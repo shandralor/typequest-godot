@@ -433,7 +433,7 @@ func _static_forge() -> Node3D:
 	# a thin slab, NOT a coplanar plane (a second plane at y=0 would z-fight/flicker)
 	root.add_child(_make_box(Vector3(6, 0.08, 6), Vector3(0, 0.04, 0), Color(0.34, 0.32, 0.30)))
 	var anchors := {
-		"center": Vector3(0, 0, 0),
+		"center": Vector3(0.8, 0, 0),          # in line with the grindstone's x
 		"grind_point": Vector3(0.8, 0, 1.4),   # in front of the knight, toward the camera
 		"path_near": Vector3(0, 0, 3),
 		"path_far": Vector3(0, 0, -3),
