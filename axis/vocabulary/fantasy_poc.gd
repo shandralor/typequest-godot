@@ -19,8 +19,7 @@ const ASSETS := {
 	"hero": "res://assets/kaykit/characters/Mannequin_Medium.glb",  # knight stand-in
 	"skeleton": "res://assets/kaykit/skeletons/Skeleton_Warrior.glb",
 	# props (referenced by later scenes; the start scene uses none)
-	"chest": "res://assets/kaykit/dungeon/chest.gltf",
-	"chest_gold": "res://assets/kaykit/dungeon/chest_gold.gltf",  # win beat, lid is a child
+	"chest": "res://assets/kaykit/dungeon/chest_gold.gltf",  # A7: a gold chest, lid a separate child
 	"bridge": "res://assets/kaykit/resource_bits/Wood_Planks_Stack_Large.gltf",
 }
 
