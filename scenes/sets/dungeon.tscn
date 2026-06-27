@@ -1,6 +1,8 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cot8utgwpu2gb"]
 
-[ext_resource type="PackedScene" path="res://assets/kaykit/dungeon/barrel_large.gltf" id="1_5dk1y"]
+[ext_resource type="PackedScene" uid="uid://8wu436f72rr1" path="res://assets/kaykit/dungeon/barrel_large.gltf" id="1_5dk1y"]
+[ext_resource type="PackedScene" uid="uid://d13i81wvdnvq0" path="res://assets/kaykit/dungeon/wall_cracked.gltf" id="2_fdla7"]
+[ext_resource type="PackedScene" uid="uid://cgg18b4xeeu26" path="res://assets/kaykit/dungeon/rubble_half.gltf" id="3_ytubi"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8g3ta"]
 albedo_color = Color(0.16, 0.16, 0.19, 1)
@@ -32,7 +34,7 @@ albedo_color = Color(0.08, 0.08, 0.1, 1)
 [sub_resource type="BoxMesh" id="BoxMesh_7v1ep"]
 size = Vector3(14, 0.5, 16)
 
-[node name="" type="Node3D" unique_id=1336513404]
+[node name="Node3D" type="Node3D" unique_id=1336513404]
 
 [node name="Ground" type="MeshInstance3D" parent="." unique_id=177790921]
 material_override = SubResource("StandardMaterial3D_8g3ta")
@@ -84,5 +86,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
 [node name="treasure" type="Marker3D" parent="." unique_id=1393587147]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
 
-[node name="barrel_large2" type="Node3D" parent="." unique_id=2009984683 instance=ExtResource("1_5dk1y")]
+[node name="barrel_large2" parent="." unique_id=2009984683 instance=ExtResource("1_5dk1y")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, 0, -4.6)
+
+[node name="wall_cracked2" parent="." unique_id=420583884 instance=ExtResource("2_fdla7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.733658, 0, -6.3972764)
+
+[node name="rubble_half2" parent="." unique_id=1853761 instance=ExtResource("3_ytubi")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9225273, -0.35511267, 1.4208083)

@@ -17,6 +17,7 @@ const SceneActivity = preload("res://logic/scene_activity.gd")
 const AzertyInput = preload("res://input/azerty_input.gd")
 const TypeAlongPanel = preload("res://ui/type_along.gd")
 const KeyboardGuide = preload("res://ui/keyboard_guide.gd")
+const ChoiceBannerScript = preload("res://ui/choice_banner.gd")
 
 enum Phase { PROSE, CHOICE, PAUSE, WIN, DONE }
 
@@ -54,6 +55,8 @@ var _keyboard
 var _narration: Label
 var _message: Label
 var _hud: Label
+var _choice_layer: Control
+var _banners: Array = []
 
 # demo / capture
 var _demo := false
@@ -173,6 +176,12 @@ func _build_layout() -> void:
 	_keyboard.offset_bottom = -12
 	band.add_child(_keyboard)
 
+	# choice banners float over the lower part of the scene, above the band
+	_choice_layer = Control.new()
+	_choice_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_choice_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ui.add_child(_choice_layer)
+
 
 func _make_label(size: int, align: int) -> Label:
 	var l := Label.new()
@@ -188,6 +197,8 @@ func _make_label(size: int, align: int) -> Label:
 
 func _enter_node() -> void:
 	var node = _run.current()
+	_clear_banners()
+	_type_along.visible = true
 	_composer.compose(node.scene, node.id)
 	_update_camera(0.0, true)   # snap to the new scene's framing
 	_activity.reset()
@@ -217,7 +228,8 @@ func _begin_choice() -> void:
 	_picked = null
 	_buffer = ""
 	_phase = Phase.CHOICE
-	_show_choice_prompt()
+	_narration.text = "typ je keuze:"
+	_show_banners()
 	_highlight_choice()
 
 
@@ -287,7 +299,7 @@ func _choice_char(c: String) -> void:
 		if c != expected:
 			return
 		_buffer += c
-	_show_choice_prompt()
+	_update_banner_highlight()
 	_highlight_choice()
 	if _picked != null and _buffer == _picked.word:
 		_run.choose(_locale.resolve(_picked.choice.word_key))
@@ -296,18 +308,46 @@ func _choice_char(c: String) -> void:
 
 # --- view helpers ------------------------------------------------------------
 
-func _show_choice_prompt() -> void:
-	var labels: Array = []
-	for cand in _candidates:
-		labels.append("%s (%s)" % [cand.word, _hint_nl(cand.choice.hint)])
-	_narration.text = "typ je keuze: " + " of ".join(labels)
-	if _picked == null:
-		var words: Array = []
-		for cand in _candidates:
-			words.append(cand.word)
-		_type_along.set_plain(" / ".join(words))
-	else:
-		_type_along.set_prose(_picked.word, _buffer.length())
+func _show_banners() -> void:
+	_type_along.visible = false
+	_clear_banners()
+	var single := _candidates.size() == 1
+	var cx := 960.0
+	var y := 430.0
+	for i in _candidates.size():
+		var cand = _candidates[i]
+		var banner = ChoiceBannerScript.new()
+		_choice_layer.add_child(banner)
+		banner.size = Vector2(380, 120)
+		banner.configure(cand.word, cand.choice.hint, float(i) * 1.3)
+		var x := cx - 190.0
+		if not single:
+			if cand.choice.hint == "left":
+				x = cx - 420.0
+			elif cand.choice.hint == "right":
+				x = cx + 40.0
+		banner.set_base_position(Vector2(x, y))
+		_banners.append({"banner": banner, "cand": cand})
+	_update_banner_highlight()
+
+
+func _update_banner_highlight() -> void:
+	for e in _banners:
+		if _picked == null:
+			e.banner.set_typed(0)
+			e.banner.set_active(true)
+		elif e.cand == _picked:
+			e.banner.set_typed(_buffer.length())
+			e.banner.set_active(true)
+		else:
+			e.banner.set_typed(0)
+			e.banner.set_active(false)
+
+
+func _clear_banners() -> void:
+	for e in _banners:
+		e.banner.queue_free()
+	_banners.clear()
 
 
 func _highlight_prose() -> void:
