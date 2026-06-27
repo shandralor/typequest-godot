@@ -1,0 +1,25 @@
+# Credits
+
+TypeQuest buys/downloads CC0 art and engineers the systems around it (migration
+brief Section 5). All bundled 3D art is below. Per-pack license files live next to
+the models under `assets/kaykit/<pack>/License.txt`.
+
+## 3D art -- KayKit by Kay Lousberg
+
+Created/distributed by **Kay Lousberg** -- https://www.kaylousberg.com
+License: **Creative Commons Zero (CC0 1.0)** --
+https://creativecommons.org/publicdomain/zero/1.0/
+(Crediting is appreciated, not required. We credit.)
+
+Packs bundled in `assets/kaykit/`:
+
+- Dungeon Remastered (1.1) -- `dungeon/`
+- Forest Nature Pack (1.0) -- `forest_nature/`
+- Character Animations (1.1), incl. the Mannequin character -- `characters/`
+- Skeletons (1.1) -- `skeletons/`
+- Resource Bits (1.0) -- `resource_bits/`
+- RPG Tools Bits (1.0) -- `rpgtools_bits/`
+- Fantasy Weapons Bits (1.0) -- `fantasy_weapons_bits/`
+
+Only the `gltf`/`glb` + atlas textures were imported; `fbx`/`obj` and sample
+renders were dropped to keep the project lean and avoid importer issues.
