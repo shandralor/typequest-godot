@@ -7,10 +7,12 @@ extends Control
 ## reorder in the editor. Emits `pressed` on click.
 
 const ChoiceBanner = preload("res://ui/choice_banner.gd")
-const PANEL := "res://assets/kenney/ui_rpg/panel_blue.png"
+const PANEL_PRIMARY := "res://assets/kenney/ui_rpg/panel_blue.png"
+const PANEL_SECONDARY := "res://assets/kenney/ui_rpg/panel_brown.png"
 
 signal pressed
 
+var _bg: TextureRect
 var _label: RichTextLabel
 var _time := 0.0
 var _hover := false
@@ -19,18 +21,18 @@ var _hover := false
 func _ready() -> void:
 	custom_minimum_size = Vector2(460, 116)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var bg := TextureRect.new()
-	bg.texture = load(PANEL)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.stretch_mode = TextureRect.STRETCH_SCALE
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bg = TextureRect.new()
+	_bg.texture = load(PANEL_PRIMARY)
+	_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sh := Shader.new()
 	sh.code = ChoiceBanner.WAVE_SHADER
 	var mat := ShaderMaterial.new()
 	mat.shader = sh
-	bg.material = mat
-	add_child(bg)
+	_bg.material = mat
+	add_child(_bg)
 
 	_label = RichTextLabel.new()
 	_label.bbcode_enabled = true
@@ -46,10 +48,21 @@ func _ready() -> void:
 	mouse_exited.connect(func(): _hover = false)
 
 
-func configure(text: String) -> void:
+func configure(text: String, secondary: bool = false) -> void:
 	if _label == null:
 		await ready
 	_label.text = "[center][color=#ffffff]%s[/color][/center]" % text
+	# secondary items (Stoppen, Terug) are smaller with a different panel colour
+	if secondary:
+		custom_minimum_size = Vector2(300, 78)
+		_bg.texture = load(PANEL_SECONDARY)
+		_label.offset_top = 12
+		_label.add_theme_font_size_override("normal_font_size", 28)
+	else:
+		custom_minimum_size = Vector2(460, 116)
+		_bg.texture = load(PANEL_PRIMARY)
+		_label.offset_top = 16
+		_label.add_theme_font_size_override("normal_font_size", 38)
 
 
 func _gui_input(event: InputEvent) -> void:

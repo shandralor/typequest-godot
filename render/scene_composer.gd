@@ -32,6 +32,8 @@ const HERO_MOVE := "res://assets/kaykit/adventurers/Rig_Medium_MovementBasic.glb
 const HERO_IDLE := "Idle_A"
 const HERO_WALK := "Walking_A"
 const HERO_PICKUP := "PickUp"
+const HERO_WORK := "Use_Item"   # looped, for grinding
+const HERO_RAISE := "Throw"     # arm-raise gesture for the sword-raise win
 
 # palette
 const C_GRASS := Color(0.34, 0.46, 0.22)
@@ -55,6 +57,12 @@ var _bridge_pos := Vector3.ZERO
 var _has_landmarks := false
 var _needs_bloom := false
 var _chest_lid: Node3D
+var _is_work_scene := false
+var _sparks: CPUParticles3D
+var _sword: Node3D
+var _sword_base := Vector3.ZERO
+var _grind_phase := 0.0
+var _raising := false
 
 
 func compose(descriptor, variant: String = "") -> void:
@@ -65,6 +73,7 @@ func compose(descriptor, variant: String = "") -> void:
 	for p in descriptor.props:
 		if p.asset == "chest":
 			_needs_bloom = true   # only the treasure scenes get bloom
+	_is_work_scene = descriptor.location == "forge"
 	_location = _instance_set(_set_for(descriptor))
 	_location.name = "Location"
 	add_child(_location)
@@ -84,6 +93,8 @@ func compose(descriptor, variant: String = "") -> void:
 		_face(node, actor.facing)
 	for prop in descriptor.props:
 		_place_prop(prop)
+	if _is_work_scene:
+		_build_sparks(_anchor_position("grind_point") + Vector3(0.0, 0.7, 0.0))
 	set_lead_progress(0.0)
 	set_lead_animation(false)
 
@@ -95,6 +106,23 @@ func _clear() -> void:
 	_lead = null
 	_lead_anim = null
 	_chest_lid = null
+	_is_work_scene = false
+	_sparks = null
+	_sword = null
+	_raising = false
+
+
+# Animate the sword grinding against the wheel (a small 2D oscillation) while the
+# child is typing; rest it otherwise. While raising it (the win), a tween owns it.
+func _process(delta: float) -> void:
+	if _sword == null or _raising:
+		return
+	if _sparks != null and _sparks.emitting:
+		_grind_phase += delta
+		var t := _grind_phase
+		_sword.position = _sword_base + Vector3(sin(t * 13.0) * 0.07, cos(t * 9.0) * 0.04, sin(t * 13.0) * 0.02)
+	else:
+		_sword.position = _sword_base
 
 
 # Builds the animated hero (B3): mesh + idle from the General rig, with the walk
@@ -109,9 +137,9 @@ func _build_hero() -> Node3D:
 	ap.root_node = NodePath("..")   # resolve tracks against the Knight root
 	var lib := AnimationLibrary.new()
 	ap.add_animation_library("", lib)
-	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP])
+	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP, HERO_WORK, HERO_RAISE])
 	_graft_animations(lib, HERO_MOVE, [HERO_WALK])
-	for clip in [HERO_IDLE, HERO_WALK]:
+	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK]:
 		if lib.has_animation(clip):
 			lib.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 	_lead_anim = ap
@@ -139,6 +167,73 @@ func set_lead_animation(moving: bool) -> void:
 	var want := HERO_WALK if moving else HERO_IDLE
 	if _lead_anim.has_animation(want) and _lead_anim.current_animation != want:
 		_lead_anim.play(want, 0.25)
+
+
+func is_work_scene() -> bool:
+	return _is_work_scene
+
+
+## Grinding aliveness: the hero plays the work clip and sparks fly while typing,
+## settling to idle when paused. The sparks heat up (orange -> hot blue-white) with
+## progress, so the child sees the sharpening getting close to done.
+func set_lead_work(active: bool, progress: float = 0.0) -> void:
+	if _lead_anim != null:
+		var want := HERO_WORK if active else HERO_IDLE
+		if _lead_anim.has_animation(want) and _lead_anim.current_animation != want:
+			_lead_anim.play(want, 0.25)
+	if _sparks != null:
+		_sparks.emitting = active
+		_sparks.color = _spark_color(progress)
+
+
+func _spark_color(p: float) -> Color:
+	if p < 0.5:
+		return Color(1.0, 0.5, 0.1).lerp(Color(1.0, 0.92, 0.35), p / 0.5)        # orange -> yellow
+	return Color(1.0, 0.92, 0.35).lerp(Color(0.6, 0.85, 1.0), (p - 0.5) / 0.5)   # yellow -> hot blue-white
+
+
+## The win flourish for the grinding session: the knight raises the sharpened sword.
+func raise_sword() -> void:
+	if _sword == null:
+		return
+	_raising = true
+	var held_high := lead_position() + Vector3(0.45, 2.05, 0.55)   # up, toward the camera
+	var t := create_tween().set_parallel()
+	t.tween_property(_sword, "position", held_high, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	t.tween_property(_sword, "rotation_degrees", Vector3(10, 0, 10), 0.5)
+
+
+func stop_sparks() -> void:
+	if _sparks != null:
+		_sparks.emitting = false
+
+
+func _build_sparks(pos: Vector3) -> void:
+	var p := CPUParticles3D.new()
+	p.position = pos
+	p.amount = 44
+	p.lifetime = 0.55
+	p.emitting = false
+	p.direction = Vector3(-0.3, 0.8, 0.6)   # up and toward the camera
+	p.spread = 42.0
+	p.initial_velocity_min = 3.0
+	p.initial_velocity_max = 6.5
+	p.gravity = Vector3(0, -8, 0)
+	p.scale_amount_min = 0.8
+	p.scale_amount_max = 1.8
+	var spark := SphereMesh.new()
+	spark.radius = 0.05
+	spark.height = 0.1
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.8, 0.3)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.6, 0.15)
+	mat.emission_energy_multiplier = 9.0
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	spark.material = mat
+	p.mesh = spark
+	add_child(p)
+	_sparks = p
 
 
 ## Play a one-shot hero clip (e.g. PickUp at the win), then settle back to idle.
@@ -236,6 +331,8 @@ func set_lead_yaw(yaw: float) -> void:
 # the treasure glow, mood lighting) and all motion stay in code.
 
 func _set_for(descriptor) -> String:
+	if descriptor.location == "forge":
+		return "forge"
 	if descriptor.location == "dungeon":
 		return "dungeon"
 	if descriptor.path == SceneDescriptor.PATH_FORK:
@@ -273,6 +370,8 @@ func build_static(set_name: String) -> Node3D:
 			return _static_forest(false, true)
 		"dungeon":
 			return _static_dungeon()
+		"forge":
+			return _static_forge()
 		_:
 			return _static_forest(false, false)
 
@@ -341,6 +440,37 @@ func _static_dungeon() -> Node3D:
 	if barrel != null:
 		barrel.position = Vector3(-2.6, 0, -4.6)
 		root.add_child(barrel)
+	return root
+
+
+func _static_forge() -> Node3D:
+	var root := Node3D.new()
+	var rng := _rng()
+	root.add_child(_make_ground(Vector2(40, 40), Color(0.30, 0.46, 0.22)))   # grassy yard
+	root.add_child(_make_ground(Vector2(6, 6), Color(0.34, 0.32, 0.30)))     # stone pad
+	var anchors := {
+		"center": Vector3(0, 0, 0),
+		"grind_point": Vector3(0.8, 0, 1.4),   # in front of the knight, toward the camera
+		"path_near": Vector3(0, 0, 3),
+		"path_far": Vector3(0, 0, -3),
+		"treasure": Vector3(0, 0, -3),
+	}
+	for n in anchors:
+		var m := Marker3D.new()
+		m.name = n
+		m.position = anchors[n]
+		root.add_child(m)
+	var grind := _instance_path("res://assets/kaykit/rpgtools_bits/grindstone.gltf")
+	if grind != null:
+		grind.position = anchors["grind_point"]
+		grind.rotation.y = deg_to_rad(90)
+		root.add_child(grind)
+	var anvil := _instance_path("res://assets/kaykit/rpgtools_bits/anvil.gltf")
+	if anvil != null:
+		anvil.position = Vector3(-1.8, 0, 0.6)
+		anvil.rotation.y = deg_to_rad(-40)
+		root.add_child(anvil)
+	_treeline(root, rng, ["Tree_1_A_Color1", "Tree_2_A_Color1", "Tree_3_A_Color1"])
 	return root
 
 
@@ -440,6 +570,15 @@ func _place_prop(prop) -> void:
 	match prop.asset:
 		"bridge":
 			pass  # the river + bridge are baked into the forest_bridge location set
+		"sword":
+			var sword := _instance_asset("sword")
+			sword.name = "Prop_sword"
+			add_child(sword)
+			# held up against the wheel, canted diagonally toward the player
+			_sword_base = _anchor_position(prop.anchor) + Vector3(-0.3, 0.85, -0.3)
+			sword.position = _sword_base
+			sword.rotation_degrees = Vector3(-28, 12, 64)
+			_sword = sword
 		"chest":
 			var chest := _instance_asset("chest")
 			chest.name = "Prop_chest"

@@ -56,6 +56,7 @@ class StoryNode extends RefCounted:
 	var narration_key: String = ""
 	var choices: Array = []         # Array[Choice]
 	var ending: String = ""         # "" | "neutral" | "win"
+	var win_key: String = ""        # locale key for the win message (optional)
 	var return_to: String = ""      # A9 setback target
 	var prerevealed: bool = false   # A9
 	var safety: Dictionary = {}     # locale -> { hash, date, criteria_version }

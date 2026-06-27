@@ -79,10 +79,12 @@ func _ready() -> void:
 	_build_layout()
 	var args := OS.get_cmdline_user_args()
 	_demo = "--demo" in args
-	# debug: jump straight to a node (--scene=ID) and pre-type N chars (--type=N)
+	# debug: pick a scenario (--scenario=ID), jump to a node (--scene=ID), and
+	# pre-type N chars (--type=N)
 	var jump := _arg_value(args, "--scene")
-	if _demo or jump != "":
-		_start_scenario("band1")
+	var scen := _arg_value(args, "--scenario")
+	if _demo or jump != "" or scen != "":
+		_start_scenario(scen if scen != "" else "band1")
 		if jump != "":
 			_run.current_id = jump
 			_enter_node()
@@ -268,12 +270,17 @@ func _resolve_ending() -> void:
 			_phase = Phase.PAUSE
 			_after(1.8, _enter_node)
 		"win":
-			_message.text = "goed gedaan. je hebt de schat.\n(druk op enter)"
+			_message.text = _win_message() + "\n(druk op enter)"
 			_type_along.set_plain("")
 			_keyboard.highlight("")
 			_phase = Phase.WIN
-			_composer.play_lead_oneshot("PickUp")
-			_composer.open_chest()
+			if _composer.is_work_scene():
+				_composer.stop_sparks()
+				_composer.raise_sword()                 # lift the sharpened sword
+				_composer.play_lead_oneshot("Throw")    # arm-raise gesture
+			else:
+				_composer.open_chest()                  # treasure win: open the chest
+				_composer.play_lead_oneshot("PickUp")
 			_flash()
 		_:
 			_message.text = "einde."
@@ -440,7 +447,10 @@ func _process(delta: float) -> void:
 	else:
 		_update_gaze(delta)
 		if drive_anim:
-			_composer.set_lead_animation(false)
+			if _composer.is_work_scene():
+				_composer.set_lead_work(act == SceneActivity.Activity.MOVING, p)
+			else:
+				_composer.set_lead_animation(false)
 	_update_camera(delta, false)
 	if _demo:
 		_demo_tick(delta)
@@ -537,6 +547,12 @@ func _camera_rig() -> Dictionary:
 	if _composer.is_treasure():
 		# a closer hero shot of the knight + the opening chest at the win
 		return {"pos": lead + Vector3(0, 2.7, 5.8), "look": lead + Vector3(0, 0.9, -2.4)}
+	if _composer.is_work_scene():
+		if _phase == Phase.WIN:
+			# raised and looking down so the knight + raised sword clear the grindstone
+			return {"pos": lead + Vector3(0.25, 3.1, 4.4), "look": lead + Vector3(0.35, 1.5, 0.5)}
+		# a near front view of the knight grinding the sword on the wheel in front
+		return {"pos": lead + Vector3(0.5, 1.9, 4.0), "look": lead + Vector3(0.55, 0.95, 1.2)}
 	return {"pos": lead + Vector3(0, 4.2, 9.5), "look": lead + Vector3(0, 1.0, -1.5)}
 
 
@@ -618,7 +634,7 @@ func _show_menu(title: String, items: Array) -> void:
 	for it in items:
 		var banner := MenuBannerScene.instantiate()
 		vbox.add_child(banner)
-		banner.configure(it.text)
+		banner.configure(it.text, it.get("secondary", false))
 		banner.pressed.connect(it.on_press)
 
 
@@ -627,7 +643,7 @@ func _show_main_menu() -> void:
 	_set_playing_ui(false)
 	_show_menu("TypeQuest", [
 		{"text": "Start", "on_press": _show_scenario_menu},
-		{"text": "Stoppen", "on_press": _quit_app},
+		{"text": "Stoppen", "on_press": _quit_app, "secondary": true},
 	])
 
 
@@ -638,12 +654,19 @@ func _show_scenario_menu() -> void:
 	var items: Array = []
 	for s in Scenarios.list():
 		items.append({"text": s.title, "on_press": _start_scenario.bind(s.id)})
-	items.append({"text": "Terug", "on_press": _show_main_menu})
+	items.append({"text": "Terug", "on_press": _show_main_menu, "secondary": true})
 	_show_menu("Kies een avontuur", items)
 
 
 func _quit_app() -> void:
 	get_tree().quit()
+
+
+func _win_message() -> String:
+	var node = _run.current()
+	if node != null and node.win_key != "":
+		return _locale.resolve(node.win_key)
+	return "goed gedaan."
 
 
 func _start_scenario(id: String) -> void:

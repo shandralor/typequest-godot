@@ -89,6 +89,7 @@ static func build() -> StoryGraph:
 	schat.prose_key = "schat.prose"
 	schat.narration_key = "schat.narration"
 	schat.ending = "win"
+	schat.win_key = "schat.win"
 	schat.safety = _nl_be_safety("fnv1a:1f2d5082")
 	schat.scene = Scenes.schat()
 	g.add_node(schat)

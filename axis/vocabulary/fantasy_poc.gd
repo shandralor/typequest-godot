@@ -21,6 +21,9 @@ const ASSETS := {
 	# props (referenced by later scenes; the start scene uses none)
 	"chest": "res://assets/kaykit/dungeon/chest_gold.gltf",  # A7: a gold chest, lid a separate child
 	"bridge": "res://assets/kaykit/resource_bits/Wood_Planks_Stack_Large.gltf",
+	"grindstone": "res://assets/kaykit/rpgtools_bits/grindstone.gltf",
+	"anvil": "res://assets/kaykit/rpgtools_bits/anvil.gltf",
+	"sword": "res://assets/kaykit/adventurers/sword_1handed.gltf",
 }
 
 static func resolve(asset_id: String) -> String:

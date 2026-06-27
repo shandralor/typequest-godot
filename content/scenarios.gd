@@ -7,16 +7,20 @@ extends RefCounted
 
 const Band1Arc = preload("res://content/band1/band1_arc.gd")
 const Band1Scenes = preload("res://content/band1/scene_descriptors.gd")
+const GrindArc = preload("res://content/grind/grind_arc.gd")
 
 
 static func list() -> Array:
 	return [
 		{"id": "band1", "title": "De ridder en de schat"},
+		{"id": "grind", "title": "Slijp je zwaard"},
 	]
 
 
 static func build(id: String):
 	match id:
+		"grind":
+			return GrindArc.build()
 		_:
 			return Band1Arc.build()
 

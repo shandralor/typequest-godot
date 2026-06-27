@@ -27,6 +27,11 @@ const CATALOG := {
 	"naGrot.narration": "de ridder kiest de veilige weg.",
 	"brug.narration": "stap voor stap over de brug.",
 	"schat.narration": "goed gedaan kleine held.",
+	"schat.win": "goed gedaan. je hebt de schat.",
+	# grinding session (the slijplied -- a short song the child types)
+	"slijpen.prose": "slijp slijp slijp het grote zwaard. draai het wiel heel snel rond. vonken vliegen door de lucht. nu is het zwaard weer scherp.",
+	"slijpen.narration": "zing het slijplied en typ elk woord.",
+	"slijpen.win": "goed gedaan. je zwaard is scherp.",
 	# choice words (typed to pick a fork)
 	"word.verder": "verder",
 	"word.grot": "grot",
