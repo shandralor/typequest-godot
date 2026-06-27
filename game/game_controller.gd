@@ -157,16 +157,16 @@ func _build_layout() -> void:
 	rule.offset_bottom = 4
 	band.add_child(rule)
 
-	_narration = _make_label(30, HORIZONTAL_ALIGNMENT_CENTER)
+	_narration = _make_label(28, HORIZONTAL_ALIGNMENT_CENTER)
 	_narration.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_narration.offset_top = 12
+	_narration.offset_top = 8
 	_narration.offset_left = 40
 	_narration.offset_right = -40
 	band.add_child(_narration)
 
 	_type_along = TypeAlongPanel.new()
 	_type_along.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_type_along.offset_top = 50
+	_type_along.offset_top = 66
 	_type_along.offset_bottom = 168
 	_type_along.offset_left = 220
 	_type_along.offset_right = -220
@@ -174,8 +174,8 @@ func _build_layout() -> void:
 
 	_keyboard = KeyboardGuide.new()
 	_keyboard.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_keyboard.offset_top = -232
-	_keyboard.offset_bottom = -12
+	_keyboard.offset_top = -226
+	_keyboard.offset_bottom = -6
 	band.add_child(_keyboard)
 
 	# choice banners float over the lower part of the scene, above the band

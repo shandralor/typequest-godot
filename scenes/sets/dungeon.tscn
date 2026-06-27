@@ -135,6 +135,15 @@ transform = Transform3D(-0.20373419, -0.92786694, -0.31233874, 0.01943732, 0.315
 [node name="rubble_large21" parent="." unique_id=986923075 instance=ExtResource("3_5eywh")]
 transform = Transform3D(0.1969808, 0.92932403, -0.31233877, -0.017144976, -0.3152666, -0.9488483, -0.9802574, 0.19226, -0.046168245, -2.0290158, 5.340136, 2.4917839)
 
+[node name="rubble_large24" parent="." unique_id=1821439789 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.1969808, 0.92932403, -0.31233877, -0.017144976, -0.3152666, -0.9488483, -0.9802574, 0.19226, -0.046168245, 1.3559084, 5.340136, -1.0899293)
+
+[node name="rubble_large26" parent="." unique_id=1438238652 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.1969808, 0.92932403, -0.31233877, -0.017144976, -0.3152666, -0.9488483, -0.9802574, 0.19226, -0.046168245, 3.6319535, 4.789903, 1.4860737)
+
+[node name="rubble_large25" parent="." unique_id=2135321365 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.9948393, -0.08953641, 0.04772559, -0.01714497, -0.31526658, -0.9488483, 0.100002795, -0.9447699, 0.31210455, -0.120649576, 5.340136, -1.0899293)
+
 [node name="rubble_large16" parent="." unique_id=1352625509 instance=ExtResource("3_5eywh")]
 transform = Transform3D(-0.028402247, -0.00020656096, 0.99959666, 0.007272506, -0.99997365, 0, 0.9995701, 0.007269571, 0.028402995, -6.7510347, 4.869778, -1.8847625)
 
