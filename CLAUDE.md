@@ -19,10 +19,12 @@ the old TypeScript/Three.js code.
    C = dropped. Honor its **Prime Directive**: these decisions were made
    deliberately against naive defaults; do NOT re-litigate or silently simplify
    them. Treat `AUTHORED -- DO NOT REGENERATE` markers literally.
-2. `HANDOFF.md`, `docs/schemas.md`, `docs/visual-checks.md` -- carried durable docs
+2. `docs/godot-handoff.md` -- THE implementation handoff: where everything is, how it
+   works, how to run/test/screenshot, and how to extend it. Read this to start coding.
+3. `HANDOFF.md`, `docs/schemas.md`, `docs/visual-checks.md` -- carried durable docs
    (from the TS project; some wording is TS-era -- the migration brief wins on any
-   conflict).
-3. `docs/working-context.md` -- the LIVE state + next step (update it every session).
+   conflict). `docs/outreach-kaykit-nl.md` -- the asset-creator outreach message (NL).
+4. `docs/working-context.md` -- the LIVE state + next step (update it every session).
 4. `docs/working-context-legacy-ts.md` -- the TS project's working context, kept for
    reference only.
 

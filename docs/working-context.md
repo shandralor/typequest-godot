@@ -19,7 +19,35 @@ Regenerate the sets from code with `godot --headless --script res://tools/bake_s
 -- but this OVERWRITES them, so do not re-bake a set after hand-editing it. If a set
 file is missing, the composer falls back to building it procedurally.
 
-## Current state (2026-06-27)
+## START HERE
+
+For a full implementation guide (architecture, how to run/test/screenshot, how to
+add scenarios/scenes/clips), read **docs/godot-handoff.md**. This file is just the
+rolling state + next step.
+
+## Current state (2026-06-27, end of session)
+
+Playable end to end with a menu shell and TWO scenarios:
+- "De ridder en de schat" (band1 arc: forest/fork/cave/bridge/treasure).
+- "Slijp je zwaard" (grind: the knight grinds his sword to a typed song; sparks heat
+  with progress; cheering sword-raise at the win).
+Menu: Start/Stoppen -> scenario menu (waving clickable banners) + Terug -> play ->
+win + Enter returns to the scenario menu. Hero is the animated KayKit Knight.
+
+Latest polish this session: held sword via handslot.r bone attach; Sawing grind clip
+(small vertical); knight aligned to the grindstone; sliding reveal window (no top-line
+clipping); per-scenario win messages; menu secondary buttons; flicker fixes; the win
+flourishes (chest open / sword raise + flash). Outreach NL message in
+docs/outreach-kaykit-nl.md.
+
+## Next step (pick up here)
+
+Likely next: an archery or morning-gymnastics short scenario (see handoff section 5
+"Add a new scenario"), or the hex OVERWORLD (assets/kaykit/hexagon is vendored), or
+profiles (A5) so XP/stars persist. Keep adventures short.
+
+## Older state (kept for reference)
+
 
 **Milestone 1 -- COMPOSITION LOOP -- DONE (judged good by the owner).**
 **Milestone 2 -- LOGIC PORT -- DONE (pure GDScript, all tests green).**
