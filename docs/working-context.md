@@ -7,6 +7,33 @@ CLAUDE.md is how another device picks up the work (git pull -> read these).
 
 **Milestone 1 -- COMPOSITION LOOP -- DONE (judged good by the owner).**
 **Milestone 2 -- LOGIC PORT -- DONE (pure GDScript, all tests green).**
+**Milestone 3 -- PLAYABLE GAME LOOP -- DONE (first full vertical slice).**
+
+### Milestone 3: the playable loop (scenes/game.tscn, the main scene)
+
+The whole band1-arc is playable: physical AZERTY input -> type-along with the
+reveal window -> finger-guided on-screen keyboard -> scoring -> traversal ->
+re-compose the next scene, through the grot setback, the pre-revealed naGrot, and
+the win. Reference render: `.shots/game.png`.
+
+- `input/azerty_input.gd` (B1): Godot physical_keycode -> position -> AZERTY char,
+  OS-layout-independent. Engine-specific KEY_* map lives here; the layout stays pure.
+- `ui/type_along.gd` (B5): reveal window on a Kenney panel -- typed text solid, next
+  char highlighted, faint runway, hidden tail; cursor-following scroll.
+- `ui/keyboard_guide.gd` (B6): on-screen keyboard, next key lit by finger colour,
+  f/j home anchor marked; Kenney square buttons.
+- `render/scene_composer.gd`: now progress-driven (set_lead_progress/_moving from
+  observed state, B3) + a dungeon location builder for grot.
+- `logic/{scene_activity,reveal_window}.gd`: pure B3/B5 helpers (tested in
+  tests/test_render_logic.gd).
+- `game/game_controller.gd` + `scenes/game.tscn`: the orchestrator. Layout = 3D
+  scene on top, opaque UI band below (no overlap). `--demo` autoplays; `--shot`
+  captures. Set as run/main_scene.
+- UI art: Kenney UI Pack RPG (CC0) in `assets/kenney/ui_rpg/` (see CREDITS.md).
+
+Owner feedback addressed this milestone: UI moved below the scene (was overlapping);
+all keyboard rows now render; type-along scrolls past the first line.
+
 
 ### Milestone 2: the pure logic layer + axis data + band-1 content
 
@@ -58,15 +85,19 @@ naGrot, brug, schat) also need composing (grot needs a dungeon location builder)
 
 ## Next step
 
-Next milestone: the GAME LOOP -- connect the pure logic to the render layer for one
-playable beat. Suggested slice: read physical-position input (B1) -> drive a
-TypingState for the `start` prose with the reveal window (B5) and finger guidance
-(B6) -> on completion + choice word, advance the RunState and re-compose the next
-node's scene. Keep the render layer reading observed state through a seam (B2/B3);
-never push render-shaped data into the logic.
+The core loop is playable end to end. Likely next milestones (owner to prioritise):
+- B3 proper animation: drive an AnimationTree/AnimationPlayer with real KayKit walk/
+  idle clips from `assets/kaykit/characters` (currently the hero slides along the
+  path -- no clip yet). Orient + clip from SceneActivity.
+- Profiles (A5): a local in-memory/file ProfileStore behind the 3-op contract so XP/
+  stars persist across runs; hero-name picker; multi-profile roster.
+- Polish: win flash + chest-open (A9), setback vignette, narration audio toggle +
+  reveal-window sync (B5 open question), better dungeon art, scene framing.
+- The choice UI could be clearer (currently a text prompt + typed word); consider a
+  dedicated fork affordance.
 
-Watch when starting: the SceneComposer only builds `forest_path` so far; `grot`
-needs a `dungeon` location builder (or it will RED-placeholder the location).
+No blocking watch-items; all five scenes compose (forest_path + dungeon builders),
+all tests green via `bash tests/run.sh`.
 
 ## Open decisions / watch-items
 

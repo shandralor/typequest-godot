@@ -52,7 +52,33 @@ func compose(descriptor) -> void:
 		node.name = "Prop_" + prop.asset
 		add_child(node)
 		node.position = _anchor_position(prop.anchor)
-	_start_walk()
+	set_lead_progress(0.0)
+
+
+# --- protagonist motion, driven by observed state (B3) -----------------------
+# The lead's position is the typing-progress signal expressed as motion (B3): the
+# travel only dresses the progress the reveal window already carries; it is NOT a
+# second progress channel. The consumer (game controller / demo) drives these.
+
+func has_lead() -> bool:
+	return _lead != null
+
+
+## Place the lead along the travel path by progress in [0, 1].
+func set_lead_progress(p: float) -> void:
+	if _lead != null:
+		_lead.position = _travel_start.lerp(_travel_end, clampf(p, 0.0, 1.0))
+
+
+## Orient the lead: facing travel direction while moving, facing the camera at rest.
+func set_lead_moving(moving: bool) -> void:
+	if _lead == null:
+		return
+	if moving:
+		var dir := _travel_end - _travel_start
+		_lead.rotation.y = atan2(dir.x, dir.z)
+	else:
+		_lead.rotation.y = 0.0   # mannequin forward is +Z -> faces the camera
 
 
 func _clear() -> void:
@@ -68,6 +94,8 @@ func _build_location(location_id: String) -> Node3D:
 	match location_id:
 		"forest_path":
 			return _build_forest_path()
+		"dungeon":
+			return _build_dungeon()
 		_:
 			return _red_placeholder("location:" + location_id)
 
@@ -243,10 +271,53 @@ func _face(node: Node3D, facing: String) -> void:
 			node.rotation.y = 0.0  # camera
 
 
-func _start_walk() -> void:
-	if _lead == null or Engine.is_editor_hint():
-		return  # editor shows the lead staged at path_near; F5 walks it
-	_lead.position = _travel_start
-	var t := create_tween().set_loops()
-	t.tween_property(_lead, "position", _travel_end, 4.0).set_trans(Tween.TRANS_SINE)
-	t.tween_property(_lead, "position", _travel_start, 4.0).set_trans(Tween.TRANS_SINE)
+func _build_dungeon() -> Node3D:
+	var root := Node3D.new()
+	# dark stone floor + a simple enclosing room (staging geometry, not art models)
+	root.add_child(_make_ground(Vector2(12, 12), Color(0.16, 0.16, 0.19)))
+	var stone := Color(0.12, 0.12, 0.15)
+	root.add_child(_make_wall(Vector3(12, 4, 0.4), Vector3(0, 2, -6), stone))     # back
+	root.add_child(_make_wall(Vector3(0.4, 4, 12), Vector3(-6, 2, 0), stone))     # left
+	root.add_child(_make_wall(Vector3(0.4, 4, 12), Vector3(6, 2, 0), stone))      # right
+	var anchors := {
+		"center": Vector3(0, 0, 0),
+		"path_near": Vector3(0, 0, 3),
+		"path_far": Vector3(0, 0, -3),
+		"far": Vector3(0, 0, -5),
+		"far_right": Vector3(3, 0, -3),
+		"far_left": Vector3(-3, 0, -3),
+		"left": Vector3(-3, 0, 0),
+		"right": Vector3(3, 0, 0),
+		"treasure": Vector3(0, 0, -3),
+	}
+	for anchor_name in anchors:
+		var m := Marker3D.new()
+		m.name = anchor_name
+		m.position = anchors[anchor_name]
+		root.add_child(m)
+	_travel_start = anchors["path_far"]   # the cave scares the knight back to the light
+	_travel_end = anchors["path_near"]
+	# a couple of real dungeon props for flavor
+	var barrel_a := _instance_path("res://assets/kaykit/dungeon/barrel_large.gltf")
+	if barrel_a != null:
+		barrel_a.position = Vector3(-2.4, 0, -4)
+		root.add_child(barrel_a)
+	var barrel_b := _instance_path("res://assets/kaykit/dungeon/barrel_small.gltf")
+	if barrel_b != null:
+		barrel_b.position = Vector3(2.6, 0, -4.3)
+		root.add_child(barrel_b)
+	return root
+
+
+func _make_wall(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	mi.mesh = box
+	mi.position = pos
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.roughness = 1.0
+	mi.material_override = mat
+	mi.name = "Wall"
+	return mi

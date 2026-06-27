@@ -12,6 +12,9 @@ extends Node3D
 const SceneComposerScript = preload("res://render/scene_composer.gd")
 const Band1Descriptors = preload("res://content/band1/scene_descriptors.gd")
 
+var _composer
+var _phase := 0.0
+
 
 func _ready() -> void:
 	_compose()
@@ -20,13 +23,23 @@ func _ready() -> void:
 func _compose() -> void:
 	for c in get_children():
 		c.queue_free()
-	var composer = SceneComposerScript.new()
-	composer.name = "Composer"
-	add_child(composer)
-	composer.compose(Band1Descriptors.start())
+	_composer = SceneComposerScript.new()
+	_composer.name = "Composer"
+	add_child(_composer)
+	_composer.compose(Band1Descriptors.start())
 	_setup_camera()
 	if not Engine.is_editor_hint() and "--shot" in OS.get_cmdline_user_args():
 		_capture()
+
+
+func _process(delta: float) -> void:
+	# runtime-only demo walk: oscillate progress so the knight paces the path.
+	if Engine.is_editor_hint() or _composer == null or not _composer.has_lead():
+		return
+	_phase += delta * 0.5
+	var p := 0.5 - 0.5 * cos(_phase)          # 0..1..0 ping-pong
+	_composer.set_lead_progress(p)
+	_composer.set_lead_moving(sin(_phase) > 0.0)
 
 
 func _setup_camera() -> void:
