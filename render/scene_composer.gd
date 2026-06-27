@@ -64,6 +64,11 @@ func has_lead() -> bool:
 	return _lead != null
 
 
+## The lead's current position (composer space == world; composer sits at origin).
+func lead_position() -> Vector3:
+	return _lead.position if _lead != null else Vector3.ZERO
+
+
 ## Place the lead along the travel path by progress in [0, 1].
 func set_lead_progress(p: float) -> void:
 	if _lead != null:

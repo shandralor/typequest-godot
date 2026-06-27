@@ -23,7 +23,14 @@ enum Phase { PROSE, CHOICE, PAUSE, WIN, DONE }
 const VIEW_HEIGHT := 500   # top: the 3D scene gets its OWN area (a SubViewport)
 const BAND_HEIGHT := 380   # bottom: the UI band (500 + 380 = 880 window)
 
+# Follow camera: a fixed offset behind/above the hero, so the hero stays the same
+# apparent size wherever it is on the path (and every scene frames the same).
+const CAM_OFFSET := Vector3(0, 3.4, 7.5)
+const CAM_LOOK_Y := 1.0
+const CAM_LERP := 4.0
+
 var _viewport: SubViewport
+var _camera: Camera3D
 var _locale
 var _run
 var _composer
@@ -87,11 +94,10 @@ func _build_layout() -> void:
 	_composer = SceneComposerScript.new()
 	_composer.name = "Composer"
 	_viewport.add_child(_composer)
-	var cam := Camera3D.new()
-	cam.position = Vector3(0, 4.3, 11.5)
-	_viewport.add_child(cam)
-	cam.look_at(Vector3(0, 1.1, -1.5), Vector3.UP)
-	cam.current = true
+	_camera = Camera3D.new()
+	_camera.position = CAM_OFFSET
+	_viewport.add_child(_camera)
+	_camera.current = true
 
 	# HUD overlay (top-right, over the scene)
 	_hud = _make_label(24, HORIZONTAL_ALIGNMENT_RIGHT)
@@ -162,6 +168,7 @@ func _make_label(size: int, align: int) -> Label:
 func _enter_node() -> void:
 	var node = _run.current()
 	_composer.compose(node.scene)
+	_update_camera(0.0, true)   # snap to the new scene's framing
 	_activity.reset()
 	_narration.text = _locale.resolve(node.narration_key)
 	_message.text = ""
@@ -327,8 +334,23 @@ func _process(delta: float) -> void:
 	# pauses -- only the fresh idle pose (before any typing) faces the camera. This
 	# avoids the hero snapping back to face the player whenever typing stops.
 	_composer.set_lead_moving(p > 0.02)
+	_update_camera(delta, false)
 	if _demo:
 		_demo_tick(delta)
+
+
+# Keep a fixed offset behind/above the hero. Snap on scene entry, smoothly follow
+# during play, so the hero is the same apparent size wherever it is on the path.
+func _update_camera(delta: float, snap: bool) -> void:
+	if _camera == null or not _composer.has_lead():
+		return
+	var target: Vector3 = _composer.lead_position()
+	var desired: Vector3 = target + CAM_OFFSET
+	if snap:
+		_camera.position = desired
+	else:
+		_camera.position = _camera.position.lerp(desired, clampf(delta * CAM_LERP, 0.0, 1.0))
+	_camera.look_at(target + Vector3(0.0, CAM_LOOK_Y, 0.0), Vector3.UP)
 
 
 func _demo_tick(delta: float) -> void:
