@@ -20,8 +20,8 @@ const KeyboardGuide = preload("res://ui/keyboard_guide.gd")
 
 enum Phase { PROSE, CHOICE, PAUSE, WIN, DONE }
 
-const VIEW_HEIGHT := 500   # top: the 3D scene gets its OWN area (a SubViewport)
-const BAND_HEIGHT := 380   # bottom: the UI band (500 + 380 = 880 window)
+const VIEW_HEIGHT := 680   # top: the 3D scene gets its OWN area (a SubViewport)
+const BAND_HEIGHT := 400   # bottom: the UI band (680 + 400 = 1080 window)
 
 # Follow camera: a fixed offset behind/above the hero, so the hero stays the same
 # apparent size wherever it is on the path (and every scene frames the same).
@@ -35,6 +35,12 @@ var _locale
 var _run
 var _composer
 var _activity := SceneActivity.Tracker.new()
+
+# gaze (standing scenes)
+var _gaze_yaw := 0.0
+var _gaze_mode := "none"
+var _links_idx := -1
+var _rechts_idx := -1
 
 var _phase: int = Phase.PROSE
 var _prose := TypingState.new("")
@@ -59,10 +65,25 @@ func _ready() -> void:
 	_locale = LocaleNlBe.new()
 	_run = RunState.new(Band1Arc.build(), _locale)
 	_build_layout()
-	_demo = "--demo" in OS.get_cmdline_user_args()
-	if "--shot" in OS.get_cmdline_user_args():
-		_capture_after(6.0)
+	var args := OS.get_cmdline_user_args()
+	_demo = "--demo" in args
+	# debug: jump straight to a node (--scene=ID) and pre-type N chars (--type=N)
+	var jump := _arg_value(args, "--scene")
+	if jump != "":
+		_run.current_id = jump
 	_enter_node()
+	for i in range(int(_arg_value(args, "--type"))):
+		if _phase == Phase.PROSE and not _prose.is_complete():
+			_on_char(_prose.target.substr(_prose.cursor, 1))
+	if "--shot" in args:
+		_capture_after(2.0 if jump != "" else 6.0)
+
+
+func _arg_value(args: PackedStringArray, key: String) -> String:
+	for a in args:
+		if a.begins_with(key + "="):
+			return a.substr(key.length() + 1)
+	return ""
 
 
 # Layout: the 3D scene renders into a SubViewport that occupies the TOP region; the
@@ -100,17 +121,17 @@ func _build_layout() -> void:
 	_camera.current = true
 
 	# HUD overlay (top-right, over the scene)
-	_hud = _make_label(24, HORIZONTAL_ALIGNMENT_RIGHT)
+	_hud = _make_label(28, HORIZONTAL_ALIGNMENT_RIGHT)
 	_hud.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_hud.offset_left = -360
-	_hud.offset_right = -20
-	_hud.offset_top = 14
+	_hud.offset_left = -460
+	_hud.offset_right = -28
+	_hud.offset_top = 18
 	ui.add_child(_hud)
 
 	# transient message (over the scene, upper area)
-	_message = _make_label(40, HORIZONTAL_ALIGNMENT_CENTER)
+	_message = _make_label(48, HORIZONTAL_ALIGNMENT_CENTER)
 	_message.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_message.offset_top = 110
+	_message.offset_top = 170
 	_message.offset_left = 40
 	_message.offset_right = -40
 	ui.add_child(_message)
@@ -131,7 +152,7 @@ func _build_layout() -> void:
 	rule.offset_bottom = 4
 	band.add_child(rule)
 
-	_narration = _make_label(26, HORIZONTAL_ALIGNMENT_CENTER)
+	_narration = _make_label(30, HORIZONTAL_ALIGNMENT_CENTER)
 	_narration.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	_narration.offset_top = 12
 	_narration.offset_left = 40
@@ -140,16 +161,16 @@ func _build_layout() -> void:
 
 	_type_along = TypeAlongPanel.new()
 	_type_along.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_type_along.offset_top = 44
-	_type_along.offset_bottom = 170
-	_type_along.offset_left = 90
-	_type_along.offset_right = -90
+	_type_along.offset_top = 50
+	_type_along.offset_bottom = 168
+	_type_along.offset_left = 220
+	_type_along.offset_right = -220
 	band.add_child(_type_along)
 
 	_keyboard = KeyboardGuide.new()
 	_keyboard.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_keyboard.offset_top = -200
-	_keyboard.offset_bottom = -10
+	_keyboard.offset_top = -232
+	_keyboard.offset_bottom = -12
 	band.add_child(_keyboard)
 
 
@@ -167,7 +188,7 @@ func _make_label(size: int, align: int) -> Label:
 
 func _enter_node() -> void:
 	var node = _run.current()
-	_composer.compose(node.scene)
+	_composer.compose(node.scene, node.id)
 	_update_camera(0.0, true)   # snap to the new scene's framing
 	_activity.reset()
 	_narration.text = _locale.resolve(node.narration_key)
@@ -181,6 +202,7 @@ func _enter_node() -> void:
 		_phase = Phase.PROSE
 		_type_along.set_prose(_prose.target, 0)
 		_highlight_prose()
+	_setup_gaze(node)
 	_update_hud()
 
 
@@ -323,20 +345,84 @@ func _update_hud() -> void:
 # --- per-frame: drive protagonist motion from observed state -----------------
 
 func _process(delta: float) -> void:
-	var p := 0.0
-	if _phase == Phase.PROSE:
-		p = _prose.progress()
-	elif _phase == Phase.CHOICE or _phase == Phase.PAUSE or _phase == Phase.WIN:
-		p = 1.0
+	var p := _typing_progress()
 	_activity.update(p, delta)
-	_composer.set_lead_progress(p)
-	# Face the travel direction once underway, and KEEP facing it when the child
-	# pauses -- only the fresh idle pose (before any typing) faces the camera. This
-	# avoids the hero snapping back to face the player whenever typing stops.
-	_composer.set_lead_moving(p > 0.02)
+	if _composer.is_walking():
+		_composer.set_lead_progress(p)
+		# Face travel direction once underway and KEEP facing it on pauses; only the
+		# fresh idle pose (no typing yet) faces the camera.
+		_composer.set_lead_moving(p > 0.02)
+	else:
+		_update_gaze(delta)
 	_update_camera(delta, false)
 	if _demo:
 		_demo_tick(delta)
+
+
+func _typing_progress() -> float:
+	if _phase == Phase.PROSE:
+		return _prose.progress()
+	if _phase == Phase.CHOICE or _phase == Phase.PAUSE or _phase == Phase.WIN:
+		return 1.0
+	return 0.0
+
+
+# --- gaze (standing scenes): turn the hero to look at landmarks ---------------
+
+func _setup_gaze(node) -> void:
+	_gaze_mode = "none"
+	_links_idx = -1
+	_rechts_idx = -1
+	if _composer.is_walking():
+		return
+	if _composer.has_landmarks():
+		if node.prerevealed:
+			_gaze_mode = "bridge"   # naGrot: look at the safe bridge it will take
+		else:
+			_gaze_mode = "fork"     # kruispunt: look at cave, then bridge, as typed
+			var t: String = _locale.resolve(node.prose_key)
+			_links_idx = t.find("links")
+			_rechts_idx = t.find("rechts")
+	elif _has_prop(node, "chest"):
+		_gaze_mode = "chest"        # schat: face the won treasure
+	_gaze_yaw = _standing_target_yaw()
+	_composer.set_lead_yaw(_gaze_yaw)
+
+
+func _update_gaze(delta: float) -> void:
+	if _gaze_mode == "none":
+		return
+	_gaze_yaw = lerp_angle(_gaze_yaw, _standing_target_yaw(), clampf(delta * 3.0, 0.0, 1.0))
+	_composer.set_lead_yaw(_gaze_yaw)
+
+
+func _standing_target_yaw() -> float:
+	match _gaze_mode:
+		"fork":
+			var c := _prose.cursor
+			if _links_idx >= 0 and c < _links_idx:
+				return PI   # look ahead into the fork
+			if _rechts_idx >= 0 and c < _rechts_idx:
+				return _yaw_to(_composer.cave_pos())
+			return _yaw_to(_composer.bridge_pos())
+		"bridge":
+			return _yaw_to(_composer.bridge_pos())
+		"chest":
+			return _yaw_to(_composer.anchor_pos("treasure"))
+		_:
+			return 0.0
+
+
+func _yaw_to(target: Vector3) -> float:
+	var dir: Vector3 = target - _composer.lead_position()
+	return atan2(dir.x, dir.z)
+
+
+func _has_prop(node, asset: String) -> bool:
+	for p in node.scene.props:
+		if p.asset == asset:
+			return true
+	return false
 
 
 # Keep a fixed offset behind/above the hero. Snap on scene entry, smoothly follow
@@ -344,13 +430,24 @@ func _process(delta: float) -> void:
 func _update_camera(delta: float, snap: bool) -> void:
 	if _camera == null or not _composer.has_lead():
 		return
-	var target: Vector3 = _composer.lead_position()
-	var desired: Vector3 = target + CAM_OFFSET
+	var rig := _camera_rig()
 	if snap:
-		_camera.position = desired
+		_camera.position = rig.pos
 	else:
-		_camera.position = _camera.position.lerp(desired, clampf(delta * CAM_LERP, 0.0, 1.0))
-	_camera.look_at(target + Vector3(0.0, CAM_LOOK_Y, 0.0), Vector3.UP)
+		_camera.position = _camera.position.lerp(rig.pos, clampf(delta * CAM_LERP, 0.0, 1.0))
+	_camera.look_at(rig.look, Vector3.UP)
+
+
+# Framing adapts to the scene: a close follow while walking; a wide, raised
+# establishing shot at the fork (so the cave on the left and the bridge on the
+# right are both in view as the hero turns to look); medium otherwise.
+func _camera_rig() -> Dictionary:
+	var lead: Vector3 = _composer.lead_position()
+	if _composer.is_walking():
+		return {"pos": lead + CAM_OFFSET, "look": lead + Vector3(0, CAM_LOOK_Y, 0)}
+	if _composer.has_landmarks():
+		return {"pos": lead + Vector3(0, 5.5, 11.5), "look": lead + Vector3(0, 0.5, -4.5)}
+	return {"pos": lead + Vector3(0, 4.2, 9.5), "look": lead + Vector3(0, 1.0, -1.5)}
 
 
 func _demo_tick(delta: float) -> void:

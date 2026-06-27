@@ -22,8 +22,8 @@ const FINGER_COLORS := {
 	"right_ring": Color("9575cd"), "right_pinky": Color("f06292"),
 	"thumb": Color("bdbdbd"),
 }
-const KEY_SIZE := Vector2(40, 42)
-const GAP := 4
+const KEY_SIZE := Vector2(48, 50)
+const GAP := 5
 const IDLE_MODULATE := Color(0.82, 0.82, 0.82)
 
 var _keys: Dictionary = {}   # char -> NinePatchRect
@@ -41,7 +41,7 @@ func _ready() -> void:
 	var extra := HBoxContainer.new()
 	extra.alignment = BoxContainer.ALIGNMENT_CENTER
 	extra.add_theme_constant_override("separation", GAP)
-	extra.add_child(_make_key(" ", "spatie", Vector2(200, 42)))
+	extra.add_child(_make_key(" ", "spatie", Vector2(250, 50)))
 	extra.add_child(_make_key(".", ".", KEY_SIZE))
 	vbox.add_child(extra)
 
@@ -70,7 +70,7 @@ func _make_key(ch: String, label_text: String, size: Vector2) -> NinePatchRect:
 	var guide := Layout.guidance_for_char(ch)
 	var is_anchor: bool = guide.get("is_home_anchor", false)
 	lbl.add_theme_color_override("font_color", Color("7a1f0a") if is_anchor else Color("3b2a1a"))
-	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.add_theme_font_size_override("font_size", 26)
 	key.add_child(lbl)
 	_keys[ch] = key
 	return key

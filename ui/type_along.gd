@@ -33,7 +33,7 @@ func _ready() -> void:
 	_label.offset_top = 20
 	_label.offset_right = -30
 	_label.offset_bottom = -20
-	_label.add_theme_font_size_override("normal_font_size", 28)
+	_label.add_theme_font_size_override("normal_font_size", 34)
 	add_child(_label)
 
 

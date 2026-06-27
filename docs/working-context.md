@@ -83,9 +83,29 @@ walk clips (B3); the setback vignette + win flash/chest-open; and profiles (A5,
 local in-memory/file ProfileStore first). The other five scenes (kruispunt, grot,
 naGrot, brug, schat) also need composing (grot needs a dungeon location builder).
 
+### Milestone 4: art/staging polish pass (2026-06-27)
+
+- Window is now 1920x1080 (VIEW_HEIGHT 680 / BAND_HEIGHT 400). UI scaled up.
+- Forest scenes are much larger than the camera view (56x140 ground + a treeline
+  ring + distance fog) so the horizon edge is never visible (immersion). Each
+  forest scene is seeded by node id, so they differ.
+- Fork-in-the-road geometry for fork scenes (kruispunt, naGrot): the path splits,
+  with a cave mouth on the left and a small bridge on the right.
+- Hero GAZE on standing scenes: at kruispunt the hero turns to look at the cave
+  while typing that part, then the bridge; naGrot looks at the bridge; schat faces
+  the chest. Driven by cursor position vs prose keywords (game_controller gaze).
+- Camera framing adapts per scene: close follow while walking, a wide raised
+  establishing shot at the fork, medium otherwise.
+- Real bridge scene (brug): a blue river crossing the path with a plank bridge
+  deck/rails/posts the hero walks across (replaced the wrong Wood_Planks prop).
+- Dungeon (grot) now has a ceiling -- no sky leak.
+- Win (schat): a larger gold chest in a glowing clearing (OmniLight + bushes).
+- Composer is still imperative (B4); `compose(descriptor, variant)` takes the node
+  id only as a staging seed -- it never reaches the logic layer.
+
 ## Next step
 
-The core loop is playable end to end. Likely next milestones (owner to prioritise):
+The core loop is playable end to end and art-polished. Likely next milestones:
 - B3 proper animation: drive an AnimationTree/AnimationPlayer with real KayKit walk/
   idle clips from `assets/kaykit/characters` (currently the hero slides along the
   path -- no clip yet). Orient + clip from SceneActivity.
