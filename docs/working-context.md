@@ -3,6 +3,22 @@
 Update this at the end of every session: current state + next step. This plus
 CLAUDE.md is how another device picks up the work (git pull -> read these).
 
+## Editable scenes (HOW TO TWEAK VISUALS)
+
+Static scenery is now authored as **editable scenes** in `scenes/sets/`:
+- `forest_straight.tscn` (start, schat), `forest_fork.tscn` (kruispunt, naGrot --
+  includes the cave mouth + bridge landmark), `forest_bridge.tscn` (brug -- river +
+  bridge), `dungeon.tscn` (grot).
+
+Open any of these in the Godot editor and move/add/delete the ground, path, trees,
+cave rocks, bridge, walls, or the named Marker3D **anchors** -- the game instances
+the set and reads those anchors. Dynamic things (the hero, the chest + its glow,
+mood lighting, walking/gaze/camera) stay in code and are NOT in these sets.
+
+Regenerate the sets from code with `godot --headless --script res://tools/bake_sets.gd`
+-- but this OVERWRITES them, so do not re-bake a set after hand-editing it. If a set
+file is missing, the composer falls back to building it procedurally.
+
 ## Current state (2026-06-27)
 
 **Milestone 1 -- COMPOSITION LOOP -- DONE (judged good by the owner).**

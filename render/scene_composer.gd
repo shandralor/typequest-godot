@@ -43,15 +43,21 @@ var _travel_end := Vector3(0, 0, -8)
 var _cave_pos := Vector3.ZERO
 var _bridge_pos := Vector3.ZERO
 var _has_landmarks := false
+var _needs_bloom := false
 
 
 func compose(descriptor, variant: String = "") -> void:
 	_clear()
 	_variant = variant
-	_has_landmarks = false
-	_location = _build_location(descriptor)
+	_has_landmarks = descriptor.path == SceneDescriptor.PATH_FORK
+	_needs_bloom = false
+	for p in descriptor.props:
+		if p.asset == "chest":
+			_needs_bloom = true   # only the treasure scenes get bloom
+	_location = _instance_set(_set_for(descriptor))
 	_location.name = "Location"
 	add_child(_location)
+	_read_anchors(descriptor)
 	_apply_mood(descriptor.mood)
 	for actor in descriptor.actors:
 		var node := _instance_asset(actor.asset)
@@ -135,24 +141,58 @@ func set_lead_yaw(yaw: float) -> void:
 
 
 # --- locations ----------------------------------------------------------------
+# Static staging is authored in scenes/sets/<name>.tscn (editable in the editor)
+# and instanced here; if a set is missing it falls back to the procedural builder.
+# Only the STATIC scenery + anchors live in the set. Dynamic things (hero, chest,
+# the treasure glow, mood lighting) and all motion stay in code.
 
-func _build_location(descriptor) -> Node3D:
-	match descriptor.location:
-		"forest_path":
-			return _build_forest_path(descriptor)
+func _set_for(descriptor) -> String:
+	if descriptor.location == "dungeon":
+		return "dungeon"
+	if descriptor.path == SceneDescriptor.PATH_FORK:
+		return "forest_fork"
+	for p in descriptor.props:
+		if p.asset == "bridge":
+			return "forest_bridge"
+	return "forest_straight"
+
+
+func _instance_set(set_name: String) -> Node3D:
+	var path := "res://scenes/sets/%s.tscn" % set_name
+	if ResourceLoader.exists(path):
+		var inst := _instance_path(path)
+		if inst != null:
+			return inst
+	return build_static(set_name)
+
+
+func _read_anchors(descriptor) -> void:
+	_travel_start = _anchor_position("path_near")
+	_travel_end = _anchor_position("path_far")
+	if descriptor.path == SceneDescriptor.PATH_FORK:
+		_cave_pos = _anchor_position("far_left")
+		_bridge_pos = _anchor_position("far_right")
+
+
+# Builds the STATIC staging for a set. Public so the bake tool can generate the
+# editable scenes/sets/<name>.tscn from it.
+func build_static(set_name: String) -> Node3D:
+	match set_name:
+		"forest_fork":
+			return _static_forest(true, false)
+		"forest_bridge":
+			return _static_forest(false, true)
 		"dungeon":
-			return _build_dungeon(descriptor)
+			return _static_dungeon()
 		_:
-			return _red_placeholder("location:" + descriptor.location)
+			return _static_forest(false, false)
 
 
-func _build_forest_path(descriptor) -> Node3D:
+func _static_forest(fork: bool, bridge: bool) -> Node3D:
 	var root := Node3D.new()
 	var rng := _rng()
 	# ground extends well beyond the camera so no edge is ever visible
-	var grass := _grass_tint(rng)
-	root.add_child(_make_ground(Vector2(56, 140), grass))
-	# anchors
+	root.add_child(_make_ground(Vector2(56, 140), _grass_tint(rng)))
 	var anchors := {
 		"center": Vector3(0, 0, 0),
 		"path_near": Vector3(0, 0, 8),
@@ -169,30 +209,23 @@ func _build_forest_path(descriptor) -> Node3D:
 		m.name = n
 		m.position = anchors[n]
 		root.add_child(m)
-	_travel_start = anchors["path_near"]
-	_travel_end = anchors["path_far"]
-
-	var is_fork: bool = descriptor.path == SceneDescriptor.PATH_FORK
-	if is_fork:
+	if fork:
 		# the path arrives from the front and splits left (cave) / right (bridge)
 		root.add_child(_path_segment(Vector3(0, 0, 13), Vector3(0, 0, 0), 3.0))
 		root.add_child(_path_segment(Vector3(0, 0, 0), anchors["far_left"], 2.4))
 		root.add_child(_path_segment(Vector3(0, 0, 0), anchors["far_right"], 2.4))
 		_build_cave_mouth(root, anchors["far_left"])
 		_build_bridge(root, anchors["far_right"], 5.0, true)
-		_cave_pos = anchors["far_left"]
-		_bridge_pos = anchors["far_right"]
-		_has_landmarks = true
-		_travel_start = anchors["center"]
-		_travel_end = anchors["center"]
+	elif bridge:
+		root.add_child(_path_segment(Vector3(0, 0, 16), Vector3(0, 0, -16), 3.0))
+		_build_bridge(root, anchors["center"], 0.0, false)
 	else:
 		root.add_child(_path_segment(Vector3(0, 0, 16), Vector3(0, 0, -16), 3.0))
-
-	_scatter_forest(root, rng, is_fork)
+	_scatter_forest(root, rng, fork)
 	return root
 
 
-func _build_dungeon(descriptor) -> Node3D:
+func _static_dungeon() -> Node3D:
 	var root := Node3D.new()
 	root.add_child(_make_ground(Vector2(14, 16), Color(0.16, 0.16, 0.19)))
 	root.add_child(_make_box(Vector3(14, 5, 0.5), Vector3(0, 2.5, -7), C_STONE))   # back wall
@@ -215,8 +248,6 @@ func _build_dungeon(descriptor) -> Node3D:
 		m.name = n
 		m.position = anchors[n]
 		root.add_child(m)
-	_travel_start = anchors["center"]
-	_travel_end = anchors["center"]
 	var barrel := _instance_path("res://assets/kaykit/dungeon/barrel_large.gltf")
 	if barrel != null:
 		barrel.position = Vector3(-2.6, 0, -4.6)
@@ -319,8 +350,7 @@ func _build_bridge(root: Node3D, center: Vector3, _river_width: float, small: bo
 func _place_prop(prop) -> void:
 	match prop.asset:
 		"bridge":
-			# the real bridge scene: a wide river with the deck along the path
-			_build_bridge(_location, _anchor_position("center"), 0.0, false)
+			pass  # the river + bridge are baked into the forest_bridge location set
 		"chest":
 			var chest := _instance_asset("chest")
 			chest.name = "Prop_chest"
@@ -390,11 +420,13 @@ func _apply_mood(mood: String) -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.glow_enabled = true   # bloom for the treasure halo and bright highlights
-	env.glow_intensity = 1.0
-	env.glow_strength = 1.2
-	env.glow_bloom = 0.35
-	env.glow_hdr_threshold = 0.9
+	if _needs_bloom:
+		# bloom only in the treasure scenes, reduced 25% from the first pass
+		env.glow_enabled = true
+		env.glow_intensity = 0.75
+		env.glow_strength = 0.9
+		env.glow_bloom = 0.26
+		env.glow_hdr_threshold = 0.9
 	var sun := DirectionalLight3D.new()
 	sun.name = "Sun"
 	sun.rotation_degrees = Vector3(-55, -40, 0)
@@ -435,6 +467,7 @@ func _instance_path(path: String) -> Node3D:
 	if packed is PackedScene:
 		var inst = packed.instantiate()
 		if inst is Node3D:
+			inst.scene_file_path = path  # so the bake tool can save it as an instance
 			return inst
 	return null
 
