@@ -339,24 +339,33 @@ func _stage_treasure(pos: Vector3) -> void:
 	# a bright clearing flourish around the chest: a warm light, an emissive halo
 	# (blooms via the environment glow), and a ring of bushes
 	var glow := OmniLight3D.new()
-	glow.position = pos + Vector3(0, 1.6, 0)
-	glow.light_color = Color(1.0, 0.9, 0.55)
-	glow.omni_range = 12.0
-	glow.light_energy = 9.0
+	glow.position = pos + Vector3(0, 1.8, 0)
+	glow.light_color = Color(1.0, 0.88, 0.5)
+	glow.omni_range = 16.0
+	glow.light_energy = 28.0
 	add_child(glow)
+	# a tall light shaft + emissive halo so the treasure is an obvious beacon
+	var shaft := SpotLight3D.new()
+	shaft.position = pos + Vector3(0, 9.0, 0)
+	shaft.rotation_degrees = Vector3(-90, 0, 0)
+	shaft.light_color = Color(1.0, 0.9, 0.55)
+	shaft.light_energy = 24.0
+	shaft.spot_range = 14.0
+	shaft.spot_angle = 30.0
+	add_child(shaft)
 	var halo := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
-	sphere.radius = 0.7
-	sphere.height = 1.4
+	sphere.radius = 1.1
+	sphere.height = 2.2
 	halo.mesh = sphere
-	halo.position = pos + Vector3(0, 1.3, 0)
+	halo.position = pos + Vector3(0, 1.6, 0)
 	var hmat := StandardMaterial3D.new()
-	hmat.albedo_color = Color(1.0, 0.86, 0.4)
 	hmat.emission_enabled = true
-	hmat.emission = Color(1.0, 0.82, 0.35)
-	hmat.emission_energy_multiplier = 6.0
+	hmat.emission = Color(1.0, 0.85, 0.4)
+	hmat.emission_energy_multiplier = 18.0
+	hmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	hmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	hmat.albedo_color.a = 0.5
+	hmat.albedo_color = Color(1.0, 0.85, 0.4, 0.55)
 	halo.material_override = hmat
 	add_child(halo)
 	var rng := _rng()
@@ -382,8 +391,10 @@ func _apply_mood(mood: String) -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.glow_enabled = true   # bloom for the treasure halo and bright highlights
-	env.glow_intensity = 0.6
-	env.glow_bloom = 0.15
+	env.glow_intensity = 1.0
+	env.glow_strength = 1.2
+	env.glow_bloom = 0.35
+	env.glow_hdr_threshold = 0.9
 	var sun := DirectionalLight3D.new()
 	sun.name = "Sun"
 	sun.rotation_degrees = Vector3(-55, -40, 0)
