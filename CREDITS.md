@@ -22,6 +22,7 @@ Packs bundled in `assets/kaykit/`:
 - Resource Bits (1.0) -- `resource_bits/`
 - RPG Tools Bits (1.0) -- `rpgtools_bits/`
 - Fantasy Weapons Bits (1.0) -- `fantasy_weapons_bits/`
+- Board Game Bits (1.0) -- `board_game_bits/`
 
 Only the `gltf`/`glb` + atlas textures were imported; `fbx`/`obj` and sample
 renders were dropped to keep the project lean and avoid importer issues.
