@@ -271,15 +271,23 @@ func _treeline(root: Node3D, rng: RandomNumberGenerator, trees: Array) -> void:
 
 
 func _build_cave_mouth(root: Node3D, pos: Vector3) -> void:
-	# a dark rocky mound with a black opening facing the fork, plus real rocks
-	root.add_child(_make_box(Vector3(6.0, 5.5, 4.0), pos + Vector3(0, 2.75, -0.5), C_ROCK_DARK))
-	root.add_child(_make_box(Vector3(2.6, 3.2, 1.4), pos + Vector3(0, 1.6, 1.6), C_CAVE))  # opening
-	for off in [Vector3(-3.0, 0, 1.4), Vector3(3.0, 0, 1.2)]:
-		var rock := _instance_path(FOREST_DIR + "Rock_2_A_Color1.gltf")
+	# an arch of large real rocks framing a dark opening that faces the fork (+z)
+	var placements := [
+		["Rock_1_A_Color1", Vector3(-2.4, 0, 0.3), 3.6, 0.3],
+		["Rock_2_A_Color1", Vector3(2.5, 0, 0.2), 3.8, -0.5],
+		["Rock_3_A_Color1", Vector3(0, 0, -1.6), 4.4, 0.0],     # back mound
+		["Rock_2_A_Color1", Vector3(-1.4, 2.6, -0.4), 2.8, 1.1], # lintel left
+		["Rock_1_A_Color1", Vector3(1.5, 2.8, -0.4), 3.0, 2.0],  # lintel right
+	]
+	for p in placements:
+		var rock := _instance_path(FOREST_DIR + p[0] + ".gltf")
 		if rock != null:
-			rock.position = pos + off
-			rock.scale = Vector3(2.6, 2.6, 2.6)
+			rock.position = pos + p[1]
+			rock.scale = Vector3.ONE * p[2]
+			rock.rotation.y = p[3]
 			root.add_child(rock)
+	# a dark recess inside the arch reads as the cave depth
+	root.add_child(_make_box(Vector3(2.2, 2.8, 1.6), pos + Vector3(0, 1.4, -0.6), C_CAVE))
 
 
 func _build_bridge(root: Node3D, center: Vector3, _river_width: float, small: bool) -> void:
@@ -328,19 +336,35 @@ func _place_prop(prop) -> void:
 
 
 func _stage_treasure(pos: Vector3) -> void:
-	# a small bright clearing flourish around the won chest
+	# a bright clearing flourish around the chest: a warm light, an emissive halo
+	# (blooms via the environment glow), and a ring of bushes
 	var glow := OmniLight3D.new()
-	glow.position = pos + Vector3(0, 1.2, 0)
-	glow.light_color = Color(1.0, 0.92, 0.6)
-	glow.omni_range = 7.0
-	glow.light_energy = 3.0
+	glow.position = pos + Vector3(0, 1.6, 0)
+	glow.light_color = Color(1.0, 0.9, 0.55)
+	glow.omni_range = 12.0
+	glow.light_energy = 9.0
 	add_child(glow)
+	var halo := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.7
+	sphere.height = 1.4
+	halo.mesh = sphere
+	halo.position = pos + Vector3(0, 1.3, 0)
+	var hmat := StandardMaterial3D.new()
+	hmat.albedo_color = Color(1.0, 0.86, 0.4)
+	hmat.emission_enabled = true
+	hmat.emission = Color(1.0, 0.82, 0.35)
+	hmat.emission_energy_multiplier = 6.0
+	hmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	hmat.albedo_color.a = 0.5
+	halo.material_override = hmat
+	add_child(halo)
 	var rng := _rng()
-	for i in range(6):
+	for i in range(7):
 		var bush := _instance_path(FOREST_DIR + "Bush_2_A_Color1.gltf")
 		if bush != null:
-			var ang := TAU * float(i) / 6.0
-			bush.position = pos + Vector3(sin(ang) * 2.2, 0, cos(ang) * 2.2)
+			var ang := TAU * float(i) / 7.0
+			bush.position = pos + Vector3(sin(ang) * 2.4, 0, cos(ang) * 2.4)
 			bush.scale = Vector3.ONE * rng.randf_range(0.7, 1.0)
 			add_child(bush)
 
@@ -357,6 +381,9 @@ func _apply_mood(mood: String) -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.glow_enabled = true   # bloom for the treasure halo and bright highlights
+	env.glow_intensity = 0.6
+	env.glow_bloom = 0.15
 	var sun := DirectionalLight3D.new()
 	sun.name = "Sun"
 	sun.rotation_degrees = Vector3(-55, -40, 0)

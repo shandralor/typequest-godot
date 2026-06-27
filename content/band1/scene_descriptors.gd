@@ -56,7 +56,11 @@ static func brug() -> SceneDescriptor:
 	d.mood = "day"
 	d.path = SceneDescriptor.PATH_STRAIGHT
 	d.actors = [SceneDescriptor.ActorPlacement.new("hero", "path_near", "walk", "camera")]
-	d.props = [SceneDescriptor.PropPlacement.new("bridge", "center")]
+	# the prose promises a chest on the other side -- show it at the far end as the goal
+	d.props = [
+		SceneDescriptor.PropPlacement.new("bridge", "center"),
+		SceneDescriptor.PropPlacement.new("chest", "far"),
+	]
 	return d
 
 
