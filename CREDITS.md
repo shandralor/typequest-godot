@@ -17,6 +17,7 @@ Packs bundled in `assets/kaykit/`:
 - Forest Nature Pack (1.0) -- `forest_nature/`
 - Adventurers (2.0), incl. the Knight (the hero) -- `adventurers/`
 - Character Animations (1.1), incl. the Mannequin character -- `characters/`
+- Medieval Hexagon Pack (1.0) -- `hexagon/` (for a future overworld)
 - Skeletons (1.1) -- `skeletons/`
 - Resource Bits (1.0) -- `resource_bits/`
 - RPG Tools Bits (1.0) -- `rpgtools_bits/`

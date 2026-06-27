@@ -625,7 +625,10 @@ func _show_menu(title: String, items: Array) -> void:
 func _show_main_menu() -> void:
 	_app_state = AppState.MAIN
 	_set_playing_ui(false)
-	_show_menu("TypeQuest", [{"text": "Start", "on_press": _show_scenario_menu}])
+	_show_menu("TypeQuest", [
+		{"text": "Start", "on_press": _show_scenario_menu},
+		{"text": "Stoppen", "on_press": _quit_app},
+	])
 
 
 func _show_scenario_menu() -> void:
@@ -635,7 +638,12 @@ func _show_scenario_menu() -> void:
 	var items: Array = []
 	for s in Scenarios.list():
 		items.append({"text": s.title, "on_press": _start_scenario.bind(s.id)})
+	items.append({"text": "Terug", "on_press": _show_main_menu})
 	_show_menu("Kies een avontuur", items)
+
+
+func _quit_app() -> void:
+	get_tree().quit()
 
 
 func _start_scenario(id: String) -> void:
