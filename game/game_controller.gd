@@ -20,8 +20,10 @@ const KeyboardGuide = preload("res://ui/keyboard_guide.gd")
 
 enum Phase { PROSE, CHOICE, PAUSE, WIN, DONE }
 
-const BAND_HEIGHT := 400   # bottom UI band height; the camera frames the hero above it
+const VIEW_HEIGHT := 500   # top: the 3D scene gets its OWN area (a SubViewport)
+const BAND_HEIGHT := 380   # bottom: the UI band (500 + 380 = 880 window)
 
+var _viewport: SubViewport
 var _locale
 var _run
 var _composer
@@ -49,34 +51,47 @@ const DEMO_INTERVAL := 0.10
 func _ready() -> void:
 	_locale = LocaleNlBe.new()
 	_run = RunState.new(Band1Arc.build(), _locale)
-	_setup_world()
-	_build_ui()
+	_build_layout()
 	_demo = "--demo" in OS.get_cmdline_user_args()
 	if "--shot" in OS.get_cmdline_user_args():
 		_capture_after(6.0)
 	_enter_node()
 
 
-# The 3D scene renders to the full window; the opaque UI band covers the bottom, so
-# the camera is framed to keep the hero in the visible area above the band.
-func _setup_world() -> void:
-	_composer = SceneComposerScript.new()
-	_composer.name = "Composer"
-	add_child(_composer)
-	var cam := Camera3D.new()
-	cam.position = Vector3(0, 5.0, 11.5)
-	add_child(cam)
-	cam.look_at(Vector3(0, 1.6, -2.0), Vector3.UP)
-	cam.current = true
-
-
-func _build_ui() -> void:
+# Layout: the 3D scene renders into a SubViewport that occupies the TOP region; the
+# UI band sits in its OWN region BELOW it. The full scene is always visible -- the
+# UI never paints over it. Everything lives under one CanvasLayer so Controls anchor
+# reliably to the screen.
+func _build_layout() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	var ui := Control.new()
 	ui.set_anchors_preset(Control.PRESET_FULL_RECT)
 	ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(ui)
+
+	# --- 3D scene area (top) ---
+	var container := SubViewportContainer.new()
+	container.stretch = true
+	container.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	container.offset_top = 0
+	container.offset_bottom = VIEW_HEIGHT
+	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ui.add_child(container)
+	_viewport = SubViewport.new()
+	_viewport.own_world_3d = true
+	_viewport.transparent_bg = false
+	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	_viewport.msaa_3d = Viewport.MSAA_2X
+	container.add_child(_viewport)
+	_composer = SceneComposerScript.new()
+	_composer.name = "Composer"
+	_viewport.add_child(_composer)
+	var cam := Camera3D.new()
+	cam.position = Vector3(0, 4.3, 11.5)
+	_viewport.add_child(cam)
+	cam.look_at(Vector3(0, 1.1, -1.5), Vector3.UP)
+	cam.current = true
 
 	# HUD overlay (top-right, over the scene)
 	_hud = _make_label(24, HORIZONTAL_ALIGNMENT_RIGHT)
@@ -89,12 +104,12 @@ func _build_ui() -> void:
 	# transient message (over the scene, upper area)
 	_message = _make_label(40, HORIZONTAL_ALIGNMENT_CENTER)
 	_message.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_message.offset_top = 120
+	_message.offset_top = 110
 	_message.offset_left = 40
 	_message.offset_right = -40
 	ui.add_child(_message)
 
-	# bottom UI band: opaque, holds narration + type-along + keyboard
+	# --- UI band (bottom): opaque, holds narration + type-along + keyboard ---
 	var band := Control.new()
 	band.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	band.offset_top = -BAND_HEIGHT
@@ -119,15 +134,15 @@ func _build_ui() -> void:
 
 	_type_along = TypeAlongPanel.new()
 	_type_along.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_type_along.offset_top = 48
-	_type_along.offset_bottom = 188
+	_type_along.offset_top = 44
+	_type_along.offset_bottom = 178
 	_type_along.offset_left = 90
 	_type_along.offset_right = -90
 	band.add_child(_type_along)
 
 	_keyboard = KeyboardGuide.new()
 	_keyboard.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_keyboard.offset_top = -205
+	_keyboard.offset_top = -190
 	_keyboard.offset_bottom = -8
 	band.add_child(_keyboard)
 
@@ -306,9 +321,12 @@ func _process(delta: float) -> void:
 		p = _prose.progress()
 	elif _phase == Phase.CHOICE or _phase == Phase.PAUSE or _phase == Phase.WIN:
 		p = 1.0
-	var act := _activity.update(p, delta)
+	_activity.update(p, delta)
 	_composer.set_lead_progress(p)
-	_composer.set_lead_moving(act == SceneActivity.Activity.MOVING)
+	# Face the travel direction once underway, and KEEP facing it when the child
+	# pauses -- only the fresh idle pose (before any typing) faces the camera. This
+	# avoids the hero snapping back to face the player whenever typing stops.
+	_composer.set_lead_moving(p > 0.02)
 	if _demo:
 		_demo_tick(delta)
 

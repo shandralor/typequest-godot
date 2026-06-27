@@ -22,8 +22,8 @@ const FINGER_COLORS := {
 	"right_ring": Color("9575cd"), "right_pinky": Color("f06292"),
 	"thumb": Color("bdbdbd"),
 }
-const KEY_SIZE := Vector2(42, 44)
-const GAP := 5
+const KEY_SIZE := Vector2(40, 42)
+const GAP := 4
 const IDLE_MODULATE := Color(0.82, 0.82, 0.82)
 
 var _keys: Dictionary = {}   # char -> NinePatchRect
@@ -39,7 +39,7 @@ func _ready() -> void:
 	var extra := HBoxContainer.new()
 	extra.alignment = BoxContainer.ALIGNMENT_CENTER
 	extra.add_theme_constant_override("separation", GAP)
-	extra.add_child(_make_key(" ", "spatie", Vector2(210, 44)))
+	extra.add_child(_make_key(" ", "spatie", Vector2(200, 42)))
 	extra.add_child(_make_key(".", ".", KEY_SIZE))
 	vbox.add_child(extra)
 
