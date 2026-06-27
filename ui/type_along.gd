@@ -26,8 +26,7 @@ func _ready() -> void:
 	add_child(bg)
 	_label = RichTextLabel.new()
 	_label.bbcode_enabled = true
-	_label.scroll_active = true
-	_label.scroll_following = true   # keep the cursor/runway in view as prose wraps
+	_label.scroll_active = false   # the sliding window keeps it to ~2 lines; no scroll
 	_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_label.offset_left = 30
 	_label.offset_top = 20
@@ -39,8 +38,9 @@ func _ready() -> void:
 
 ## Render the reveal window for `prose` at `cursor`.
 func set_prose(prose: String, cursor: int, words_ahead: int = RevealWindow.DEFAULT_WORDS_AHEAD) -> void:
+	var start := RevealWindow.window_start(prose, cursor)
 	var visible_end := RevealWindow.visible_end(prose, cursor, words_ahead)
-	var bb := "[color=#%s]%s[/color]" % [TYPED, prose.substr(0, cursor)]
+	var bb := "[color=#%s]%s[/color]" % [TYPED, prose.substr(start, cursor - start)]
 	if cursor < prose.length():
 		var next_char := prose.substr(cursor, 1)
 		bb += "[bgcolor=#%s][color=#%s]%s[/color][/bgcolor]" % [HILITE_BG, TYPED, next_char]

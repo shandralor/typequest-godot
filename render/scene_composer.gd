@@ -33,7 +33,8 @@ const HERO_IDLE := "Idle_A"
 const HERO_WALK := "Walking_A"
 const HERO_PICKUP := "PickUp"
 const HERO_WORK := "Use_Item"   # looped, for grinding
-const HERO_RAISE := "Throw"     # arm-raise gesture for the sword-raise win
+const HERO_CHEER := "Cheering"  # looped victory -- raises the held sword at the win
+const HERO_SIM := "res://assets/kaykit/characters/Rig_Medium_Simulation.glb"
 
 # palette
 const C_GRASS := Color(0.34, 0.46, 0.22)
@@ -60,9 +61,6 @@ var _chest_lid: Node3D
 var _is_work_scene := false
 var _sparks: CPUParticles3D
 var _sword: Node3D
-var _sword_base := Vector3.ZERO
-var _grind_phase := 0.0
-var _raising := false
 
 
 func compose(descriptor, variant: String = "") -> void:
@@ -109,20 +107,6 @@ func _clear() -> void:
 	_is_work_scene = false
 	_sparks = null
 	_sword = null
-	_raising = false
-
-
-# Animate the sword grinding against the wheel (a small 2D oscillation) while the
-# child is typing; rest it otherwise. While raising it (the win), a tween owns it.
-func _process(delta: float) -> void:
-	if _sword == null or _raising:
-		return
-	if _sparks != null and _sparks.emitting:
-		_grind_phase += delta
-		var t := _grind_phase
-		_sword.position = _sword_base + Vector3(sin(t * 13.0) * 0.07, cos(t * 9.0) * 0.04, sin(t * 13.0) * 0.02)
-	else:
-		_sword.position = _sword_base
 
 
 # Builds the animated hero (B3): mesh + idle from the General rig, with the walk
@@ -137,9 +121,10 @@ func _build_hero() -> Node3D:
 	ap.root_node = NodePath("..")   # resolve tracks against the Knight root
 	var lib := AnimationLibrary.new()
 	ap.add_animation_library("", lib)
-	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP, HERO_WORK, HERO_RAISE])
+	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP, HERO_WORK])
 	_graft_animations(lib, HERO_MOVE, [HERO_WALK])
-	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK]:
+	_graft_animations(lib, HERO_SIM, [HERO_CHEER])
+	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK, HERO_CHEER]:
 		if lib.has_animation(clip):
 			lib.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 	_lead_anim = ap
@@ -173,6 +158,13 @@ func is_work_scene() -> bool:
 	return _is_work_scene
 
 
+## Play a looping clip on the hero (e.g. Cheering at the win) -- it holds, unlike a
+## one-shot which settles back to idle.
+func play_lead_loop(anim: String) -> void:
+	if _lead_anim != null and _lead_anim.has_animation(anim) and _lead_anim.current_animation != anim:
+		_lead_anim.play(anim, 0.3)
+
+
 ## Grinding aliveness: the hero plays the work clip and sparks fly while typing,
 ## settling to idle when paused. The sparks heat up (orange -> hot blue-white) with
 ## progress, so the child sees the sharpening getting close to done.
@@ -190,17 +182,6 @@ func _spark_color(p: float) -> Color:
 	if p < 0.5:
 		return Color(1.0, 0.5, 0.1).lerp(Color(1.0, 0.92, 0.35), p / 0.5)        # orange -> yellow
 	return Color(1.0, 0.92, 0.35).lerp(Color(0.6, 0.85, 1.0), (p - 0.5) / 0.5)   # yellow -> hot blue-white
-
-
-## The win flourish for the grinding session: the knight raises the sharpened sword.
-func raise_sword() -> void:
-	if _sword == null:
-		return
-	_raising = true
-	var held_high := lead_position() + Vector3(0.45, 2.05, 0.55)   # up, toward the camera
-	var t := create_tween().set_parallel()
-	t.tween_property(_sword, "position", held_high, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	t.tween_property(_sword, "rotation_degrees", Vector3(10, 0, 10), 0.5)
 
 
 func stop_sparks() -> void:
@@ -447,7 +428,8 @@ func _static_forge() -> Node3D:
 	var root := Node3D.new()
 	var rng := _rng()
 	root.add_child(_make_ground(Vector2(40, 40), Color(0.30, 0.46, 0.22)))   # grassy yard
-	root.add_child(_make_ground(Vector2(6, 6), Color(0.34, 0.32, 0.30)))     # stone pad
+	# a thin slab, NOT a coplanar plane (a second plane at y=0 would z-fight/flicker)
+	root.add_child(_make_box(Vector3(6, 0.08, 6), Vector3(0, 0.04, 0), Color(0.34, 0.32, 0.30)))
 	var anchors := {
 		"center": Vector3(0, 0, 0),
 		"grind_point": Vector3(0.8, 0, 1.4),   # in front of the knight, toward the camera
@@ -573,11 +555,18 @@ func _place_prop(prop) -> void:
 		"sword":
 			var sword := _instance_asset("sword")
 			sword.name = "Prop_sword"
-			add_child(sword)
-			# held up against the wheel, canted diagonally toward the player
-			_sword_base = _anchor_position(prop.anchor) + Vector3(-0.3, 0.85, -0.3)
-			sword.position = _sword_base
-			sword.rotation_degrees = Vector3(-28, 12, 64)
+			# attach to the knight's right-hand weapon slot so it is actually held;
+			# the grinding + raise motion then comes from the hand animation
+			var sk: Skeleton3D = _lead.find_child("Skeleton3D", true, false) if _lead != null else null
+			if sk != null:
+				var ba := BoneAttachment3D.new()
+				ba.bone_name = "handslot.r"
+				sk.add_child(ba)
+				ba.add_child(sword)
+				sword.position = Vector3(0.22, 0.11, 0.0)   # nudge onto the wheel
+			else:
+				add_child(sword)
+				sword.position = _anchor_position(prop.anchor)
 			_sword = sword
 		"chest":
 			var chest := _instance_asset("chest")

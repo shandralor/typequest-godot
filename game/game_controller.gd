@@ -93,6 +93,8 @@ func _ready() -> void:
 				_on_char(_prose.target.substr(_prose.cursor, 1))
 		if "--shot" in args:
 			_capture_after(2.0 if jump != "" else 6.0)
+		if "--burst" in args:
+			_capture_burst()
 	else:
 		_compose_backdrop()
 		if _arg_value(args, "--menu") == "scenarios":
@@ -276,8 +278,7 @@ func _resolve_ending() -> void:
 			_phase = Phase.WIN
 			if _composer.is_work_scene():
 				_composer.stop_sparks()
-				_composer.raise_sword()                 # lift the sharpened sword
-				_composer.play_lead_oneshot("Throw")    # arm-raise gesture
+				_composer.play_lead_loop("Cheering")    # raise the held sword in triumph
 			else:
 				_composer.open_chest()                  # treasure win: open the chest
 				_composer.play_lead_oneshot("PickUp")
@@ -549,8 +550,9 @@ func _camera_rig() -> Dictionary:
 		return {"pos": lead + Vector3(0, 2.7, 5.8), "look": lead + Vector3(0, 0.9, -2.4)}
 	if _composer.is_work_scene():
 		if _phase == Phase.WIN:
-			# raised and looking down so the knight + raised sword clear the grindstone
-			return {"pos": lead + Vector3(0.25, 3.1, 4.4), "look": lead + Vector3(0.35, 1.5, 0.5)}
+			# from the front-left so the grindstone is off to the side, not occluding
+			# the cheering knight + raised sword
+			return {"pos": lead + Vector3(-2.6, 2.3, 4.6), "look": lead + Vector3(0.1, 1.5, 0.3)}
 		# a near front view of the knight grinding the sword on the wheel in front
 		return {"pos": lead + Vector3(0.5, 1.9, 4.0), "look": lead + Vector3(0.55, 0.95, 1.2)}
 	return {"pos": lead + Vector3(0, 4.2, 9.5), "look": lead + Vector3(0, 1.0, -1.5)}
@@ -675,6 +677,16 @@ func _start_scenario(id: String) -> void:
 	_app_state = AppState.PLAYING
 	_run = RunState.new(Scenarios.build(id), _locale)
 	_enter_node()
+
+
+func _capture_burst() -> void:
+	var shots_dir := ProjectSettings.globalize_path("res://.shots")
+	DirAccess.make_dir_recursive_absolute(shots_dir)
+	for i in range(12):
+		await get_tree().create_timer(0.25).timeout
+		get_viewport().get_texture().get_image().save_png(shots_dir.path_join("burst_%02d.png" % i))
+	print("BURST_DONE")
+	get_tree().quit()
 
 
 func _capture_after(seconds: float) -> void:

@@ -8,6 +8,22 @@ extends RefCounted
 ## or gates input on visibility (the typing logic still scores against full prose).
 
 const DEFAULT_WORDS_AHEAD := 4
+const DEFAULT_CHARS_BEHIND := 40
+
+
+## The start of the visible window: keep roughly `chars_behind` characters of
+## already-typed text before the cursor (snapped to a word boundary), so the panel
+## shows a stable ~2 lines around the cursor instead of the whole (growing) passage.
+## Older text scrolls off; the child cannot read the whole passage at once (B5).
+static func window_start(prose: String, cursor: int, chars_behind: int = DEFAULT_CHARS_BEHIND) -> int:
+	if cursor <= chars_behind:
+		return 0
+	var i := cursor - chars_behind
+	while i < cursor and prose.substr(i, 1) != " ":
+		i += 1
+	while i < cursor and prose.substr(i, 1) == " ":
+		i += 1
+	return i
 
 
 ## Returns the index (exclusive) up to which prose should be shown: the cursor's
