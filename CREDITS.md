@@ -15,6 +15,7 @@ Packs bundled in `assets/kaykit/`:
 
 - Dungeon Remastered (1.1) -- `dungeon/`
 - Forest Nature Pack (1.0) -- `forest_nature/`
+- Adventurers (2.0), incl. the Knight (the hero) -- `adventurers/`
 - Character Animations (1.1), incl. the Mannequin character -- `characters/`
 - Skeletons (1.1) -- `skeletons/`
 - Resource Bits (1.0) -- `resource_bits/`

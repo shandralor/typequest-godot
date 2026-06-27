@@ -16,7 +16,7 @@ const ID := "fantasy-poc"
 
 const ASSETS := {
 	# characters
-	"hero": "res://assets/kaykit/characters/Mannequin_Medium.glb",  # knight stand-in
+	"hero": "res://assets/kaykit/adventurers/Knight.glb",  # animated rig built in the composer
 	"skeleton": "res://assets/kaykit/skeletons/Skeleton_Warrior.glb",
 	# props (referenced by later scenes; the start scene uses none)
 	"chest": "res://assets/kaykit/dungeon/chest_gold.gltf",  # A7: a gold chest, lid a separate child

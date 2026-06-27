@@ -23,12 +23,15 @@ const FOREST_DIR := "res://assets/kaykit/forest_nature/"
 const LEAD_ASSETS := ["hero"]
 const MISSING_COLOR := Color(1.0, 0.0, 0.0)
 const SCATTER_SEED := 20260627
-# the hero is an animated rig (B3): the General set carries the mesh + idle, the
-# Movement set carries the walk cycle; we graft the walk into the one player.
-const HERO_BASE := "res://assets/kaykit/characters/Rig_Medium_General.glb"
-const HERO_MOVE := "res://assets/kaykit/characters/Rig_Medium_MovementBasic.glb"
+# the hero is the KayKit Knight (B3): its own textured mesh on the shared Rig_Medium
+# skeleton, with idle/walk/pickup grafted in from the Rig_Medium animation sets
+# (same skeleton, so the tracks resolve).
+const HERO_MODEL := "res://assets/kaykit/adventurers/Knight.glb"
+const HERO_GENERAL := "res://assets/kaykit/adventurers/Rig_Medium_General.glb"
+const HERO_MOVE := "res://assets/kaykit/adventurers/Rig_Medium_MovementBasic.glb"
 const HERO_IDLE := "Idle_A"
 const HERO_WALK := "Walking_A"
+const HERO_PICKUP := "PickUp"
 
 # palette
 const C_GRASS := Color(0.34, 0.46, 0.22)
@@ -98,31 +101,35 @@ func _clear() -> void:
 # cycle grafted in from the Movement rig (same Rig_Medium skeleton, so the tracks
 # resolve). _lead_anim is then driven by the SceneActivity state.
 func _build_hero() -> Node3D:
-	var hero := _instance_path(HERO_BASE)
+	var hero := _instance_path(HERO_MODEL)
 	if hero == null:
 		return _red_placeholder("hero")
-	# the General rig mesh imports untextured -- restore the mannequin colours
-	var tex := load("res://assets/kaykit/characters/mannequin_texture.png")
-	if tex != null:
-		for mi in hero.find_children("*", "MeshInstance3D", true, false):
-			var mat := StandardMaterial3D.new()
-			mat.albedo_texture = tex
-			mi.material_override = mat
-	var ap := hero.find_child("AnimationPlayer", true, false) as AnimationPlayer
-	if ap != null:
-		var mv := _instance_path(HERO_MOVE)
-		if mv != null:
-			var mvap := mv.find_child("AnimationPlayer", true, false) as AnimationPlayer
-			if mvap != null and mvap.has_animation(HERO_WALK):
-				var lib := ap.get_animation_library("")
-				if lib != null and not lib.has_animation(HERO_WALK):
-					lib.add_animation(HERO_WALK, mvap.get_animation(HERO_WALK).duplicate())
-			mv.free()
-		for clip in [HERO_IDLE, HERO_WALK]:
-			if ap.has_animation(clip):
-				ap.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
+	var ap := AnimationPlayer.new()
+	hero.add_child(ap)
+	ap.root_node = NodePath("..")   # resolve tracks against the Knight root
+	var lib := AnimationLibrary.new()
+	ap.add_animation_library("", lib)
+	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP])
+	_graft_animations(lib, HERO_MOVE, [HERO_WALK])
+	for clip in [HERO_IDLE, HERO_WALK]:
+		if lib.has_animation(clip):
+			lib.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 	_lead_anim = ap
 	return hero
+
+
+# Copy named clips from an animation glb's player into the hero's library. The
+# tracks target Rig_Medium/Skeleton3D bones, which the Knight shares.
+func _graft_animations(lib: AnimationLibrary, glb_path: String, names: Array) -> void:
+	var src := _instance_path(glb_path)
+	if src == null:
+		return
+	var sap := src.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if sap != null:
+		for n in names:
+			if sap.has_animation(n) and not lib.has_animation(n):
+				lib.add_animation(n, sap.get_animation(n).duplicate())
+	src.free()
 
 
 ## Cross-fade the hero between its walk and idle clips (B3 in-place aliveness).
