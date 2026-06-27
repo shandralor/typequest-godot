@@ -130,6 +130,18 @@ naGrot, brug, schat) also need composing (grot needs a dungeon location builder)
 - Choices are waving banners now (ui/choice_banner.gd): Kenney blue panel + cloth
   wave shader + sway + direction arrow + typed highlight, not the prose box.
 
+### Menu shell + Knight hero (2026-06-27, later)
+
+- The hero is the KayKit Adventurers Knight (assets/kaykit/adventurers), animated by
+  grafting Idle_A/PickUp/Walking_A onto its Rig_Medium (scene_composer _build_hero).
+- Menu shell closes the loop: Main menu (Start) -> scenario menu (one entry, the
+  band-1 arc) -> play -> at the win press Enter to return to the scenario menu.
+  AppState in game_controller (MAIN/SCENARIOS/PLAYING). Menus are mouse-clickable
+  waving banners (ui/menu_banner.{gd,tscn}) in an editable menu_screen.tscn
+  (scenes/menu/) whose Items VBoxContainer can be reordered in the editor. Scenarios
+  list: content/scenarios.gd (reorder there to reorder the menu). The 3D scene is the
+  backdrop; the band's dark background fills the bottom during menus.
+
 ## Next step
 
 Likely next milestones:

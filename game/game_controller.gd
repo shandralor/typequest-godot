@@ -18,8 +18,12 @@ const AzertyInput = preload("res://input/azerty_input.gd")
 const TypeAlongPanel = preload("res://ui/type_along.gd")
 const KeyboardGuide = preload("res://ui/keyboard_guide.gd")
 const ChoiceBannerScript = preload("res://ui/choice_banner.gd")
+const MenuScreenScene = preload("res://scenes/menu/menu_screen.tscn")
+const MenuBannerScene = preload("res://ui/menu_banner.tscn")
+const Scenarios = preload("res://content/scenarios.gd")
 
 enum Phase { PROSE, CHOICE, PAUSE, WIN, DONE }
+enum AppState { MAIN, SCENARIOS, PLAYING }
 
 const VIEW_HEIGHT := 680   # top: the 3D scene gets its OWN area (a SubViewport)
 const BAND_HEIGHT := 400   # bottom: the UI band (680 + 400 = 1080 window)
@@ -58,6 +62,11 @@ var _hud: Label
 var _choice_layer: Control
 var _banners: Array = []
 var _ui: Control
+var _menu_layer: Control
+var _menu_screen: Control
+var _band: Control
+var _viewport_container: SubViewportContainer
+var _app_state := AppState.MAIN
 
 # demo / capture
 var _demo := false
@@ -67,20 +76,29 @@ const DEMO_INTERVAL := 0.10
 
 func _ready() -> void:
 	_locale = LocaleNlBe.new()
-	_run = RunState.new(Band1Arc.build(), _locale)
 	_build_layout()
 	var args := OS.get_cmdline_user_args()
 	_demo = "--demo" in args
 	# debug: jump straight to a node (--scene=ID) and pre-type N chars (--type=N)
 	var jump := _arg_value(args, "--scene")
-	if jump != "":
-		_run.current_id = jump
-	_enter_node()
-	for i in range(int(_arg_value(args, "--type"))):
-		if _phase == Phase.PROSE and not _prose.is_complete():
-			_on_char(_prose.target.substr(_prose.cursor, 1))
-	if "--shot" in args:
-		_capture_after(2.0 if jump != "" else 6.0)
+	if _demo or jump != "":
+		_start_scenario("band1")
+		if jump != "":
+			_run.current_id = jump
+			_enter_node()
+		for i in range(int(_arg_value(args, "--type"))):
+			if _phase == Phase.PROSE and not _prose.is_complete():
+				_on_char(_prose.target.substr(_prose.cursor, 1))
+		if "--shot" in args:
+			_capture_after(2.0 if jump != "" else 6.0)
+	else:
+		_compose_backdrop()
+		if _arg_value(args, "--menu") == "scenarios":
+			_show_scenario_menu()
+		else:
+			_show_main_menu()
+		if "--shot" in args:
+			_capture_after(1.0)
 
 
 func _arg_value(args: PackedStringArray, key: String) -> String:
@@ -111,6 +129,7 @@ func _build_layout() -> void:
 	container.offset_bottom = VIEW_HEIGHT
 	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(container)
+	_viewport_container = container
 	_viewport = SubViewport.new()
 	_viewport.own_world_3d = true
 	_viewport.transparent_bg = false
@@ -146,6 +165,7 @@ func _build_layout() -> void:
 	band.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	band.offset_top = -BAND_HEIGHT
 	ui.add_child(band)
+	_band = band
 	var bg := ColorRect.new()
 	bg.color = Color("241c14")
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -183,6 +203,11 @@ func _build_layout() -> void:
 	_choice_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_choice_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(_choice_layer)
+
+	_menu_layer = Control.new()
+	_menu_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_menu_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ui.add_child(_menu_layer)
 
 
 func _make_label(size: int, align: int) -> Label:
@@ -243,7 +268,7 @@ func _resolve_ending() -> void:
 			_phase = Phase.PAUSE
 			_after(1.8, _enter_node)
 		"win":
-			_message.text = "goed gedaan. je hebt de schat."
+			_message.text = "goed gedaan. je hebt de schat.\n(druk op enter)"
 			_type_along.set_plain("")
 			_keyboard.highlight("")
 			_phase = Phase.WIN
@@ -262,6 +287,11 @@ func _input(event: InputEvent) -> void:
 		return
 	if event.keycode == KEY_ESCAPE:
 		get_tree().quit()
+		return
+	if _app_state != AppState.PLAYING:
+		return  # menus are mouse-driven
+	if _phase == Phase.WIN and event.keycode == KEY_ENTER:
+		_show_scenario_menu()   # finishing + enter returns to the scenario menu
 		return
 	var c := AzertyInput.char_for_physical(event.physical_keycode)
 	if c != "":
@@ -390,6 +420,11 @@ func _update_hud() -> void:
 # --- per-frame: drive protagonist motion from observed state -----------------
 
 func _process(delta: float) -> void:
+	if _app_state != AppState.PLAYING:
+		if _composer.has_lead():
+			_composer.set_lead_animation(false)
+		_update_camera(delta, false)
+		return
 	var p := _typing_progress()
 	var act := _activity.update(p, delta)
 	# Don't drive idle/walk during WIN/PAUSE -- a one-shot (e.g. PickUp) is playing.
@@ -541,6 +576,74 @@ func _flash() -> void:
 	f.color.a = 0.75
 	t.tween_property(f, "color:a", 0.0, 0.6)
 	t.tween_callback(f.queue_free)
+
+
+# --- menus -------------------------------------------------------------------
+
+func _compose_backdrop() -> void:
+	_composer.compose(Scenarios.backdrop_scene(), "menu")
+	_update_camera(0.0, true)
+
+
+func _set_playing_ui(playing: bool) -> void:
+	# Hide the band's contents during menus (its dark background still fills the
+	# bottom strip, so there is no bare gap). The 3D backdrop shows above it.
+	if _narration != null:
+		_narration.visible = playing
+	if _type_along != null:
+		_type_along.visible = playing
+	if _keyboard != null:
+		_keyboard.visible = playing
+	if _hud != null:
+		_hud.visible = playing
+	if _message != null:
+		_message.visible = playing
+	if _choice_layer != null:
+		_choice_layer.visible = playing
+
+
+func _clear_menu() -> void:
+	if _menu_screen != null:
+		_menu_screen.queue_free()
+		_menu_screen = null
+
+
+func _show_menu(title: String, items: Array) -> void:
+	_clear_menu()
+	var screen := MenuScreenScene.instantiate()
+	_menu_layer.add_child(screen)
+	_menu_screen = screen
+	(screen.get_node("Title") as Label).text = title
+	var vbox := screen.get_node("Items")
+	for it in items:
+		var banner := MenuBannerScene.instantiate()
+		vbox.add_child(banner)
+		banner.configure(it.text)
+		banner.pressed.connect(it.on_press)
+
+
+func _show_main_menu() -> void:
+	_app_state = AppState.MAIN
+	_set_playing_ui(false)
+	_show_menu("TypeQuest", [{"text": "Start", "on_press": _show_scenario_menu}])
+
+
+func _show_scenario_menu() -> void:
+	_app_state = AppState.SCENARIOS
+	_set_playing_ui(false)
+	_compose_backdrop()
+	var items: Array = []
+	for s in Scenarios.list():
+		items.append({"text": s.title, "on_press": _start_scenario.bind(s.id)})
+	_show_menu("Kies een avontuur", items)
+
+
+func _start_scenario(id: String) -> void:
+	_clear_menu()
+	_set_playing_ui(true)
+	_app_state = AppState.PLAYING
+	_run = RunState.new(Scenarios.build(id), _locale)
+	_enter_node()
 
 
 func _capture_after(seconds: float) -> void:
