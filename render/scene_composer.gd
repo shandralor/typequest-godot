@@ -23,6 +23,12 @@ const FOREST_DIR := "res://assets/kaykit/forest_nature/"
 const LEAD_ASSETS := ["hero"]
 const MISSING_COLOR := Color(1.0, 0.0, 0.0)
 const SCATTER_SEED := 20260627
+# the hero is an animated rig (B3): the General set carries the mesh + idle, the
+# Movement set carries the walk cycle; we graft the walk into the one player.
+const HERO_BASE := "res://assets/kaykit/characters/Rig_Medium_General.glb"
+const HERO_MOVE := "res://assets/kaykit/characters/Rig_Medium_MovementBasic.glb"
+const HERO_IDLE := "Idle_A"
+const HERO_WALK := "Walking_A"
 
 # palette
 const C_GRASS := Color(0.34, 0.46, 0.22)
@@ -37,6 +43,7 @@ const C_STONE := Color(0.13, 0.13, 0.16)
 var _variant := ""
 var _location: Node3D
 var _lead: Node3D
+var _lead_anim: AnimationPlayer
 var _walking := false
 var _travel_start := Vector3(0, 0, 7)
 var _travel_end := Vector3(0, 0, -8)
@@ -60,10 +67,11 @@ func compose(descriptor, variant: String = "") -> void:
 	_read_anchors(descriptor)
 	_apply_mood(descriptor.mood)
 	for actor in descriptor.actors:
-		var node := _instance_asset(actor.asset)
+		var is_lead: bool = actor.asset in LEAD_ASSETS
+		var node := _build_hero() if is_lead else _instance_asset(actor.asset)
 		node.name = "Actor_" + actor.asset
 		add_child(node)
-		if actor.asset in LEAD_ASSETS:
+		if is_lead:
 			_lead = node
 			_walking = _is_walking_scene(descriptor, actor)
 			node.position = _travel_start if _walking else _anchor_position(actor.anchor)
@@ -73,6 +81,7 @@ func compose(descriptor, variant: String = "") -> void:
 	for prop in descriptor.props:
 		_place_prop(prop)
 	set_lead_progress(0.0)
+	set_lead_animation(false)
 
 
 func _clear() -> void:
@@ -80,6 +89,47 @@ func _clear() -> void:
 		c.queue_free()
 	_location = null
 	_lead = null
+	_lead_anim = null
+
+
+# Builds the animated hero (B3): mesh + idle from the General rig, with the walk
+# cycle grafted in from the Movement rig (same Rig_Medium skeleton, so the tracks
+# resolve). _lead_anim is then driven by the SceneActivity state.
+func _build_hero() -> Node3D:
+	var hero := _instance_path(HERO_BASE)
+	if hero == null:
+		return _red_placeholder("hero")
+	# the General rig mesh imports untextured -- restore the mannequin colours
+	var tex := load("res://assets/kaykit/characters/mannequin_texture.png")
+	if tex != null:
+		for mi in hero.find_children("*", "MeshInstance3D", true, false):
+			var mat := StandardMaterial3D.new()
+			mat.albedo_texture = tex
+			mi.material_override = mat
+	var ap := hero.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if ap != null:
+		var mv := _instance_path(HERO_MOVE)
+		if mv != null:
+			var mvap := mv.find_child("AnimationPlayer", true, false) as AnimationPlayer
+			if mvap != null and mvap.has_animation(HERO_WALK):
+				var lib := ap.get_animation_library("")
+				if lib != null and not lib.has_animation(HERO_WALK):
+					lib.add_animation(HERO_WALK, mvap.get_animation(HERO_WALK).duplicate())
+			mv.free()
+		for clip in [HERO_IDLE, HERO_WALK]:
+			if ap.has_animation(clip):
+				ap.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
+	_lead_anim = ap
+	return hero
+
+
+## Cross-fade the hero between its walk and idle clips (B3 in-place aliveness).
+func set_lead_animation(moving: bool) -> void:
+	if _lead_anim == null:
+		return
+	var want := HERO_WALK if moving else HERO_IDLE
+	if _lead_anim.has_animation(want) and _lead_anim.current_animation != want:
+		_lead_anim.play(want, 0.25)
 
 
 func _is_walking_scene(descriptor, actor) -> bool:

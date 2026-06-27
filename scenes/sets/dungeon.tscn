@@ -1,8 +1,11 @@
 [gd_scene format=3 uid="uid://cot8utgwpu2gb"]
 
 [ext_resource type="PackedScene" uid="uid://8wu436f72rr1" path="res://assets/kaykit/dungeon/barrel_large.gltf" id="1_5dk1y"]
-[ext_resource type="PackedScene" uid="uid://d13i81wvdnvq0" path="res://assets/kaykit/dungeon/wall_cracked.gltf" id="2_fdla7"]
+[ext_resource type="PackedScene" uid="uid://c2nmppry1fq83" path="res://assets/kaykit/dungeon/rubble_large.gltf" id="3_5eywh"]
 [ext_resource type="PackedScene" uid="uid://cgg18b4xeeu26" path="res://assets/kaykit/dungeon/rubble_half.gltf" id="3_ytubi"]
+[ext_resource type="PackedScene" uid="uid://cfsffoxomexna" path="res://assets/kaykit/dungeon/floor_dirt_large.gltf" id="4_8alcm"]
+[ext_resource type="PackedScene" uid="uid://bsar2p60ivq74" path="res://assets/kaykit/dungeon/floor_dirt_large_rocky.gltf" id="5_us351"]
+[ext_resource type="PackedScene" uid="uid://c8wmxffnxpe32" path="res://assets/kaykit/dungeon/floor_dirt_small_A.gltf" id="6_r7xcn"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8g3ta"]
 albedo_color = Color(0.16, 0.16, 0.19, 1)
@@ -37,6 +40,7 @@ size = Vector3(14, 0.5, 16)
 [node name="Node3D" type="Node3D" unique_id=1336513404]
 
 [node name="Ground" type="MeshInstance3D" parent="." unique_id=177790921]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00039196014, 0.0068559647, -0.003962517)
 material_override = SubResource("StandardMaterial3D_8g3ta")
 mesh = SubResource("PlaneMesh_fdla7")
 
@@ -87,10 +91,130 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
 
 [node name="barrel_large2" parent="." unique_id=2009984683 instance=ExtResource("1_5dk1y")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, 0, -4.6)
-
-[node name="wall_cracked2" parent="." unique_id=420583884 instance=ExtResource("2_fdla7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.733658, 0, -6.3972764)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6275268, 0.20493555, -0.8616605)
 
 [node name="rubble_half2" parent="." unique_id=1853761 instance=ExtResource("3_ytubi")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.9225273, -0.35511267, 1.4208083)
+transform = Transform3D(0.47036707, -0.040633064, -1.0753897, 0.015149015, 0.99916387, -0.046322074, 0.8823408, 0.004506339, 0.57407475, 4.318995, 0.014984131, -6.5467644)
+
+[node name="rubble_large2" parent="." unique_id=489187474 instance=ExtResource("3_5eywh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.453685, 0, -5.608949)
+
+[node name="rubble_large4" parent="." unique_id=552704977 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.99997354, -0.007272505, 0, 0.007272505, -0.99997354, 0, 0, 0, 1, -4.453685, 4.869778, -5.608949)
+
+[node name="rubble_large5" parent="." unique_id=289869540 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.99997354, -0.007272505, 0, 0.007272505, -0.99997354, 0, 0, 0, 1, 0.412138, 4.869778, -5.608949)
+
+[node name="rubble_large7" parent="." unique_id=557416482 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.72762346, -0.0052917856, -0.6859565, 0.007272506, -0.99997365, 0, -0.68593824, -0.0049886215, 0.72764266, 4.827818, 4.818862, -4.491657)
+
+[node name="rubble_large3" parent="." unique_id=131126092 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.3833102, 0, -1.2230681, 0, 1, 0, 0.62866116, 0, 0.7457348, 0.13876963, -0.065907, -6.0228686)
+
+[node name="rubble_large14" parent="." unique_id=617465113 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.028402995, 0, 0.99959654, 0, 1, 0, -0.99959654, 0, 0.028402995, -6.889239, 0, 2.9790971)
+
+[node name="rubble_large15" parent="." unique_id=462641952 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.028402247, -0.00020656096, 0.99959666, 0.007272506, -0.99997365, 0, 0.9995701, 0.007269571, 0.028402995, -6.889239, 4.869778, 2.9790971)
+
+[node name="rubble_large18" parent="." unique_id=637983469 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.0032121958, 0.99358433, 0.113047935, -0.02822077, 0.11309356, -0.99318343, -0.99959654, 0, 0.028402995, -6.595477, 4.8213625, 2.9790971)
+
+[node name="rubble_large22" parent="." unique_id=1551625033 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.0032121958, 0.99358433, 0.113047935, -0.02822077, 0.11309356, -0.99318343, -0.99959654, 0, 0.028402995, -5.47842, 4.8213625, -3.4929123)
+
+[node name="rubble_large19" parent="." unique_id=1976258478 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.0040137386, -0.99358153, 0.11304795, 0.029042503, -0.11288535, -0.99318355, 0.9995701, 0.007269571, 0.028402997, -1.7569418, 5.3721037, 2.9790971)
+
+[node name="rubble_large20" parent="." unique_id=1072596403 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.20373419, -0.92786694, -0.31233874, 0.01943732, 0.31513366, -0.9488483, 0.97883344, -0.19938385, -0.04616825, 2.4334178, 4.7977843, 3.4645746)
+
+[node name="rubble_large23" parent="." unique_id=2142787393 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.20373419, -0.92786694, -0.31233874, 0.01943732, 0.31513366, -0.9488483, 0.97883344, -0.19938385, -0.04616825, 0.510334, 4.7977843, -2.747882)
+
+[node name="rubble_large21" parent="." unique_id=986923075 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.1969808, 0.92932403, -0.31233877, -0.017144976, -0.3152666, -0.9488483, -0.9802574, 0.19226, -0.046168245, -2.0290158, 5.340136, 2.4917839)
+
+[node name="rubble_large16" parent="." unique_id=1352625509 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.028402247, -0.00020656096, 0.99959666, 0.007272506, -0.99997365, 0, 0.9995701, 0.007269571, 0.028402995, -6.7510347, 4.869778, -1.8847625)
+
+[node name="rubble_large17" parent="." unique_id=1556340198 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.6392947, 0, 0.7106951, 0, 1, 0, -0.3652997, 0, 1.2437558, -7.172552, -0.065907, -1.6232612)
+
+[node name="rubble_half3" parent="." unique_id=1470579369 instance=ExtResource("3_ytubi")]
+transform = Transform3D(-0.5982731, -0.021370355, -0.9771535, 0.015149015, 0.99916387, -0.046322074, 0.80114895, -0.034851983, -0.7288319, 8.40843, -0.26078844, 3.6192665)
+
+[node name="rubble_large8" parent="." unique_id=1755553734 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.42557618, 0, -0.9049226, 0, 1, 0, 0.9049226, 0, 0.42557618, 3.8263369, -0.27577257, -3.9202182)
+
+[node name="rubble_large9" parent="." unique_id=684967611 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.42556497, -0.0030950054, -0.9049227, 0.007272506, -0.99997365, 0, -0.90489864, -0.0065810545, 0.42557618, 3.8263369, 4.5940056, -3.9202182)
+
+[node name="rubble_large10" parent="." unique_id=1657122091 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.42556497, -0.0030950054, -0.9049227, 0.007272506, -0.99997365, 0, -0.90489864, -0.0065810545, 0.42557618, 5.897115, 4.5940056, 0.482975)
+
+[node name="rubble_large11" parent="." unique_id=1031496937 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.31106177, 0.0022622582, -0.950387, 0.0072725057, -0.9999736, 0, -0.9503618, -0.006911694, -0.31107008, 6.76526, 4.5430894, 4.954316)
+
+[node name="rubble_large12" parent="." unique_id=29324396 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.40576202, 0, -1.1953409, 0, 1, 0, 0.6144093, 0, -0.789415, 6.155341, -0.34167957, 0.059443533)
+
+[node name="rubble_large13" parent="." unique_id=1485610719 instance=ExtResource("3_5eywh")]
+transform = Transform3D(-0.40576202, 0, -1.1953409, 0, 1, 0, 0.6144093, 0, -0.789415, 7.08364, -0.34167957, 2.4234614)
+
+[node name="rubble_large6" parent="." unique_id=965825101 instance=ExtResource("3_5eywh")]
+transform = Transform3D(0.3833102, 0, -1.2230681, 0, 1, 0, 0.62866116, 0, 0.7457348, 2.2212026, -0.065907, -7.716678)
+
+[node name="floor_dirt_large2" parent="." unique_id=144914190 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.7381525, 0, -2.6774983)
+
+[node name="floor_dirt_large3" parent="." unique_id=1365711256 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.7381525, 0, -2.6774983)
+
+[node name="floor_dirt_large4" parent="." unique_id=1246771489 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.8554203, 0, 0.8253555)
+
+[node name="floor_dirt_large5" parent="." unique_id=132523941 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.7381525, 0, 0.80718136)
+
+[node name="floor_dirt_large_rocky2" parent="." unique_id=839634150 instance=ExtResource("5_us351")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.85334337, 0, -2.6379142)
+
+[node name="floor_dirt_large6" parent="." unique_id=676373483 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.28901, 0, -2.6774983)
+
+[node name="floor_dirt_large7" parent="." unique_id=835817245 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.1717424, 0, 0.8253555)
+
+[node name="floor_dirt_large8" parent="." unique_id=2141488016 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.28901, 0, 0.80718136)
+
+[node name="floor_dirt_large_rocky3" parent="." unique_id=515940920 instance=ExtResource("5_us351")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.173819, 0, -2.6379142)
+
+[node name="floor_dirt_large9" parent="." unique_id=870239357 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.28901, 0, 2.633778)
+
+[node name="floor_dirt_large10" parent="." unique_id=1349910211 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.1717424, 0, 6.136632)
+
+[node name="floor_dirt_large11" parent="." unique_id=1215831064 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.28901, 0, 6.118458)
+
+[node name="floor_dirt_large_rocky4" parent="." unique_id=536918648 instance=ExtResource("5_us351")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.173819, 0, 2.6733623)
+
+[node name="floor_dirt_large12" parent="." unique_id=2030969815 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.977006, 0, 2.633778)
+
+[node name="floor_dirt_large13" parent="." unique_id=1305959711 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0942736, 0, 6.136632)
+
+[node name="floor_dirt_large14" parent="." unique_id=291216722 instance=ExtResource("4_8alcm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.977006, 0, 6.118458)
+
+[node name="floor_dirt_large_rocky5" parent="." unique_id=1651330441 instance=ExtResource("5_us351")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.092197, 0, 2.6733623)
+
+[node name="floor_dirt_small_A2" parent="." unique_id=1030609349 instance=ExtResource("6_r7xcn")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.1174097, 0, -5.8851914)

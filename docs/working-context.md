@@ -119,18 +119,26 @@ naGrot, brug, schat) also need composing (grot needs a dungeon location builder)
 - Composer is still imperative (B4); `compose(descriptor, variant)` takes the node
   id only as a staging seed -- it never reaches the logic layer.
 
+### B3 animation + choice banners (2026-06-27, later)
+
+- The hero is now an ANIMATED rig (B3): built from KayKit Rig_Medium_General.glb
+  (mesh + Idle_A) with Walking_A grafted in from Rig_Medium_MovementBasic.glb (same
+  rig, tracks resolve). Driven by SceneActivity: walk while moving, idle at rest,
+  cross-faded. The mannequin_texture is re-applied (the General mesh imports gray).
+  Combined with progress-travel, the hero actually walks. See scene_composer
+  _build_hero / set_lead_animation.
+- Choices are waving banners now (ui/choice_banner.gd): Kenney blue panel + cloth
+  wave shader + sway + direction arrow + typed highlight, not the prose box.
+
 ## Next step
 
-The core loop is playable end to end and art-polished. Likely next milestones:
-- B3 proper animation: drive an AnimationTree/AnimationPlayer with real KayKit walk/
-  idle clips from `assets/kaykit/characters` (currently the hero slides along the
-  path -- no clip yet). Orient + clip from SceneActivity.
+Likely next milestones:
 - Profiles (A5): a local in-memory/file ProfileStore behind the 3-op contract so XP/
   stars persist across runs; hero-name picker; multi-profile roster.
 - Polish: win flash + chest-open (A9), setback vignette, narration audio toggle +
-  reveal-window sync (B5 open question), better dungeon art, scene framing.
-- The choice UI could be clearer (currently a text prompt + typed word); consider a
-  dedicated fork affordance.
+  reveal-window sync (B5 open question), arrived/cheer animation at the win.
+- Hero is a gray->recoloured mannequin stand-in; a real knight model would drop in
+  via the vocabulary + a rig with the same Rig_Medium animations.
 
 No blocking watch-items; all five scenes compose (forest_path + dungeon builders),
 all tests green via `bash tests/run.sh`.

@@ -386,14 +386,17 @@ func _update_hud() -> void:
 
 func _process(delta: float) -> void:
 	var p := _typing_progress()
-	_activity.update(p, delta)
+	var act := _activity.update(p, delta)
 	if _composer.is_walking():
 		_composer.set_lead_progress(p)
+		var moving := act == SceneActivity.Activity.MOVING
 		# Face travel direction once underway and KEEP facing it on pauses; only the
 		# fresh idle pose (no typing yet) faces the camera.
-		_composer.set_lead_moving(p > 0.02)
+		_composer.set_lead_moving(moving)
+		_composer.set_lead_animation(moving)
 	else:
 		_update_gaze(delta)
+		_composer.set_lead_animation(false)
 	_update_camera(delta, false)
 	if _demo:
 		_demo_tick(delta)
