@@ -57,6 +57,7 @@ var _message: Label
 var _hud: Label
 var _choice_layer: Control
 var _banners: Array = []
+var _ui: Control
 
 # demo / capture
 var _demo := false
@@ -100,6 +101,7 @@ func _build_layout() -> void:
 	ui.set_anchors_preset(Control.PRESET_FULL_RECT)
 	ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(ui)
+	_ui = ui
 
 	# --- 3D scene area (top) ---
 	var container := SubViewportContainer.new()
@@ -245,6 +247,9 @@ func _resolve_ending() -> void:
 			_type_along.set_plain("")
 			_keyboard.highlight("")
 			_phase = Phase.WIN
+			_composer.play_lead_oneshot("PickUp")
+			_composer.open_chest()
+			_flash()
 		_:
 			_message.text = "einde."
 			_phase = Phase.DONE
@@ -387,16 +392,20 @@ func _update_hud() -> void:
 func _process(delta: float) -> void:
 	var p := _typing_progress()
 	var act := _activity.update(p, delta)
+	# Don't drive idle/walk during WIN/PAUSE -- a one-shot (e.g. PickUp) is playing.
+	var drive_anim := _phase == Phase.PROSE or _phase == Phase.CHOICE
 	if _composer.is_walking():
 		_composer.set_lead_progress(p)
-		var moving := act == SceneActivity.Activity.MOVING
-		# Face travel direction once underway and KEEP facing it on pauses; only the
-		# fresh idle pose (no typing yet) faces the camera.
-		_composer.set_lead_moving(moving)
-		_composer.set_lead_animation(moving)
+		# Facing and the walk clip are separate: face the travel direction once
+		# underway and KEEP facing it on pauses (only the fresh idle pose, no typing
+		# yet, faces the camera); but play the idle clip when momentarily paused.
+		_composer.set_lead_moving(p > 0.02)
+		if drive_anim:
+			_composer.set_lead_animation(_phase == Phase.PROSE and act == SceneActivity.Activity.MOVING)
 	else:
 		_update_gaze(delta)
-		_composer.set_lead_animation(false)
+		if drive_anim:
+			_composer.set_lead_animation(false)
 	_update_camera(delta, false)
 	if _demo:
 		_demo_tick(delta)
@@ -490,6 +499,9 @@ func _camera_rig() -> Dictionary:
 		return {"pos": lead + CAM_OFFSET, "look": lead + Vector3(0, CAM_LOOK_Y, 0)}
 	if _composer.has_landmarks():
 		return {"pos": lead + Vector3(0, 5.5, 11.5), "look": lead + Vector3(0, 0.5, -4.5)}
+	if _composer.is_treasure():
+		# a closer hero shot of the knight + the opening chest at the win
+		return {"pos": lead + Vector3(0, 2.7, 5.8), "look": lead + Vector3(0, 0.9, -2.4)}
 	return {"pos": lead + Vector3(0, 4.2, 9.5), "look": lead + Vector3(0, 1.0, -1.5)}
 
 
@@ -514,6 +526,21 @@ func _demo_tick(delta: float) -> void:
 
 func _after(seconds: float, cb: Callable) -> void:
 	get_tree().create_timer(seconds).timeout.connect(cb, CONNECT_ONE_SHOT)
+
+
+# A brief white flash over everything -- the win flourish (A9).
+func _flash() -> void:
+	if _ui == null:
+		return
+	var f := ColorRect.new()
+	f.color = Color(1, 1, 1, 0.0)
+	f.set_anchors_preset(Control.PRESET_FULL_RECT)
+	f.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui.add_child(f)
+	var t := create_tween()
+	f.color.a = 0.75
+	t.tween_property(f, "color:a", 0.0, 0.6)
+	t.tween_callback(f.queue_free)
 
 
 func _capture_after(seconds: float) -> void:

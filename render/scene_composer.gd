@@ -51,6 +51,7 @@ var _cave_pos := Vector3.ZERO
 var _bridge_pos := Vector3.ZERO
 var _has_landmarks := false
 var _needs_bloom := false
+var _chest_lid: Node3D
 
 
 func compose(descriptor, variant: String = "") -> void:
@@ -90,6 +91,7 @@ func _clear() -> void:
 	_location = null
 	_lead = null
 	_lead_anim = null
+	_chest_lid = null
 
 
 # Builds the animated hero (B3): mesh + idle from the General rig, with the walk
@@ -132,6 +134,32 @@ func set_lead_animation(moving: bool) -> void:
 		_lead_anim.play(want, 0.25)
 
 
+## Play a one-shot hero clip (e.g. PickUp at the win), then settle back to idle.
+func play_lead_oneshot(anim: String) -> void:
+	if _lead_anim == null or not _lead_anim.has_animation(anim):
+		return
+	_lead_anim.get_animation(anim).loop_mode = Animation.LOOP_NONE
+	if not _lead_anim.animation_finished.is_connected(_on_lead_oneshot_done):
+		_lead_anim.animation_finished.connect(_on_lead_oneshot_done)
+	_lead_anim.play(anim, 0.2)
+
+
+func _on_lead_oneshot_done(_anim: StringName) -> void:
+	if _lead_anim != null and _lead_anim.has_animation(HERO_IDLE):
+		_lead_anim.play(HERO_IDLE, 0.3)
+
+
+## Hinge the treasure chest lid open (A9 win flourish). The lid is a child node of
+## the chest model, so "open" is a lid rotation.
+func open_chest() -> void:
+	if _chest_lid == null:
+		return
+	var t := create_tween()
+	t.tween_interval(0.3)   # let the hero reach first
+	t.tween_property(_chest_lid, "rotation_degrees:x", -82.0, 0.6) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 func _is_walking_scene(descriptor, actor) -> bool:
 	# the hero only walks the path on a straight scene where it starts at path_near
 	return descriptor.path == SceneDescriptor.PATH_STRAIGHT and actor.anchor == "path_near"
@@ -149,6 +177,10 @@ func is_walking() -> bool:
 
 func has_landmarks() -> bool:
 	return _has_landmarks
+
+
+func is_treasure() -> bool:
+	return _needs_bloom
 
 
 func cave_pos() -> Vector3:
@@ -406,8 +438,13 @@ func _place_prop(prop) -> void:
 			chest.name = "Prop_chest"
 			chest.scale = Vector3(2.5, 2.5, 2.5)
 			add_child(chest)
-			chest.position = _anchor_position(prop.anchor)
-			_stage_treasure(_anchor_position(prop.anchor))
+			# at the win, sit the chest a bit closer to the hero so the open reads
+			var cpos := _anchor_position(prop.anchor)
+			if prop.anchor == "treasure":
+				cpos += Vector3(0, 0, 1.4)
+			chest.position = cpos
+			_chest_lid = chest.find_child("chest_gold_lid", true, false)
+			_stage_treasure(cpos)
 		_:
 			var node := _instance_asset(prop.asset)
 			node.name = "Prop_" + prop.asset
@@ -421,15 +458,15 @@ func _stage_treasure(pos: Vector3) -> void:
 	var glow := OmniLight3D.new()
 	glow.position = pos + Vector3(0, 1.8, 0)
 	glow.light_color = Color(1.0, 0.88, 0.5)
-	glow.omni_range = 16.0
-	glow.light_energy = 28.0
+	glow.omni_range = 14.0
+	glow.light_energy = 13.0
 	add_child(glow)
 	# a tall light shaft + emissive halo so the treasure is an obvious beacon
 	var shaft := SpotLight3D.new()
 	shaft.position = pos + Vector3(0, 9.0, 0)
 	shaft.rotation_degrees = Vector3(-90, 0, 0)
 	shaft.light_color = Color(1.0, 0.9, 0.55)
-	shaft.light_energy = 24.0
+	shaft.light_energy = 11.0
 	shaft.spot_range = 14.0
 	shaft.spot_angle = 30.0
 	add_child(shaft)
@@ -442,7 +479,7 @@ func _stage_treasure(pos: Vector3) -> void:
 	var hmat := StandardMaterial3D.new()
 	hmat.emission_enabled = true
 	hmat.emission = Color(1.0, 0.85, 0.4)
-	hmat.emission_energy_multiplier = 18.0
+	hmat.emission_energy_multiplier = 9.0
 	hmat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	hmat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	hmat.albedo_color = Color(1.0, 0.85, 0.4, 0.55)
