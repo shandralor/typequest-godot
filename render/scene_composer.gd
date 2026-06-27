@@ -32,7 +32,8 @@ const HERO_MOVE := "res://assets/kaykit/adventurers/Rig_Medium_MovementBasic.glb
 const HERO_IDLE := "Idle_A"
 const HERO_WALK := "Walking_A"
 const HERO_PICKUP := "PickUp"
-const HERO_WORK := "Use_Item"   # looped, for grinding
+const HERO_WORK := "Sawing"     # looped horizontal saw -- small vertical, for grinding
+const HERO_TOOLS := "res://assets/kaykit/characters/Rig_Medium_Tools.glb"
 const HERO_CHEER := "Cheering"  # looped victory -- raises the held sword at the win
 const HERO_SIM := "res://assets/kaykit/characters/Rig_Medium_Simulation.glb"
 
@@ -121,8 +122,9 @@ func _build_hero() -> Node3D:
 	ap.root_node = NodePath("..")   # resolve tracks against the Knight root
 	var lib := AnimationLibrary.new()
 	ap.add_animation_library("", lib)
-	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP, HERO_WORK])
+	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP])
 	_graft_animations(lib, HERO_MOVE, [HERO_WALK])
+	_graft_animations(lib, HERO_TOOLS, [HERO_WORK])
 	_graft_animations(lib, HERO_SIM, [HERO_CHEER])
 	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK, HERO_CHEER]:
 		if lib.has_animation(clip):
@@ -563,7 +565,7 @@ func _place_prop(prop) -> void:
 				ba.bone_name = "handslot.r"
 				sk.add_child(ba)
 				ba.add_child(sword)
-				sword.position = Vector3(0.22, 0.11, 0.0)   # nudge onto the wheel
+				sword.position = Vector3(0.4, 0.11, 0.0)   # nudge onto the wheel
 			else:
 				add_child(sword)
 				sword.position = _anchor_position(prop.anchor)
