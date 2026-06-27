@@ -32,7 +32,9 @@ var _keys: Dictionary = {}   # char -> NinePatchRect
 func _ready() -> void:
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", GAP)
-	vbox.set_anchors_preset(Control.PRESET_CENTER)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER          # center rows vertically
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)        # fill the keyboard area
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(vbox)
 	for row in ROWS:
 		vbox.add_child(_make_row(row))

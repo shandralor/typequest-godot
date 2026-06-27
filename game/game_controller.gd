@@ -135,15 +135,15 @@ func _build_layout() -> void:
 	_type_along = TypeAlongPanel.new()
 	_type_along.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	_type_along.offset_top = 44
-	_type_along.offset_bottom = 178
+	_type_along.offset_bottom = 170
 	_type_along.offset_left = 90
 	_type_along.offset_right = -90
 	band.add_child(_type_along)
 
 	_keyboard = KeyboardGuide.new()
 	_keyboard.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_keyboard.offset_top = -190
-	_keyboard.offset_bottom = -8
+	_keyboard.offset_top = -200
+	_keyboard.offset_bottom = -10
 	band.add_child(_keyboard)
 
 
