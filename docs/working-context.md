@@ -5,18 +5,25 @@ CLAUDE.md is how another device picks up the work (git pull -> read these).
 
 ## Editable scenes (HOW TO TWEAK VISUALS)
 
-Static scenery is now authored as **editable scenes** in `scenes/sets/`:
+Static scenery is authored as **editable scenes** in `scenes/sets/` (owner rule:
+EVERY location gets one):
 - `forest_straight.tscn` (start, schat), `forest_fork.tscn` (kruispunt, naGrot --
   includes the cave mouth + bridge landmark), `forest_bridge.tscn` (brug -- river +
-  bridge), `dungeon.tscn` (grot).
+  bridge), `dungeon.tscn` (grot), `forge.tscn` (slijpen -- grindstone + anvil yard),
+  `overworld.tscn` (the island: hex tiles, buildings, site_* arrival markers,
+  route_* Path3D walk curves, camera_pos/camera_look framing markers).
 
 Open any of these in the Godot editor and move/add/delete the ground, path, trees,
-cave rocks, bridge, walls, or the named Marker3D **anchors** -- the game instances
-the set and reads those anchors. Dynamic things (the hero, the chest + its glow,
-mood lighting, walking/gaze/camera) stay in code and are NOT in these sets.
+cave rocks, bridge, walls, tiles, buildings, or the named Marker3D **anchors** --
+the game instances the set and reads those anchors (and the overworld's Path3D
+routes: bend a curve and the knight follows your road). Dynamic things (the hero,
+the chest + its glow, mood lighting, walking/gaze/camera) stay in code and are NOT
+in these sets.
 
-Regenerate the sets from code with `godot --headless --script res://tools/bake_sets.gd`
--- but this OVERWRITES them, so do not re-bake a set after hand-editing it. If a set
+Bake sets from code with
+`godot --headless --script res://tools/bake_sets.gd -- <set> [<set> ...]` -- the
+tool only bakes the sets you NAME and lists them when run bare, so a hand-edited
+set is never overwritten by accident. Baking OVERWRITES the named set. If a set
 file is missing, the composer falls back to building it procedurally.
 
 ## START HERE
@@ -25,26 +32,44 @@ For a full implementation guide (architecture, how to run/test/screenshot, how t
 add scenarios/scenes/clips), read **docs/godot-handoff.md**. This file is just the
 rolling state + next step.
 
-## Current state (2026-06-27, end of session)
+## Current state (2026-07-02, end of session)
 
-Playable end to end with a menu shell and TWO scenarios:
-- "De ridder en de schat" (band1 arc: forest/fork/cave/bridge/treasure).
-- "Slijp je zwaard" (grind: the knight grinds his sword to a typed song; sparks heat
-  with progress; cheering sword-raise at the win).
-Menu: Start/Stoppen -> scenario menu (waving clickable banners) + Terug -> play ->
-win + Enter returns to the scenario menu. Hero is the animated KayKit Knight.
+THE OVERWORLD EXISTS. The scenario menu is replaced by a small hex ISLAND
+(KayKit Medieval Hexagon, one screen): the knight stands at a road hub; the child
+TYPES a site word to travel -- bos (forest -> band1 arc), smidse (blacksmith ->
+grind), boog (archery range -- a greyed TEASER until that scenario exists). The
+knight walks the editable Path3D route, the scenario starts on arrival, and the
+win + Enter puts the knight back on the island at that site. ESC on the island ->
+main menu (Start/Stoppen, island backdrop). Typed site selection is PREFIX-matched
+so bos/boog style shared prefixes never shadow a site (content test enforces no
+word is a prefix of another); the keyboard guide lights a key only once the prefix
+singles a site out. A bare `--demo` now plays from the island like a child would.
+Owner decisions captured: picker-first (unlocks bolt on with profiles A5), typed
+navigation, knight walks the roads, small island now but nothing in code assumes
+one screen (banners project from 3D anchors, camera framing lives in the set's
+markers, fov 30 tele because the wide 1920x680 viewport makes fov 75 fisheye).
 
-Latest polish this session: held sword via handslot.r bone attach; Sawing grind clip
-(small vertical); knight aligned to the grindstone; sliding reveal window (no top-line
-clipping); per-scenario win messages; menu secondary buttons; flicker fixes; the win
-flourishes (chest open / sword raise + flash). Outreach NL message in
-docs/outreach-kaykit-nl.md.
+Also this session: bake_sets.gd now bakes ONLY named sets (protects hand-edited
+ones); forge.tscn baked so the grind scene is hand-editable too (owner rule);
+review findings from the fresh-clone verification pass captured as tasks.
+
+## Known small issues (queued, from the 2026-07-02 review pass)
+
+- Prerevealed prose (naGrot) is never visible: _show_banners hides the type-along
+  panel right after _enter_node set the plain prose. Show it during the choice.
+- Choice guidance lights only candidates[0]'s first key at an open story fork
+  (steers kids into the grot setback branch) -- owner call pending. The OVERWORLD
+  already does the neutral thing (no highlight until the prefix disambiguates).
+- WIN leaves a large empty type-along panel; win overlay text is medium-contrast
+  over bright sky.
+- --demo at a story fork always picks candidates[0] (the setback branch).
 
 ## Next step (pick up here)
 
-Likely next: an archery or morning-gymnastics short scenario (see handoff section 5
-"Add a new scenario"), or the hex OVERWORLD (assets/kaykit/hexagon is vendored), or
-profiles (A5) so XP/stars persist. Keep adventures short.
+Likely next: the archery scenario (its island site + teaser banner already exist:
+boog -- follow handoff section 5, unlock by filling in its scenario id), or
+profiles (A5) so XP/stars persist and island sites can be EARNED, or the queued
+small fixes above. Keep adventures short.
 
 ## Older state (kept for reference)
 

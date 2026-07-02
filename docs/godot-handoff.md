@@ -38,16 +38,20 @@ Always pass game args after `--` (they arrive via `OS.get_cmdline_user_args()`).
 - A single test: `godot --headless --script res://tests/test_logic.gd`
 
 Debug / capture flags (handled in `game/game_controller.gd::_ready`):
-- `--demo` -- autoplay (auto-types the correct keys). Skips the menu.
-- `--scenario=ID` -- start a scenario directly (`band1`, `grind`). Skips the menu.
+- `--demo` -- autoplay (auto-types the correct keys). A bare `--demo` starts at the
+  OVERWORLD like a child would (types the first site word, walks there, plays);
+  with `--scenario`/`--scene` it starts that scenario directly.
+- `--scenario=ID` -- start a scenario directly (`band1`, `grind`). Skips the island.
 - `--scene=NODE` -- jump to a story node id (only valid for the started scenario).
 - `--type=N` -- pre-type N correct characters synchronously at start.
 - `--shot` -- after a delay, save one frame to `.shots/` (gitignored) and quit.
 - `--burst` -- save 12 frames at 0.25s to `.shots/burst_NN.png` (find flicker).
-- `--menu=scenarios` -- open the scenario menu instead of the main menu.
+- `--menu=world` -- open the overworld island directly (`--menu=scenarios` is a
+  back-compat alias).
 
 Examples:
-- Forest start, screenshot mid-walk: `godot --path . -- --demo --shot`
+- The island + travel + band1, screenshot: `godot --path . -- --demo --shot`
+- The overworld island: `godot --path . -- --menu=world --shot`
 - A specific node: `godot --path . -- --scene=kruispunt --type=35 --shot`
 - The grinding scenario: `godot --path . -- --demo --scenario=grind --shot`
 
@@ -65,14 +69,16 @@ The brief's three-axis decoupling and pure-core isolation are real here.
 ```
 logic/    pure GDScript: no Node/Input/render/network. Headless-testable. (B2/B7/B8)
 axis/     engine-independent DATA: locale, keyboard layout, asset vocabulary. (A3)
-content/  the band-1 arc, the grind arc, band spec, scene descriptors, scenarios. (A7)
-render/   scene_composer.gd -- builds the 3D scene from a descriptor. (B4)
+content/  the band-1 arc, the grind arc, band spec, scene descriptors, scenarios,
+          overworld.gd (the island's site registry: word -> scenario). (A7)
+render/   scene_composer.gd -- builds the 3D scene from a descriptor; also the
+          overworld island composer. (B4)
 input/    azerty_input.gd -- physical key -> AZERTY char (render side of B1).
 ui/       type-along (reveal window), keyboard guide, choice + menu banners.
-game/     game_controller.gd -- the loop + menu shell + camera.
+game/     game_controller.gd -- the loop + menu shell + overworld + camera.
 scenes/   game.tscn (main), start.tscn (composition demo), menu/, sets/ (baked).
 tests/    headless suites + run.sh.
-tools/    bake_sets.gd -- regenerates the editable location .tscn sets.
+tools/    bake_sets.gd -- bakes NAMED editable location .tscn sets.
 ```
 
 A guard test (`tests/test_purity.gd`) fails if anything in `logic/ axis/ content/`
@@ -142,11 +148,19 @@ it in the node's `safety`.
 2. Make a `content/<name>/<name>_arc.gd` returning a StoryGraph (set prose_key,
    narration_key, win_key, ending, safety {nl-BE: {hash,...}}, scene).
 3. Add any new location to `scene_composer` (`_set_for`, `build_static`,
-   `_static_<name>`) and `content_validator.LOCATION_IDS`.
+   `_static_<name>`) and `content_validator.LOCATION_IDS`; bake its editable set
+   (`tools/bake_sets.gd` -- OWNER RULE: every location gets a hand-editable set).
 4. Register it in `content/scenarios.gd` (`list()` + a `build()` branch).
-5. Validate: extend `tests/test_content.gd` to validate the new graph (must be 0
-   problems), then `bash tests/run.sh`.
-6. Screenshot it: `godot --path . -- --demo --scenario=<id> --shot`.
+5. Give it a SITE on the island: a site word in the locale (`site.<word>` --
+   discuss the word with the owner; no word may be a PREFIX of another, the
+   content test enforces it), a row in `content/overworld.gd`, and a building +
+   `site_<id>` Marker3D + `route_<id>` Path3D in `scenes/sets/overworld.tscn`
+   (hand-edit the set, or extend `_static_overworld` and re-bake ONLY if the set
+   was never hand-edited).
+6. Validate: `tests/test_content.gd` validates every graph + the overworld sites,
+   then `bash tests/run.sh`.
+7. Screenshot it: `godot --path . -- --demo --scenario=<id> --shot` and the island
+   `godot --path . -- --menu=world --shot`.
 
 ---
 
@@ -158,12 +172,13 @@ lighting -> place actors (hero special) -> place props -> per-type effects.
 
 ### Locations: hybrid editable sets
 Static staging lives in editable `scenes/sets/<name>.tscn` (forest_straight,
-forest_fork, forest_bridge, dungeon). `_instance_set` loads the `.tscn` if present,
-else falls back to the procedural `build_static(name)` -> `_static_forest/_dungeon/
-_forge`. `forge` is procedural-only (not baked). Regenerate sets with
-`godot --headless --script res://tools/bake_sets.gd` (OVERWRITES; do not re-bake a
-set you have hand-edited). Set the gltf/glb as instance references (scene_file_path)
-so the `.tscn` stays small.
+forest_fork, forest_bridge, dungeon, forge, overworld -- OWNER RULE: every location
+gets one). `_instance_set` loads the `.tscn` if present, else falls back to the
+procedural `build_static(name)`. Bake with
+`godot --headless --script res://tools/bake_sets.gd -- <set> [<set> ...]` -- the
+tool only bakes the sets you NAME (baking OVERWRITES; never re-bake a hand-edited
+set). Set the gltf/glb as instance references (scene_file_path) so the `.tscn`
+stays small.
 
 Scene-type behaviour the controller keys off:
 - walking (path straight + hero at `path_near`): hero walks the travel path; camera
@@ -203,16 +218,39 @@ type-along + keyboard), a HUD, a transient message, a `_choice_layer`, and a
 `_menu_layer`. The 3D renders in the SubViewport so the UI band never overlaps it.
 
 States:
-- `AppState { MAIN, SCENARIOS, PLAYING }` -- menu shell.
+- `AppState { MAIN, OVERWORLD, PLAYING }` -- menu shell + the island.
 - `Phase { PROSE, CHOICE, PAUSE, WIN, DONE }` -- within a playing beat.
 
-Flow: `_show_main_menu` (Start / Stoppen) -> `_show_scenario_menu` (one banner per
-`Scenarios.list()` + Terug) -> `_start_scenario(id)` builds a `RunState` and calls
-`_enter_node()`. A node: compose its scene, set narration, then PROSE (type the prose,
-reveal window B5, finger guidance B6) or, if prerevealed, straight to CHOICE. On prose
-complete: score, then choices -> `_begin_choice` (waving choice banners), or ending ->
+Flow: `_show_main_menu` (Start / Stoppen, over the island backdrop) ->
+`_show_overworld` (the walkable island picker, below) -> arrival calls
+`_start_scenario(id)`, which builds a `RunState` and calls `_enter_node()`. A
+node: compose its scene, set narration, then PROSE (type the prose, reveal window
+B5, finger guidance B6) or, if prerevealed, straight to CHOICE. On prose complete:
+score, then choices -> `_begin_choice` (waving choice banners), or ending ->
 `_resolve_ending` (setback bounces to return_to; win shows `win_key` message + the
-scene's flourish + flash, then ENTER returns to the scenario menu).
+scene's flourish + flash, then ENTER returns to the island, knight standing at the
+finished site). ESC on the island returns to the main menu.
+
+### The overworld (the walkable scenario picker)
+The island replaces the old scenario menu: sites are places, and the child TYPES a
+site word (bos / smidse / boog) to send the knight walking there. Pieces:
+- `content/overworld.gd` -- pure site registry: word key, scenario id, anchor +
+  route names, `unlocked` (a plain flag until profiles A5 make it earned; a site
+  with an empty scenario is a greyed TEASER, e.g. boog until archery exists).
+- `scenes/sets/overworld.tscn` -- the EDITABLE island (KayKit hexagon tiles,
+  buildings, decoration): `site_<id>` Marker3D arrival spots, `route_<id>` Path3D
+  walk curves (bend them to follow your roads), and `camera_pos`/`camera_look`
+  markers for the framing. Owner decoration goes here, in the editor.
+- `scene_composer.compose_overworld()` -- instances the set + the animated knight;
+  `overworld_cam()` reads the camera markers and adds a 30-degree tele fov (the
+  1920x680 viewport turns the default 75-degree fov fisheye).
+- Controller: `_ow_char` does PREFIX matching across unlocked words (bos/boog
+  style shared prefixes never shadow a site; the keyboard guide only lights a key
+  once the prefix singles a site out). `_begin_ow_travel` walks route legs (via
+  the hub when starting from another site); arrival starts the scenario. Site
+  banners are projected from the 3D anchors each frame, so a larger scrolling
+  island later needs no banner changes -- the one-screen island is a STAGING
+  choice, not a code assumption.
 
 `_input` reads physical keys via `AzertyInput.char_for_physical` (B1, OS-layout-
 independent). `_process` drives the hero (walk/idle/work/gaze) and the camera
@@ -254,9 +292,9 @@ independent). `_process` drives the hero (walk/idle/work/gaze) and the camera
 - The grind sword's exact on-wheel position + the win framing were hand-tuned from
   screenshots; fine if it looks right, easy to nudge (`_place_prop` sword offset,
   `_static_forge` anchors, `_camera_rig` work/win).
-- Ideas queued: an archery scenario, a morning-gymnastics scenario (type exercise
-  words -> matching clips), and a hex OVERWORLD to navigate between adventures (the
-  `assets/kaykit/hexagon` pack is vendored for this). Keep adventures SHORT.
+- Ideas queued: an archery scenario (its island site + teaser banner already
+  exist: boog) and a morning-gymnastics scenario (type exercise words -> matching
+  clips). Keep adventures SHORT.
 - Profiles (A5) not built: XP/stars do not persist across runs yet. The schema +
   no-auth-coupled-to-non-identifying-data posture are specified in the brief A5;
   build a local in-memory/file ProfileStore behind the 3-op contract.
