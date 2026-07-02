@@ -37,6 +37,12 @@ const CATALOG := {
 	"word.grot": "grot",
 	"word.brug": "brug",
 	"word.kist": "kist",
+	# overworld site words (typed to travel to an adventure site)
+	"site.bos": "bos",
+	"site.smidse": "smidse",
+	"site.boog": "boog",
+	"overworld.narration": "waar ga je naartoe? typ het woord.",
+	"overworld.locked": "nog niet open",
 }
 
 

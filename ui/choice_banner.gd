@@ -81,6 +81,9 @@ func configure(word: String, hint: String, phase: float) -> void:
 		"right":
 			_arrow.texture = load(ARROW_RIGHT)
 			_arrow.rotation = 0.0
+		"none":
+			_arrow.visible = false     # overworld site banners: the word only
+			_label.offset_top = 26
 		_:
 			_arrow.texture = load(ARROW_RIGHT)
 			_arrow.pivot_offset = Vector2(32, 20)

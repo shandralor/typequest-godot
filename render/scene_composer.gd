@@ -19,6 +19,15 @@ extends Node3D
 
 const Vocabulary = preload("res://axis/vocabulary/fantasy_poc.gd")
 const FOREST_DIR := "res://assets/kaykit/forest_nature/"
+const HEX_DIR := "res://assets/kaykit/hexagon/"
+
+# Overworld hex grid: KayKit hexagon tiles measure 2.0 across flats (x) with the
+# top surface at y=0; everything is placed at HEX_SCALE so the knight reads as a
+# figure on a toy island rather than a giant. Axial (q, r) -> world:
+#   x = (q + r/2) * 2.0 * HEX_SCALE,  z = r * 1.7320 * HEX_SCALE
+const HEX_SCALE := 3.0
+const HEX_W := 2.0 * HEX_SCALE          # column step
+const HEX_ROW := 1.7320 * HEX_SCALE     # row step
 
 const LEAD_ASSETS := ["hero"]
 const MISSING_COLOR := Color(1.0, 0.0, 0.0)
@@ -62,6 +71,7 @@ var _chest_lid: Node3D
 var _is_work_scene := false
 var _sparks: CPUParticles3D
 var _sword: Node3D
+var _is_overworld := false
 
 
 func compose(descriptor, variant: String = "") -> void:
@@ -108,6 +118,64 @@ func _clear() -> void:
 	_is_work_scene = false
 	_sparks = null
 	_sword = null
+	_is_overworld = false
+
+
+## Compose the overworld island: the editable set (scenes/sets/overworld.tscn) plus
+## the animated knight standing at `start_anchor` (the hub, or the site it just
+## returned from). The island is a MENU rendered as a place -- no SceneDescriptor,
+## no logic-layer involvement; travel is driven by the controller along the set's
+## editable Path3D routes.
+func compose_overworld(start_anchor: String = "hub") -> void:
+	_clear()
+	_variant = "overworld"
+	_is_overworld = true
+	_location = _instance_set("overworld")
+	_location.name = "Location"
+	add_child(_location)
+	_apply_mood("light", false)   # no distance fog: the island must read crisply
+	var hero := _build_hero()
+	hero.name = "Actor_hero"
+	add_child(hero)
+	_lead = hero
+	_walking = false
+	hero.position = _anchor_position(start_anchor)
+	set_lead_animation(false)
+
+
+func is_overworld() -> bool:
+	return _is_overworld
+
+
+## The editable Path3D route named in the overworld set (null if missing).
+func overworld_route(route_name: String) -> Path3D:
+	if _location == null:
+		return null
+	return _location.get_node_or_null(NodePath(route_name)) as Path3D
+
+
+## Camera framing for the overworld, read from the set's editable camera_pos /
+## camera_look markers so the owner can reframe the island in the editor. The
+## narrow fov is deliberate: the game viewport is very wide (1920x680), where the
+## default 75-degree fov turns fisheye; a tele lens keeps the island a readable
+## storybook diorama.
+func overworld_cam() -> Dictionary:
+	var pos := Vector3(0, 30, 34)
+	var look := Vector3(0, 0, -2)
+	if _location != null:
+		var p := _location.get_node_or_null(^"camera_pos") as Node3D
+		var l := _location.get_node_or_null(^"camera_look") as Node3D
+		if p != null:
+			pos = p.position
+		if l != null:
+			look = l.position
+	return {"pos": pos, "look": look, "fov": 30.0}
+
+
+## Directly place the lead (overworld travel along a route).
+func set_lead_position(pos: Vector3) -> void:
+	if _lead != null:
+		_lead.position = pos
 
 
 # Builds the animated hero (B3): mesh + idle from the General rig, with the walk
@@ -355,6 +423,8 @@ func build_static(set_name: String) -> Node3D:
 			return _static_dungeon()
 		"forge":
 			return _static_forge()
+		"overworld":
+			return _static_overworld()
 		_:
 			return _static_forest(false, false)
 
@@ -455,6 +525,128 @@ func _static_forge() -> Node3D:
 		anvil.rotation.y = deg_to_rad(-40)
 		root.add_child(anvil)
 	_treeline(root, rng, ["Tree_1_A_Color1", "Tree_2_A_Color1", "Tree_3_A_Color1"])
+	return root
+
+
+# --- overworld island (KayKit hexagon pack) ------------------------------------
+
+func _hex_world(q: int, r: int) -> Vector3:
+	return Vector3((float(q) + float(r) * 0.5) * HEX_W, 0.0, float(r) * HEX_ROW)
+
+
+func _pull_toward(from: Vector3, to: Vector3, dist: float) -> Vector3:
+	return from + (to - from).normalized() * dist
+
+
+func _hex_tile(root: Node3D, model: String, q: int, r: int, yaw_deg: float = 0.0) -> Node3D:
+	var inst := _instance_path(HEX_DIR + model + ".gltf")
+	if inst == null:
+		inst = _red_placeholder(model)
+	inst.position = _hex_world(q, r)
+	inst.scale = Vector3.ONE * HEX_SCALE
+	inst.rotation.y = deg_to_rad(yaw_deg)
+	root.add_child(inst)
+	return inst
+
+
+# A decorated model standing ON a tile (building, trees, mountain, flag), turned
+# to face the hub so fronts read from the camera.
+func _hex_decor(root: Node3D, model: String, q: int, r: int, face_hub: bool = true) -> Node3D:
+	var inst := _instance_path(HEX_DIR + model + ".gltf")
+	if inst == null:
+		inst = _red_placeholder(model)
+	var pos := _hex_world(q, r)
+	inst.position = pos
+	inst.scale = Vector3.ONE * HEX_SCALE
+	if face_hub and pos.length() > 0.1:
+		inst.rotation.y = atan2(-pos.x, -pos.z)
+	root.add_child(inst)
+	return inst
+
+
+## The small one-screen island (radius-2 land, water ring): the hub crossroads in
+## the middle, dirt paths to the three sites (bos / smidse / boog), decoration, and
+## the named markers + editable Path3D routes the game reads. Baked to
+## scenes/sets/overworld.tscn -- arrange it in the editor; a LARGER island later
+## only means editing that set (nothing here assumes one screen).
+func _static_overworld() -> Node3D:
+	var root := Node3D.new()
+	# land: every axial coord within radius 2
+	for q in range(-2, 3):
+		for r in range(-2, 3):
+			if abs(q + r) <= 2:
+				_hex_tile(root, "hex_grass", q, r)
+	# water ring at radius 3
+	for q in range(-3, 4):
+		for r in range(-3, 4):
+			var s := -q - r
+			if maxi(abs(q), maxi(abs(r), abs(s))) == 3:
+				_hex_tile(root, "hex_water", q, r)
+	# sites: the buildings/forest sit on the site tile; the ARRIVAL anchor is pulled
+	# toward the hub so the knight stands in front of them, never inside them
+	_hex_decor(root, "building_blacksmith_red", 2, -2)
+	_hex_decor(root, "building_archeryrange_red", 1, 1)
+	# the bos site tile stays open grass; the forest frames it on the neighbours
+	_hex_decor(root, "trees_A_large", -2, 1)
+	_hex_decor(root, "trees_A_medium", -1, -1)
+	_hex_decor(root, "trees_B_medium", -2, 2)
+	# decoration (the owner adds/moves more in the editor)
+	_hex_decor(root, "mountain_A_grass_trees", 0, -2)
+	_hex_decor(root, "building_windmill_red", 1, -2)
+	_hex_decor(root, "building_home_A_red", 2, -1)
+	_hex_decor(root, "tree_single_A", 2, 0, false)
+	_hex_decor(root, "flag_red", -2, 0, false).position += Vector3(0.9, 0, 2.2)
+	_hex_decor(root, "flag_red", 2, -2, false).position += Vector3(-2.4, 0, 1.6)
+	_hex_decor(root, "flag_red", 1, 1, false).position += Vector3(-2.4, 0, -1.2)
+	# a couple of drifting-height clouds for storybook depth
+	for c in [[-1.5, -2.0, 10.0], [1.8, 1.2, 13.0]]:
+		var cloud := _instance_path(HEX_DIR + "cloud_big.gltf")
+		if cloud != null:
+			cloud.position = _hex_world(0, 0) + Vector3(c[0] * HEX_W, c[2], c[1] * HEX_ROW)
+			cloud.scale = Vector3.ONE * HEX_SCALE
+			root.add_child(cloud)
+	var hub := _hex_world(0, 0)
+	# arrival spots: on the site tile but pulled 2.6 units toward the hub
+	var arrive := {
+		"bos": _pull_toward(_hex_world(-2, 0), hub, 2.6),
+		"smidse": _pull_toward(_hex_world(2, -2), hub, 2.6),
+		"boog": _pull_toward(_hex_world(1, 1), hub, 2.6),
+	}
+	# dirt paths from the hub over the via tile to each arrival spot
+	var via := {
+		"bos": [_hex_world(-1, 0), arrive["bos"]],
+		"smidse": [_hex_world(1, -1), arrive["smidse"]],
+		"boog": [_hex_world(0, 1), arrive["boog"]],
+	}
+	for site in via:
+		var prev: Vector3 = hub
+		for wp in via[site]:
+			root.add_child(_path_segment(prev, wp, 1.7))
+			prev = wp
+	# markers the game reads (hero start, site spots, camera framing)
+	var anchors := {
+		"hub": hub,
+		"site_bos": arrive["bos"],
+		"site_smidse": arrive["smidse"],
+		"site_boog": arrive["boog"],
+		"camera_pos": Vector3(0, 30.0, 34.0),
+		"camera_look": Vector3(0, 0, -2.0),
+	}
+	for n in anchors:
+		var m := Marker3D.new()
+		m.name = n
+		m.position = anchors[n]
+		root.add_child(m)
+	# editable travel routes (hub -> site); the knight walks these curves
+	for site in via:
+		var path := Path3D.new()
+		path.name = "route_" + site
+		var curve := Curve3D.new()
+		curve.add_point(hub)
+		for wp in via[site]:
+			curve.add_point(wp)
+		path.curve = curve
+		root.add_child(path)
 	return root
 
 
@@ -634,7 +826,7 @@ func _stage_treasure(pos: Vector3) -> void:
 
 # --- mood / lighting ----------------------------------------------------------
 
-func _apply_mood(mood: String) -> void:
+func _apply_mood(mood: String, with_fog: bool = true) -> void:
 	var we := WorldEnvironment.new()
 	we.name = "Mood"
 	var env := Environment.new()
@@ -664,11 +856,12 @@ func _apply_mood(mood: String) -> void:
 			sun.light_energy = 1.15
 			sun.light_color = Color(1.0, 0.96, 0.88)
 			env.ambient_light_energy = 0.5
-			# gentle distance fog so the field edge fades, never a hard horizon
-			env.fog_enabled = true
-			env.fog_light_color = Color(0.74, 0.82, 0.92)
-			env.fog_density = 0.013
-			env.fog_aerial_perspective = 0.5
+			if with_fog:
+				# gentle distance fog so the field edge fades, never a hard horizon
+				env.fog_enabled = true
+				env.fog_light_color = Color(0.74, 0.82, 0.92)
+				env.fog_density = 0.013
+				env.fog_aerial_perspective = 0.5
 	we.environment = env
 	add_child(we)
 	add_child(sun)

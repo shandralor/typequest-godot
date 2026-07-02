@@ -21,9 +21,10 @@ const ChoiceBannerScript = preload("res://ui/choice_banner.gd")
 const MenuScreenScene = preload("res://scenes/menu/menu_screen.tscn")
 const MenuBannerScene = preload("res://ui/menu_banner.tscn")
 const Scenarios = preload("res://content/scenarios.gd")
+const OverworldSites = preload("res://content/overworld.gd")
 
 enum Phase { PROSE, CHOICE, PAUSE, WIN, DONE }
-enum AppState { MAIN, SCENARIOS, PLAYING }
+enum AppState { MAIN, OVERWORLD, PLAYING }
 
 const VIEW_HEIGHT := 680   # top: the 3D scene gets its OWN area (a SubViewport)
 const BAND_HEIGHT := 400   # bottom: the UI band (680 + 400 = 1080 window)
@@ -68,6 +69,15 @@ var _band: Control
 var _viewport_container: SubViewportContainer
 var _app_state := AppState.MAIN
 
+# overworld (the walkable scenario picker)
+var _ow_candidates: Array = []   # unlocked sites: [{ word, site }]
+var _ow_buffer := ""
+var _ow_banners: Array = []      # [{ banner, site, word, locked }]
+var _ow_walk = null              # { legs: [{route, reverse}], leg, dist, site }
+var _ow_at := "hub"              # anchor the hero stands at on the island
+const OW_WALK_SPEED := 4.5
+const OW_BANNER_LIFT := Vector3(0, 4.6, 0)   # banner floats this far above a site
+
 # demo / capture
 var _demo := false
 var _demo_accum := 0.0
@@ -84,7 +94,10 @@ func _ready() -> void:
 	var jump := _arg_value(args, "--scene")
 	var scen := _arg_value(args, "--scenario")
 	if _demo or jump != "" or scen != "":
-		_start_scenario(scen if scen != "" else "band1")
+		if jump != "" or scen != "":
+			_start_scenario(scen if scen != "" else "band1")
+		else:
+			_show_overworld()   # a bare --demo plays from the island, like a child
 		if jump != "":
 			_run.current_id = jump
 			_enter_node()
@@ -96,10 +109,10 @@ func _ready() -> void:
 		if "--burst" in args:
 			_capture_burst()
 	else:
-		_compose_backdrop()
-		if _arg_value(args, "--menu") == "scenarios":
-			_show_scenario_menu()
+		if _arg_value(args, "--menu") in ["world", "scenarios"]:
+			_show_overworld()
 		else:
+			_compose_backdrop()
 			_show_main_menu()
 		if "--shot" in args:
 			_capture_after(1.0)
@@ -294,12 +307,22 @@ func _input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	if event.keycode == KEY_ESCAPE:
-		get_tree().quit()
+		if _app_state == AppState.OVERWORLD:
+			_show_main_menu()   # back out of the island to the main menu
+		else:
+			get_tree().quit()
+		return
+	if _app_state == AppState.OVERWORLD:
+		if _ow_walk == null:   # ignore keys while the knight is traveling
+			var oc := AzertyInput.char_for_physical(event.physical_keycode)
+			if oc != "":
+				get_viewport().set_input_as_handled()
+				_ow_char(oc)
 		return
 	if _app_state != AppState.PLAYING:
-		return  # menus are mouse-driven
+		return  # the main menu is mouse-driven
 	if _phase == Phase.WIN and event.keycode == KEY_ENTER:
-		_show_scenario_menu()   # finishing + enter returns to the scenario menu
+		_show_overworld(_ow_at)   # finishing + enter returns to the island
 		return
 	var c := AzertyInput.char_for_physical(event.physical_keycode)
 	if c != "":
@@ -428,6 +451,16 @@ func _update_hud() -> void:
 # --- per-frame: drive protagonist motion from observed state -----------------
 
 func _process(delta: float) -> void:
+	if _app_state == AppState.OVERWORLD:
+		if _ow_walk != null:
+			_ow_walk_tick(delta)
+		elif _composer.has_lead():
+			_composer.set_lead_animation(false)
+		_position_ow_banners()
+		_update_camera(delta, false)
+		if _demo:
+			_demo_tick(delta)
+		return
 	if _app_state != AppState.PLAYING:
 		if _composer.has_lead():
 			_composer.set_lead_animation(false)
@@ -529,6 +562,7 @@ func _update_camera(delta: float, snap: bool) -> void:
 	if _camera == null or not _composer.has_lead():
 		return
 	var rig := _camera_rig()
+	_camera.fov = rig.get("fov", 75.0)   # the overworld uses a tele lens
 	if snap:
 		_camera.position = rig.pos
 	else:
@@ -540,6 +574,8 @@ func _update_camera(delta: float, snap: bool) -> void:
 # establishing shot at the fork (so the cave on the left and the bridge on the
 # right are both in view as the hero turns to look); medium otherwise.
 func _camera_rig() -> Dictionary:
+	if _composer.is_overworld():
+		return _composer.overworld_cam()   # editable markers in the overworld set
 	var lead: Vector3 = _composer.lead_position()
 	if _composer.is_walking():
 		return {"pos": lead + CAM_OFFSET, "look": lead + Vector3(0, CAM_LOOK_Y, 0)}
@@ -563,6 +599,12 @@ func _demo_tick(delta: float) -> void:
 	if _demo_accum < DEMO_INTERVAL:
 		return
 	_demo_accum = 0.0
+	if _app_state == AppState.OVERWORLD:
+		if _ow_walk == null and not _ow_candidates.is_empty():
+			var target: String = _ow_candidates[0].word
+			if _ow_buffer.length() < target.length():
+				_ow_char(target.substr(_ow_buffer.length(), 1))
+		return
 	if _phase == Phase.PROSE and not _prose.is_complete():
 		_on_char(_prose.target.substr(_prose.cursor, 1))
 	elif _phase == Phase.CHOICE:
@@ -599,7 +641,7 @@ func _flash() -> void:
 # --- menus -------------------------------------------------------------------
 
 func _compose_backdrop() -> void:
-	_composer.compose(Scenarios.backdrop_scene(), "menu")
+	_composer.compose_overworld("hub")   # the island is the menu backdrop
 	_update_camera(0.0, true)
 
 
@@ -643,21 +685,164 @@ func _show_menu(title: String, items: Array) -> void:
 func _show_main_menu() -> void:
 	_app_state = AppState.MAIN
 	_set_playing_ui(false)
+	_clear_ow_banners()
 	_show_menu("TypeQuest", [
-		{"text": "Start", "on_press": _show_scenario_menu},
+		{"text": "Start", "on_press": _show_overworld_from_menu},
 		{"text": "Stoppen", "on_press": _quit_app, "secondary": true},
 	])
 
 
-func _show_scenario_menu() -> void:
-	_app_state = AppState.SCENARIOS
+func _show_overworld_from_menu() -> void:
+	_show_overworld(_ow_at)
+
+
+# --- overworld (the walkable scenario picker) ---------------------------------
+
+## Show the island with the knight standing at `at_anchor` (the hub, or the site
+## it just finished). The child TYPES a site word to travel there; typing uses
+## prefix matching across the unlocked words (bos/boog style shared prefixes stay
+## reachable), so no site is ever shadowed by another.
+func _show_overworld(at_anchor: String = "hub") -> void:
+	_app_state = AppState.OVERWORLD
+	_clear_menu()
 	_set_playing_ui(false)
-	_compose_backdrop()
-	var items: Array = []
-	for s in Scenarios.list():
-		items.append({"text": s.title, "on_press": _start_scenario.bind(s.id)})
-	items.append({"text": "Terug", "on_press": _show_main_menu, "secondary": true})
-	_show_menu("Kies een avontuur", items)
+	_narration.visible = true
+	_keyboard.visible = true
+	_choice_layer.visible = true
+	_narration.text = _locale.resolve("overworld.narration")
+	_composer.compose_overworld(at_anchor)
+	_ow_at = at_anchor
+	_ow_buffer = ""
+	_ow_walk = null
+	_ow_candidates = []
+	for s in OverworldSites.sites():
+		if s.unlocked and s.scenario != "":
+			_ow_candidates.append({"word": _locale.resolve(s.word_key), "site": s})
+	_build_ow_banners()
+	_update_ow_highlight()
+	_update_camera(0.0, true)
+
+
+func _build_ow_banners() -> void:
+	_clear_ow_banners()
+	var i := 0
+	for s in OverworldSites.sites():
+		var locked: bool = not s.unlocked or s.scenario == ""
+		var banner = ChoiceBannerScript.new()
+		_choice_layer.add_child(banner)
+		banner.size = Vector2(300, 96)
+		banner.configure(_locale.resolve(s.word_key), "none", float(i) * 1.3)
+		if locked:
+			banner.set_active(false)
+		_ow_banners.append({"banner": banner, "site": s,
+			"word": _locale.resolve(s.word_key), "locked": locked})
+		i += 1
+	_position_ow_banners()
+
+
+func _clear_ow_banners() -> void:
+	for e in _ow_banners:
+		e.banner.queue_free()
+	_ow_banners.clear()
+
+
+# Banners float above their site, projected from the 3D anchor each frame -- so a
+# larger scrolling island later needs no banner changes.
+func _position_ow_banners() -> void:
+	if _camera == null:
+		return
+	for e in _ow_banners:
+		var world: Vector3 = _composer.anchor_pos(e.site.anchor) + OW_BANNER_LIFT
+		var screen: Vector2 = _camera.unproject_position(world)
+		e.banner.set_base_position(screen - Vector2(e.banner.size.x * 0.5, 0))
+
+
+## Typed site selection: the buffer must stay a prefix of at least one unlocked
+## word; a completed word starts the travel.
+func _ow_char(c: String) -> void:
+	var next := _ow_buffer + c
+	var matches: Array = []
+	for cand in _ow_candidates:
+		if cand.word.begins_with(next):
+			matches.append(cand)
+	if matches.is_empty():
+		return
+	_ow_buffer = next
+	_update_ow_highlight()
+	for cand in matches:
+		if cand.word == _ow_buffer:
+			_begin_ow_travel(cand.site)
+			return
+
+
+func _update_ow_highlight() -> void:
+	var matches: Array = []
+	for cand in _ow_candidates:
+		if cand.word.begins_with(_ow_buffer):
+			matches.append(cand)
+	for e in _ow_banners:
+		if e.locked:
+			e.banner.set_typed(0)
+			e.banner.set_active(false)
+		elif _ow_buffer != "" and e.word.begins_with(_ow_buffer):
+			e.banner.set_typed(_ow_buffer.length())
+			e.banner.set_active(true)
+		else:
+			e.banner.set_typed(0)
+			e.banner.set_active(_ow_buffer == "")
+	# guide the next key only once the typed prefix singles a site out (an open
+	# pick shows no bias -- the banners themselves show the words)
+	if matches.size() == 1 and _ow_buffer.length() < matches[0].word.length():
+		_keyboard.highlight(matches[0].word.substr(_ow_buffer.length(), 1))
+	else:
+		_keyboard.highlight("")
+
+
+## Travel legs: routes are authored hub -> site, so from the hub it is one leg;
+## from another site it is that site's route reversed back to the hub first.
+func _begin_ow_travel(site) -> void:
+	var legs: Array = []
+	if _ow_at != "hub":
+		for s in OverworldSites.sites():
+			if s.anchor == _ow_at:
+				legs.append({"route": s.route, "reverse": true})
+	legs.append({"route": site.route, "reverse": false})
+	_ow_walk = {"legs": legs, "leg": 0, "dist": 0.0, "site": site}
+	_clear_ow_banners()
+	_keyboard.highlight("")
+	_narration.text = _locale.resolve(site.word_key)
+
+
+func _ow_walk_tick(delta: float) -> void:
+	var leg: Dictionary = _ow_walk.legs[_ow_walk.leg]
+	var path: Path3D = _composer.overworld_route(leg.route)
+	if path == null or path.curve == null:   # a missing route never strands the child
+		push_warning("Missing overworld route '%s' -- starting scenario directly" % leg.route)
+		_ow_arrive()
+		return
+	var length := path.curve.get_baked_length()
+	_ow_walk.dist += OW_WALK_SPEED * delta
+	var d: float = clampf(_ow_walk.dist, 0.0, length)
+	var offset := (length - d) if leg.reverse else d
+	var pos: Vector3 = path.curve.sample_baked(offset)
+	var prev: Vector3 = _composer.lead_position()
+	_composer.set_lead_position(pos)
+	var dir := pos - prev
+	if dir.length() > 0.001:
+		_composer.set_lead_yaw(atan2(dir.x, dir.z))
+	_composer.set_lead_animation(true)
+	if _ow_walk.dist >= length:
+		_ow_walk.leg += 1
+		_ow_walk.dist = 0.0
+		if _ow_walk.leg >= _ow_walk.legs.size():
+			_ow_arrive()
+
+
+func _ow_arrive() -> void:
+	var site = _ow_walk.site
+	_ow_walk = null
+	_ow_at = site.anchor
+	_start_scenario(site.scenario)
 
 
 func _quit_app() -> void:
