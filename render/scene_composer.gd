@@ -70,6 +70,7 @@ var _needs_bloom := false
 var _chest_lid: Node3D
 var _is_work_scene := false
 var _sparks: CPUParticles3D
+var _spark_mat: StandardMaterial3D
 var _sword: Node3D
 var _grindstone: Node3D
 var _is_overworld := false
@@ -119,6 +120,7 @@ func _clear() -> void:
 	_chest_lid = null
 	_is_work_scene = false
 	_sparks = null
+	_spark_mat = null
 	_sword = null
 	_grindstone = null
 	_is_overworld = false
@@ -248,13 +250,28 @@ func set_lead_work(active: bool, progress: float = 0.0) -> void:
 			_lead_anim.play(want, 0.25)
 	if _sparks != null:
 		_sparks.emitting = active
-		_sparks.color = _spark_color(progress)
+		# drive the emission (the sparks are unshaded + emissive, so the glow colour
+		# is what reads -- the per-particle albedo tint alone would be overridden)
+		var col := _spark_color(progress)
+		if _spark_mat != null:
+			_spark_mat.albedo_color = col
+			_spark_mat.emission = col
+		# the shower intensifies toward the end of the song: bigger sparks flung
+		# higher and wider (with the colour ramp, the sharpening clearly "heats up")
+		var g := 0.75 + progress * 1.15
+		_sparks.scale_amount_min = 0.6 * g
+		_sparks.scale_amount_max = 1.1 * g
+		_sparks.initial_velocity_max = 5.0 + progress * 3.5
+		_sparks.spread = 40.0 + progress * 20.0
 
 
 func _spark_color(p: float) -> Color:
 	if p < 0.5:
-		return Color(1.0, 0.5, 0.1).lerp(Color(1.0, 0.92, 0.35), p / 0.5)        # orange -> yellow
-	return Color(1.0, 0.92, 0.35).lerp(Color(0.6, 0.85, 1.0), (p - 0.5) / 0.5)   # yellow -> hot blue-white
+		return Color(1.0, 0.32, 0.05).lerp(Color(1.0, 0.85, 0.2), p / 0.5)          # red-orange -> gold
+	if p < 0.67:
+		return Color(1.0, 0.85, 0.2).lerp(Color(0.9, 0.96, 1.0), (p - 0.5) / 0.17)  # gold -> white-hot
+	# the final third cools to a hot blue -- the child sees the end is near
+	return Color(0.9, 0.96, 1.0).lerp(Color(0.35, 0.6, 1.0), (p - 0.67) / 0.33)     # white-hot -> blue
 
 
 func stop_sparks() -> void:
@@ -324,8 +341,8 @@ func _find_child_containing(root: Node, needle: String) -> Node3D:
 func _build_sparks(pos: Vector3) -> void:
 	var p := CPUParticles3D.new()
 	p.position = pos
-	p.amount = 44
-	p.lifetime = 0.55
+	p.amount = 60
+	p.lifetime = 0.6
 	p.emitting = false
 	p.direction = Vector3(-0.3, 0.8, 0.6)   # up and toward the camera
 	p.spread = 42.0
@@ -347,6 +364,7 @@ func _build_sparks(pos: Vector3) -> void:
 	p.mesh = spark
 	add_child(p)
 	_sparks = p
+	_spark_mat = mat
 
 
 ## Play a one-shot hero clip (e.g. PickUp at the win), then settle back to idle.

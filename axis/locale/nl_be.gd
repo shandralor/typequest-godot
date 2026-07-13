@@ -29,7 +29,7 @@ const CATALOG := {
 	"schat.narration": "goed gedaan kleine held.",
 	"schat.win": "goed gedaan. je hebt de schat.",
 	# grinding session (the slijplied -- a short song the child types)
-	"slijpen.prose": "slijp slijp slijp het grote zwaard. draai het wiel heel snel rond. vonken vliegen door de lucht. nu is het zwaard weer scherp.",
+	"slijpen.prose": "slijp slijp slijp het grote zwaard. draai het wiel heel snel rond. vonken vliegen door de lucht. de ridder houdt het staal goed vast. het wiel draait rond en rond. kijk de vonken dansen fel. nog een keer en dan nog een. het zwaard wordt heel erg scherp. bijna klaar roept de smid. de laatste vonken spatten hoog. nu is het zwaard weer scherp. de ridder lacht heel blij.",
 	"slijpen.narration": "zing het slijplied en typ elk woord.",
 	"slijpen.win": "goed gedaan. je zwaard is scherp.",
 	# choice words (typed to pick a fork)

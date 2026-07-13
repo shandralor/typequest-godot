@@ -26,6 +26,16 @@ tool only bakes the sets you NAME and lists them when run bare, so a hand-edited
 set is never overwritten by accident. Baking OVERWRITES the named set. If a set
 file is missing, the composer falls back to building it procedurally.
 
+## Slijplied extended + spark ramp (2026-07-13)
+
+The grinding song (slijpen.prose) was tripled (4 -> 12 short sentences, still words
+<=7 / <=10 words per sentence; new safety hash fnv1a:4519ccbd -- recomputed as the
+sign-off for the new authored prose, A4). The grind sparks now intensify with typing
+progress: bigger + flung higher/wider toward the end, and the emission colour ramps
+red-orange -> gold -> white-hot -> BLUE in the final third (scene_composer
+set_lead_work + _spark_color). Note: the sparks are unshaded+emissive, so the glow
+reads from _spark_mat.emission -- drive that, not just CPUParticles3D.color.
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to
