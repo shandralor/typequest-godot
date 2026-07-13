@@ -53,16 +53,27 @@ Also this session: bake_sets.gd now bakes ONLY named sets (protects hand-edited
 ones); forge.tscn baked so the grind scene is hand-editable too (owner rule);
 review findings from the fresh-clone verification pass captured as tasks.
 
-## Known small issues (queued, from the 2026-07-02 review pass)
+## Queued small issues -- ALL FIXED (2026-07-13)
 
-- Prerevealed prose (naGrot) is never visible: _show_banners hides the type-along
-  panel right after _enter_node set the plain prose. Show it during the choice.
-- Choice guidance lights only candidates[0]'s first key at an open story fork
-  (steers kids into the grot setback branch) -- owner call pending. The OVERWORLD
-  already does the neutral thing (no highlight until the prefix disambiguates).
-- WIN leaves a large empty type-along panel; win overlay text is medium-contrast
-  over bright sky.
-- --demo at a story fork always picks candidates[0] (the setback branch).
+- FIXED: prerevealed prose (naGrot) now stays visible in the panel during the choice
+  (_show_banners keeps the type-along shown + re-sets the plain prose when the node
+  is prerevealed).
+- FIXED: at an OPEN fork the keyboard guidance no longer lights a key (neutral, does
+  not steer); a SINGLE choice is still guided. _highlight_choice.
+- FIXED: WIN hides the empty type-along panel; the win/setback message has a dark
+  translucent stylebox backdrop for legibility over bright sky (_set_message toggles
+  it so it only shows when there is text).
+- FIXED: --demo prefers a non-setback branch at a fork (_demo_choice_word), so
+  autoplay walks through to the win instead of looping the grot detour.
+
+## Smidse (forge) win -- FIXED (2026-07-13)
+
+The owner added walls to forge.tscn (a 3-wall smithy, open toward the camera). The
+old win camera swung far front-left and swept past the side wall, exposing its
+exterior + the open field. Fix (owner's idea): keep the SAME frontal angle as the
+grinding shot and, at the win, VANISH the grindstone in a puff of smoke to reveal the
+cheering knight (composer.vanish_grindstone + _puff_smoke; _find_child_containing
+locates the "grindstone*" node in the set). No camera swing = no exposed walls.
 
 ## Next step (pick up here)
 

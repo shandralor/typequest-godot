@@ -169,12 +169,27 @@ func _build_layout() -> void:
 	_hud.offset_top = 18
 	ui.add_child(_hud)
 
-	# transient message (over the scene, upper area)
+	# transient message (over the scene, upper area). A dark translucent stylebox
+	# keeps it legible over a bright sky (the win/setback text).
 	_message = _make_label(48, HORIZONTAL_ALIGNMENT_CENTER)
 	_message.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	_message.offset_top = 170
 	_message.offset_left = 40
 	_message.offset_right = -40
+	_message.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_message.add_theme_constant_override("outline_size", 10)
+	var msg_bg := StyleBoxFlat.new()
+	msg_bg.bg_color = Color(0, 0, 0, 0.5)
+	msg_bg.content_margin_top = 14
+	msg_bg.content_margin_bottom = 14
+	msg_bg.content_margin_left = 28
+	msg_bg.content_margin_right = 28
+	msg_bg.corner_radius_top_left = 12
+	msg_bg.corner_radius_top_right = 12
+	msg_bg.corner_radius_bottom_left = 12
+	msg_bg.corner_radius_bottom_right = 12
+	_message.add_theme_stylebox_override("normal", msg_bg)
+	_message.visible = false   # the stylebox only shows when there is a message
 	ui.add_child(_message)
 
 	# --- UI band (bottom): opaque, holds narration + type-along + keyboard ---
@@ -247,7 +262,7 @@ func _enter_node() -> void:
 	_update_camera(0.0, true)   # snap to the new scene's framing
 	_activity.reset()
 	_narration.text = _locale.resolve(node.narration_key)
-	_message.text = ""
+	_set_message("")
 	if node.prerevealed:
 		_prose = TypingState.new("")
 		_type_along.set_plain(_locale.resolve(node.prose_key))
@@ -281,23 +296,24 @@ func _resolve_ending() -> void:
 	var ending = _run.resolve_ending()
 	match ending.type:
 		"setback":
-			_message.text = "de grot is eng. terug naar het pad."
+			_set_message("de grot is eng. terug naar het pad.")
 			_phase = Phase.PAUSE
 			_after(1.8, _enter_node)
 		"win":
-			_message.text = _win_message() + "\n(druk op enter)"
-			_type_along.set_plain("")
+			_set_message(_win_message() + "\n(druk op enter)")
+			_type_along.visible = false   # no empty panel at the win
 			_keyboard.highlight("")
 			_phase = Phase.WIN
 			if _composer.is_work_scene():
 				_composer.stop_sparks()
+				_composer.vanish_grindstone()            # poof the wheel, reveal the knight
 				_composer.play_lead_loop("Cheering")    # raise the held sword in triumph
 			else:
 				_composer.open_chest()                  # treasure win: open the chest
 				_composer.play_lead_oneshot("PickUp")
 			_flash()
 		_:
-			_message.text = "einde."
+			_set_message("einde.")
 			_phase = Phase.DONE
 
 
@@ -375,7 +391,13 @@ func _choice_char(c: String) -> void:
 # --- view helpers ------------------------------------------------------------
 
 func _show_banners() -> void:
-	_type_along.visible = false
+	# keep the pre-revealed prose readable in the panel during the choice (it is the
+	# beat's content, not a typing target); a normal fork hides the panel
+	var node = _run.current()
+	var prerevealed: bool = node != null and node.prerevealed
+	_type_along.visible = prerevealed
+	if prerevealed:
+		_type_along.set_plain(_locale.resolve(node.prose_key))
 	_clear_banners()
 	var single := _candidates.size() == 1
 	var cx := 960.0
@@ -425,9 +447,12 @@ func _highlight_prose() -> void:
 
 func _highlight_choice() -> void:
 	var next_char := ""
-	if _picked == null and not _candidates.is_empty():
-		next_char = _candidates[0].word.substr(0, 1)
-	elif _picked != null and _buffer.length() < _picked.word.length():
+	if _picked == null:
+		# a SINGLE choice may be guided; at an open fork stay neutral so the guidance
+		# does not steer the child into one branch (matches the overworld behaviour)
+		if _candidates.size() == 1:
+			next_char = _candidates[0].word.substr(0, 1)
+	elif _buffer.length() < _picked.word.length():
 		next_char = _picked.word.substr(_buffer.length(), 1)
 	_keyboard.highlight(next_char)
 
@@ -438,6 +463,11 @@ func _hint_nl(hint: String) -> String:
 		"right": return "rechts"
 		"forward": return "vooruit"
 		_: return hint
+
+
+func _set_message(text: String) -> void:
+	_message.text = text
+	_message.visible = text != ""
 
 
 func _update_hud() -> void:
@@ -586,9 +616,10 @@ func _camera_rig() -> Dictionary:
 		return {"pos": lead + Vector3(0, 2.7, 5.8), "look": lead + Vector3(0, 0.9, -2.4)}
 	if _composer.is_work_scene():
 		if _phase == Phase.WIN:
-			# from the front-left so the grindstone is off to the side, not occluding
-			# the cheering knight + raised sword
-			return {"pos": lead + Vector3(-2.6, 2.3, 4.6), "look": lead + Vector3(0.1, 1.5, 0.3)}
+			# SAME frontal angle as grinding (the wheel poofs away at the win, so no
+			# swing is needed -- a swing would expose the smithy walls from outside).
+			# Just raised a touch to frame the cheering knight + raised sword.
+			return {"pos": lead + Vector3(0.5, 2.2, 4.4), "look": lead + Vector3(0.5, 1.35, 0.6)}
 		# a near front view of the knight grinding the sword on the wheel in front
 		return {"pos": lead + Vector3(0.5, 1.9, 4.0), "look": lead + Vector3(0.55, 0.95, 1.2)}
 	return {"pos": lead + Vector3(0, 4.2, 9.5), "look": lead + Vector3(0, 1.0, -1.5)}
@@ -610,11 +641,21 @@ func _demo_tick(delta: float) -> void:
 	elif _phase == Phase.CHOICE:
 		var nc := ""
 		if _picked == null and not _candidates.is_empty():
-			nc = _candidates[0].word.substr(0, 1)
+			nc = _demo_choice_word().substr(0, 1)
 		elif _picked != null and _buffer.length() < _picked.word.length():
 			nc = _picked.word.substr(_buffer.length(), 1)
 		if nc != "":
 			_on_char(nc)
+
+
+# Demo prefers a choice that is NOT a setback (return_to), so the auto-play walks a
+# scenario through to its win instead of looping the grot detour.
+func _demo_choice_word() -> String:
+	for cand in _candidates:
+		var target = _run.graph.get_node_by_id(cand.choice.target)
+		if target != null and target.return_to == "":
+			return cand.word
+	return _candidates[0].word
 
 
 # --- utilities ---------------------------------------------------------------

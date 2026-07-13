@@ -71,6 +71,7 @@ var _chest_lid: Node3D
 var _is_work_scene := false
 var _sparks: CPUParticles3D
 var _sword: Node3D
+var _grindstone: Node3D
 var _is_overworld := false
 
 
@@ -104,6 +105,7 @@ func compose(descriptor, variant: String = "") -> void:
 		_place_prop(prop)
 	if _is_work_scene:
 		_build_sparks(_anchor_position("grind_point") + Vector3(0.0, 0.7, 0.0))
+		_grindstone = _find_child_containing(_location, "grindstone")
 	set_lead_progress(0.0)
 	set_lead_animation(false)
 
@@ -118,6 +120,7 @@ func _clear() -> void:
 	_is_work_scene = false
 	_sparks = null
 	_sword = null
+	_grindstone = null
 	_is_overworld = false
 
 
@@ -257,6 +260,65 @@ func _spark_color(p: float) -> Color:
 func stop_sparks() -> void:
 	if _sparks != null:
 		_sparks.emitting = false
+
+
+func has_grindstone() -> bool:
+	return _grindstone != null
+
+
+## The grind win: the sharpened wheel vanishes in a puff of smoke, revealing the
+## cheering knight. Keeps the same camera angle as the grinding shot (no swing that
+## would expose the smithy walls from outside).
+func vanish_grindstone() -> void:
+	if _grindstone == null:
+		return
+	var at := _grindstone.position + Vector3(0.0, 0.6, 0.0)
+	_puff_smoke(at)
+	var stone := _grindstone
+	_grindstone = null
+	# fade the wheel out under the smoke, then remove it
+	var t := create_tween()
+	t.tween_interval(0.12)
+	t.tween_callback(stone.hide)
+	t.tween_callback(stone.queue_free)
+
+
+func _puff_smoke(pos: Vector3) -> void:
+	var p := CPUParticles3D.new()
+	p.position = pos
+	p.one_shot = true
+	p.amount = 34
+	p.lifetime = 0.9
+	p.explosiveness = 0.85
+	p.direction = Vector3(0, 1, 0)
+	p.spread = 80.0
+	p.initial_velocity_min = 1.2
+	p.initial_velocity_max = 3.2
+	p.gravity = Vector3(0, 0.6, 0)
+	p.scale_amount_min = 1.6
+	p.scale_amount_max = 3.2
+	var puff := SphereMesh.new()
+	puff.radius = 0.16
+	puff.height = 0.32
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.85, 0.85, 0.88, 0.9)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	puff.material = mat
+	p.mesh = puff
+	add_child(p)
+	p.emitting = true
+	# auto-remove after it finishes
+	var t := create_tween()
+	t.tween_interval(1.3)
+	t.tween_callback(p.queue_free)
+
+
+func _find_child_containing(root: Node, needle: String) -> Node3D:
+	for c in root.get_children():
+		if c is Node3D and c.name.to_lower().contains(needle):
+			return c
+	return null
 
 
 func _build_sparks(pos: Vector3) -> void:
