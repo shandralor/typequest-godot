@@ -13,6 +13,11 @@ Contexts:
 To add a context, make a folder here and call `play_context("<name>")` from
 `game/game_controller.gd`.
 
+To pick WHICH track starts, or to skip the opening silence, edit `CONTEXT_CONFIG` at
+the top of `audio/music_player.gd`: per context you can set `start` (exact filename to
+play first every time), `shuffle` (default true), and `intro_skip` (seconds to seek
+into the first track -- the menu uses 5s because most tracks open on silence).
+
 ## Source & license
 
 **AlkaKrab -- *50 Fantasy Open World RPG Tracks*** (https://alkakrab.itch.io).

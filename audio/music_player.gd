@@ -7,20 +7,35 @@ extends Node
 ##
 ## Drop CC0/royalty-free .ogg (or .mp3/.wav) tracks into
 ##   res://assets/audio/music/<context>/
-## and they play automatically. play_context("menu") fades to a random track from
-## that folder and advances through the (shuffled) folder as each track ends. A
-## context with no folder / no tracks just fades to silence -- never an error.
+## and they play automatically. play_context("menu") fades to a track from that
+## folder and advances through the (shuffled) folder as each track ends. A context
+## with no folder / no tracks just fades to silence -- never an error.
 
 const MUSIC_DIR := "res://assets/audio/music"
 const FADE := 1.5          # crossfade seconds
 const MUSIC_DB := -9.0     # playing volume (music sits under the game)
 const SILENT_DB := -60.0
 
+## ---- EDIT HERE to control what plays and how it starts, per context ----------
+## Each context may set:
+##   start       -- filename that plays FIRST every time this context starts
+##                  (exact name, e.g. "01 - Quiet Menu.ogg"). Omit = random first.
+##   shuffle     -- shuffle the rest of the playlist (default true).
+##   intro_skip  -- seconds to seek into the FIRST track when the context starts, so
+##                  the opening silence is skipped and music is heard immediately.
+## Contexts not listed here just play their folder shuffled from the top.
+const CONTEXT_CONFIG := {
+	"menu": {"start": "01 - Quiet Menu.ogg", "shuffle": true, "intro_skip": 5.0},
+	"overworld": {"shuffle": true},
+	"adventure": {"shuffle": true},
+}
+## ------------------------------------------------------------------------------
+
 var _a: AudioStreamPlayer
 var _b: AudioStreamPlayer
 var _active: AudioStreamPlayer
 var _context := ""
-var _playlist: Array = []   # Array[AudioStream]
+var _playlist: Array = []   # Array of { name: String, stream: AudioStream }
 var _idx := 0
 var _rng := RandomNumberGenerator.new()
 
@@ -46,13 +61,23 @@ func play_context(context: String) -> void:
 	if context == _context:
 		return
 	_context = context
+	var cfg: Dictionary = CONTEXT_CONFIG.get(context, {})
 	_playlist = _load_playlist(context)
 	if _playlist.is_empty():
 		_fade_out(_active)   # no tracks for this context -> silence
 		return
-	_shuffle(_playlist)
+	if cfg.get("shuffle", true):
+		_shuffle(_playlist)
+	# an explicit start track jumps to the front (played first every time)
+	var start_name: String = cfg.get("start", "")
+	if start_name != "":
+		for i in _playlist.size():
+			if _playlist[i].name == start_name:
+				var e = _playlist.pop_at(i)
+				_playlist.push_front(e)
+				break
 	_idx = 0
-	_crossfade_to(_playlist[_idx])
+	_crossfade_to(_playlist[_idx].stream, cfg.get("intro_skip", 0.0))
 
 
 func _load_playlist(context: String) -> Array:
@@ -68,16 +93,16 @@ func _load_playlist(context: String) -> Array:
 			if stream is AudioStream:
 				if stream is AudioStreamOggVorbis or stream is AudioStreamMP3:
 					stream.loop = false   # the playlist handles advancing between tracks
-				out.append(stream)
+				out.append({"name": f, "stream": stream})
 	return out
 
 
-func _crossfade_to(stream: AudioStream) -> void:
+func _crossfade_to(stream: AudioStream, seek: float = 0.0) -> void:
 	var incoming := _b if _active == _a else _a
 	var outgoing := _active
 	incoming.stream = stream
 	incoming.volume_db = SILENT_DB
-	incoming.play()
+	incoming.play(max(0.0, seek))
 	var t := create_tween().set_parallel()
 	t.tween_property(incoming, "volume_db", MUSIC_DB, FADE)
 	t.tween_property(outgoing, "volume_db", SILENT_DB, FADE)
@@ -97,7 +122,7 @@ func _on_track_finished(p: AudioStreamPlayer) -> void:
 	if p != _active or _playlist.is_empty():
 		return
 	_idx = (_idx + 1) % _playlist.size()
-	_crossfade_to(_playlist[_idx])
+	_crossfade_to(_playlist[_idx].stream)
 
 
 func _shuffle(arr: Array) -> void:
