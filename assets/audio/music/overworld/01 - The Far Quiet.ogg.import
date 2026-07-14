@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bjbi6ta04dwpg"
+path="res://.godot/imported/01 - The Far Quiet.ogg-dbe2a0802ff2c57936389ef25c8aca87.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/overworld/01 - The Far Quiet.ogg"
+dest_files=["res://.godot/imported/01 - The Far Quiet.ogg-dbe2a0802ff2c57936389ef25c8aca87.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

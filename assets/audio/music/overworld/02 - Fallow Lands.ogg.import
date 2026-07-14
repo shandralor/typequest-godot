@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dvn86iqg3v8kx"
+path="res://.godot/imported/02 - Fallow Lands.ogg-791293dbd3d5fd5a2fef0b466385285c.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/overworld/02 - Fallow Lands.ogg"
+dest_files=["res://.godot/imported/02 - Fallow Lands.ogg-791293dbd3d5fd5a2fef0b466385285c.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

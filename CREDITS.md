@@ -33,3 +33,15 @@ renders were dropped to keep the project lean and avoid importer issues.
 License: **Creative Commons Zero (CC0)**. In `assets/kenney/ui_rpg/` (panels,
 square/long buttons, bars). 9-slice panels and buttons back the type-along panel,
 the on-screen keyboard keys, and the HUD.
+
+## Music -- AlkaKrab
+
+Background music from **AlkaKrab** -- *50 Fantasy Open World RPG Tracks*.
+- itch.io: https://alkakrab.itch.io
+- YouTube (this pack): https://www.youtube.com/watch?v=YUgH4voghms
+
+License: **royalty-free / 100% copyright-free** -- free to use in commercial games,
+no attribution required. We credit anyway: AlkaKrab makes excellent game music,
+please go support the artist. In `assets/audio/music/` (a curated calm/exploration
+selection), grouped by context (`menu/`, `overworld/`, `adventure/`). The crossfading
+playlist player is `audio/music_player.gd`.

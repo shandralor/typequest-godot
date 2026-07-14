@@ -22,6 +22,7 @@ const MenuScreenScene = preload("res://scenes/menu/menu_screen.tscn")
 const MenuBannerScene = preload("res://ui/menu_banner.tscn")
 const Scenarios = preload("res://content/scenarios.gd")
 const OverworldSites = preload("res://content/overworld.gd")
+const MusicPlayerScript = preload("res://audio/music_player.gd")
 
 enum Phase { PROSE, CHOICE, PAUSE, WIN, DONE }
 enum AppState { MAIN, OVERWORLD, PLAYING }
@@ -68,6 +69,7 @@ var _menu_screen: Control
 var _band: Control
 var _viewport_container: SubViewportContainer
 var _app_state := AppState.MAIN
+var _music
 
 # overworld (the walkable scenario picker)
 var _ow_candidates: Array = []   # unlocked sites: [{ word, site }]
@@ -137,6 +139,11 @@ func _build_layout() -> void:
 	ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(ui)
 	_ui = ui
+
+	# background music (crossfading playlist per context; silent if a folder is empty)
+	_music = MusicPlayerScript.new()
+	_music.name = "Music"
+	add_child(_music)
 
 	# --- 3D scene area (top) ---
 	var container := SubViewportContainer.new()
@@ -725,6 +732,7 @@ func _show_menu(title: String, items: Array) -> void:
 
 func _show_main_menu() -> void:
 	_app_state = AppState.MAIN
+	_music.play_context("menu")
 	_set_playing_ui(false)
 	_clear_ow_banners()
 	_show_menu("TypeQuest", [
@@ -745,6 +753,7 @@ func _show_overworld_from_menu() -> void:
 ## reachable), so no site is ever shadowed by another.
 func _show_overworld(at_anchor: String = "hub") -> void:
 	_app_state = AppState.OVERWORLD
+	_music.play_context("overworld")
 	_clear_menu()
 	_set_playing_ui(false)
 	_narration.visible = true
@@ -899,6 +908,7 @@ func _win_message() -> String:
 
 func _start_scenario(id: String) -> void:
 	_clear_menu()
+	_music.play_context("adventure")
 	_set_playing_ui(true)
 	_app_state = AppState.PLAYING
 	_run = RunState.new(Scenarios.build(id), _locale)

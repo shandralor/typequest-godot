@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bunmlnerpfk1c"
+path="res://.godot/imported/01 - Quiet Menu.ogg-e837b1ae52e7e5dced27840b4f65547e.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/menu/01 - Quiet Menu.ogg"
+dest_files=["res://.godot/imported/01 - Quiet Menu.ogg-e837b1ae52e7e5dced27840b4f65547e.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

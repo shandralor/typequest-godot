@@ -36,6 +36,20 @@ red-orange -> gold -> white-hot -> BLUE in the final third (scene_composer
 set_lead_work + _spark_color). Note: the sparks are unshaded+emissive, so the glow
 reads from _spark_mat.emission -- drive that, not just CPUParticles3D.color.
 
+## Music (2026-07-14)
+
+Background music added: `audio/music_player.gd` (a crossfading, shuffled playlist
+per CONTEXT; presentation layer, not pure logic). Tracks live in
+`assets/audio/music/<context>/` -- `menu/`, `overworld/`, `adventure/` (5 .ogg each,
+a curated calm/exploration selection). game_controller calls play_context on the
+menu / overworld / scenario transitions. Empty context folder = silence, no error.
+Music is **AlkaKrab** (royalty-free, https://alkakrab.itch.io) -- credited prominently
+in the new root README.md + CREDITS.md for exposure (repo will be open-source). Full
+65-track pack lives in the shared `game-dev/_music-assets/` (copy in more per the
+workspace convention; the godot/ subfolder has .ogg/.wav ready to use). To add a
+context: make a folder + one play_context call. Per-scenario music is an easy next
+step (e.g. a smithy theme for the grind via City-Town Ambient).
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to

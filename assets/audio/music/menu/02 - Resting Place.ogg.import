@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://crexcyv7mohud"
+path="res://.godot/imported/02 - Resting Place.ogg-c6b8a479305e729478b939d278b60b85.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/menu/02 - Resting Place.ogg"
+dest_files=["res://.godot/imported/02 - Resting Place.ogg-c6b8a479305e729478b939d278b60b85.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

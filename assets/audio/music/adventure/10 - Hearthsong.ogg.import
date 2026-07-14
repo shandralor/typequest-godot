@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bdgwvgvcqttti"
+path="res://.godot/imported/10 - Hearthsong.ogg-1a71ebd88bc6514ec7defa3077efc5fc.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/adventure/10 - Hearthsong.ogg"
+dest_files=["res://.godot/imported/10 - Hearthsong.ogg-1a71ebd88bc6514ec7defa3077efc5fc.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
