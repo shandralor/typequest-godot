@@ -271,6 +271,18 @@ independent). `_process` drives the hero (walk/idle/work/gaze) and the camera
 - `scenes/menu/menu_screen.tscn` -- editable menu layout (Title + a `VBoxContainer`
   named `Items` you can reorder in the editor + a dark veil).
 
+### Audio / music (WHERE TO CHANGE IT)
+
+- Tracks: `assets/audio/music/<context>/` -- `menu/`, `overworld/`, `adventure/`
+  (drop `.ogg`/`.mp3`/`.wav` in; empty folder = silence). AlkaKrab, royalty-free.
+- Player: `audio/music_player.gd` -- crossfading shuffled playlist per context;
+  `game/game_controller.gd` calls `play_context("menu"|"overworld"|"adventure")` on
+  the menu / overworld / scenario transitions.
+- **To pick the start track / skip opening silence: edit `CONTEXT_CONFIG` at the top
+  of `audio/music_player.gd`.** Per context: `start` (exact filename played first),
+  `shuffle` (default true), `intro_skip` (seconds seeked into the first track; menu
+  uses 5s). Also noted in `assets/audio/music/README.md`.
+
 ---
 
 ## 9. Conventions, tests, gotchas
