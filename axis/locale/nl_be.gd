@@ -21,17 +21,17 @@ const CATALOG := {
 	"brug.prose": "de ridder stapt over de smalle brug. aan de andere kant wacht een grote kist.",
 	"schat.prose": "de ridder opent de kist vol goud. hij vindt de schat en is heel blij.",
 	# narration (read aloud; optional toggle later)
-	"start.narration": "luister goed en typ elk woord dat je leest.",
-	"kruispunt.narration": "kies je weg en typ het woord.",
-	"grot.narration": "wees moedig en lees rustig verder.",
-	"naGrot.narration": "de ridder kiest de veilige weg.",
-	"brug.narration": "stap voor stap over de brug.",
-	"schat.narration": "goed gedaan kleine held.",
-	"schat.win": "goed gedaan. je hebt de schat.",
+	"start.narration": "Luister goed en typ elk woord dat je leest.",
+	"kruispunt.narration": "Kies je weg en typ het woord.",
+	"grot.narration": "Wees moedig en lees rustig verder.",
+	"naGrot.narration": "De ridder kiest de veilige weg.",
+	"brug.narration": "Stap voor stap over de brug.",
+	"schat.narration": "Goed gedaan, kleine held!",
+	"schat.win": "Goed gedaan! Je hebt de schat.",
 	# grinding session (the slijplied -- a short song the child types)
 	"slijpen.prose": "slijp slijp slijp het grote zwaard. draai het wiel heel snel rond. vonken vliegen door de lucht. de ridder houdt het staal goed vast. het wiel draait rond en rond. kijk de vonken dansen fel. nog een keer en dan nog een. het zwaard wordt heel erg scherp. bijna klaar roept de smid. de laatste vonken spatten hoog. nu is het zwaard weer scherp. de ridder lacht heel blij.",
-	"slijpen.narration": "zing het slijplied en typ elk woord.",
-	"slijpen.win": "goed gedaan. je zwaard is scherp.",
+	"slijpen.narration": "Zing het slijplied en typ elk woord.",
+	"slijpen.win": "Goed gedaan! Je zwaard is scherp.",
 	# choice words (typed to pick a fork)
 	"word.verder": "verder",
 	"word.grot": "grot",
@@ -41,8 +41,8 @@ const CATALOG := {
 	"site.bos": "bos",
 	"site.smidse": "smidse",
 	"site.boog": "boog",
-	"overworld.narration": "waar ga je naartoe? typ het woord.",
-	"overworld.locked": "nog niet open",
+	"overworld.narration": "Waar ga je naartoe? Typ het woord.",
+	"overworld.locked": "Nog niet open",
 }
 
 

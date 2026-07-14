@@ -66,6 +66,23 @@ view; clouds matched by name OR instanced-scene path so set clouds aren't missed
 To re-bake the banner in another colour: edit BANNER in tools/bake_title_banner.gd
 and run `godot --script res://tools/bake_title_banner.gd` (needs a GPU, not headless).
 
+## Overworld picker polish + navigation (2026-07-14)
+
+- Site labels (bos/smidse/boog) are smaller (ChoiceBanner.set_compact) and float
+  higher (OW_BANNER_LIFT 7.2) so they clear the hexes; the island is zoomed out a
+  touch (1.12) for sky room.
+- The prompt moved to a small brown top bar (`_top_bar`/`_set_top_prompt`); the
+  bottom band now shows only the typed word (`_type_along.set_plain(_ow_buffer)`) +
+  the keyboard.
+- Instructions are grammatically capitalised now (narration, win, prompt) -- these
+  are read, never typed. The typed PROSE and choice/site words stay lowercase (no
+  Shift in the PoC).
+- Choosing a site: the camera does a small dolly-in and follows the knight along the
+  path it walks (camera rig overworld branch, when `_ow_walk != null`).
+- Leaving a scenario: a "Terug" back button (top-left, shown while PLAYING) returns
+  to the island at the site you came from; ESC now navigates back too (PLAYING ->
+  island -> main menu -> quit) instead of quitting mid-scenario.
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to

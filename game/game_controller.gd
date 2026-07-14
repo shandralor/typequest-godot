@@ -70,6 +70,9 @@ var _band: Control
 var _viewport_container: SubViewportContainer
 var _app_state := AppState.MAIN
 var _music
+var _top_bar: NinePatchRect   # small brown bar at the top (the overworld prompt)
+var _top_prompt: Label
+var _back_button: TextureButton   # leave a scenario, back to the island
 
 # overworld (the walkable scenario picker)
 var _ow_candidates: Array = []   # unlocked sites: [{ word, site }]
@@ -78,7 +81,7 @@ var _ow_banners: Array = []      # [{ banner, site, word, locked }]
 var _ow_walk = null              # { legs: [{route, reverse}], leg, dist, site }
 var _ow_at := "hub"              # anchor the hero stands at on the island
 const OW_WALK_SPEED := 4.5
-const OW_BANNER_LIFT := Vector3(0, 4.6, 0)   # banner floats this far above a site
+const OW_BANNER_LIFT := Vector3(0, 7.2, 0)   # banner floats this far above a site (into the sky, off the hexes)
 
 # demo / capture
 var _demo := false
@@ -200,6 +203,49 @@ func _build_layout() -> void:
 	_message.add_theme_stylebox_override("normal", msg_bg)
 	_message.visible = false   # the stylebox only shows when there is a message
 	ui.add_child(_message)
+
+	# small brown bar at the TOP for a standing instruction (the overworld prompt),
+	# so the bottom band is free for the typed text. Hidden unless a prompt is set.
+	_top_bar = NinePatchRect.new()
+	_top_bar.texture = load("res://assets/kenney/ui_rpg/panel_brown.png")
+	for side in ["left", "top", "right", "bottom"]:
+		_top_bar.set("patch_margin_" + side, 20)
+	_top_bar.anchor_left = 0.5
+	_top_bar.anchor_right = 0.5
+	_top_bar.offset_left = -370.0
+	_top_bar.offset_right = 370.0
+	_top_bar.offset_top = 14.0
+	_top_bar.offset_bottom = 80.0
+	_top_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_top_bar.visible = false
+	ui.add_child(_top_bar)
+	_top_prompt = _make_label(28, HORIZONTAL_ALIGNMENT_CENTER)
+	_top_prompt.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_top_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_top_bar.add_child(_top_prompt)
+
+	# back button (top-left): leave the current scenario, return to the island.
+	# Shown only while playing.
+	_back_button = TextureButton.new()
+	_back_button.texture_normal = load("res://assets/kenney/ui_rpg/buttonLong_brown.png")
+	_back_button.texture_pressed = load("res://assets/kenney/ui_rpg/buttonLong_brown_pressed.png")
+	_back_button.ignore_texture_size = true
+	_back_button.stretch_mode = TextureButton.STRETCH_SCALE
+	_back_button.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_back_button.offset_left = 24
+	_back_button.offset_top = 20
+	_back_button.offset_right = 200
+	_back_button.offset_bottom = 78
+	_back_button.visible = false
+	_back_button.pressed.connect(_on_back_pressed)
+	ui.add_child(_back_button)
+	var back_label := _make_label(26, HORIZONTAL_ALIGNMENT_CENTER)
+	back_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	back_label.offset_bottom = -6   # sit above the button's bottom lip
+	back_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	back_label.text = "Terug"
+	back_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_back_button.add_child(back_label)
 
 	# --- UI band (bottom): opaque, holds narration + type-along + keyboard ---
 	var band := Control.new()
@@ -332,10 +378,12 @@ func _input(event: InputEvent) -> void:
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	if event.keycode == KEY_ESCAPE:
-		if _app_state == AppState.OVERWORLD:
-			_show_main_menu()   # back out of the island to the main menu
+		if _app_state == AppState.PLAYING:
+			_show_overworld(_ow_at)   # leave the scenario, back to the island
+		elif _app_state == AppState.OVERWORLD:
+			_show_main_menu()         # back out of the island to the main menu
 		else:
-			get_tree().quit()
+			get_tree().quit()         # main menu -> quit
 		return
 	if _app_state == AppState.OVERWORLD:
 		if _ow_walk == null:   # ignore keys while the knight is traveling
@@ -624,7 +672,17 @@ func _camera_rig() -> Dictionary:
 		# for the buttons (like the title floats in the brown space at the top)
 		return {"pos": pos, "look": look, "fov": 34.0, "v_offset": 2.2}
 	if _composer.is_overworld():
-		return _composer.overworld_cam()   # editable markers in the overworld set
+		var ow2: Dictionary = _composer.overworld_cam()
+		var look2: Vector3 = ow2.look
+		if _ow_walk != null and _composer.has_lead():
+			# once a site is chosen, zoom in a bit and follow the knight along the
+			# path it walks (the camera lerp makes the dolly-in/out smooth)
+			var knight: Vector3 = _composer.lead_position()
+			var off: Vector3 = (ow2.pos - look2) * 0.62
+			return {"pos": knight + off, "look": knight + Vector3(0, 0.6, 0), "fov": ow2.get("fov", 30.0)}
+		# overworld picker: a modest zoom-out from the set framing, so the site
+		# labels have sky room above the hexes
+		return {"pos": look2 + (ow2.pos - look2) * 1.12, "look": look2, "fov": ow2.get("fov", 30.0)}
 	var lead: Vector3 = _composer.lead_position()
 	if _composer.is_walking():
 		return {"pos": lead + CAM_OFFSET, "look": lead + Vector3(0, CAM_LOOK_Y, 0)}
@@ -720,6 +778,13 @@ func _set_playing_ui(playing: bool) -> void:
 		_message.visible = playing
 	if _choice_layer != null:
 		_choice_layer.visible = playing
+	if _back_button != null:
+		_back_button.visible = playing
+
+
+func _on_back_pressed() -> void:
+	if _app_state == AppState.PLAYING:
+		_show_overworld(_ow_at)
 
 
 func _clear_menu() -> void:
@@ -778,6 +843,7 @@ func _show_menu(title: String, items: Array) -> void:
 func _show_main_menu() -> void:
 	_app_state = AppState.MAIN
 	_music.play_context("menu")
+	_set_top_prompt("")
 	_set_playing_ui(false)
 	_set_menu_fullscreen(true)
 	_clear_ow_banners()
@@ -804,10 +870,13 @@ func _show_overworld(at_anchor: String = "hub") -> void:
 	_set_menu_fullscreen(false)
 	_clear_menu()
 	_set_playing_ui(false)
-	_narration.visible = true
+	# prompt goes in the top bar; the band shows only the typed word + keyboard
+	_set_top_prompt(_locale.resolve("overworld.narration"))
+	_narration.visible = false
+	_type_along.visible = true
+	_type_along.set_plain("")
 	_keyboard.visible = true
 	_choice_layer.visible = true
-	_narration.text = _locale.resolve("overworld.narration")
 	_composer.compose_overworld(at_anchor)
 	_ow_at = at_anchor
 	_ow_buffer = ""
@@ -828,8 +897,9 @@ func _build_ow_banners() -> void:
 		var locked: bool = not s.unlocked or s.scenario == ""
 		var banner = ChoiceBannerScript.new()
 		_choice_layer.add_child(banner)
-		banner.size = Vector2(300, 96)
+		banner.size = Vector2(190, 64)
 		banner.configure(_locale.resolve(s.word_key), "none", float(i) * 1.3)
+		banner.set_compact(30)   # small site label, floats above its site
 		if locked:
 			banner.set_active(false)
 		_ow_banners.append({"banner": banner, "site": s,
@@ -842,6 +912,13 @@ func _clear_ow_banners() -> void:
 	for e in _ow_banners:
 		e.banner.queue_free()
 	_ow_banners.clear()
+
+
+func _set_top_prompt(text: String) -> void:
+	if _top_bar == null:
+		return
+	_top_bar.visible = text != ""
+	_top_prompt.text = text
 
 
 # Banners float above their site, projected from the 3D anchor each frame -- so a
@@ -866,6 +943,7 @@ func _ow_char(c: String) -> void:
 	if matches.is_empty():
 		return
 	_ow_buffer = next
+	_type_along.set_plain(_ow_buffer)   # show the typed word in the band
 	_update_ow_highlight()
 	for cand in matches:
 		if cand.word == _ow_buffer:
@@ -957,6 +1035,7 @@ func _win_message() -> String:
 func _start_scenario(id: String) -> void:
 	_clear_menu()
 	_music.play_context("adventure")
+	_set_top_prompt("")
 	_set_menu_fullscreen(false)
 	_set_playing_ui(true)
 	_app_state = AppState.PLAYING

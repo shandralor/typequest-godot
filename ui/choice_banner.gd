@@ -116,3 +116,11 @@ var _base_y := 0.0
 func set_base_position(pos: Vector2) -> void:
 	position = pos
 	_base_y = pos.y
+
+
+## Compact the banner (smaller text + tighter vertical padding), for the small
+## overworld site labels.
+func set_compact(font_size: int) -> void:
+	_label.add_theme_font_size_override("normal_font_size", font_size)
+	_label.offset_top = 20
+	_arrow.visible = false
