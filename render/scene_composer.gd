@@ -74,6 +74,7 @@ var _spark_mat: StandardMaterial3D
 var _sword: Node3D
 var _grindstone: Node3D
 var _is_overworld := false
+var _clouds: Array = []   # [{ node: Node3D, speed: float }] drifting sky clouds
 
 
 func compose(descriptor, variant: String = "") -> void:
@@ -124,6 +125,7 @@ func _clear() -> void:
 	_sword = null
 	_grindstone = null
 	_is_overworld = false
+	_clouds = []
 
 
 ## Compose the overworld island: the editable set (scenes/sets/overworld.tscn) plus
@@ -139,6 +141,7 @@ func compose_overworld(start_anchor: String = "hub") -> void:
 	_location.name = "Location"
 	add_child(_location)
 	_apply_mood("light", false)   # no distance fog: the island must read crisply
+	_spawn_clouds()
 	var hero := _build_hero()
 	hero.name = "Actor_hero"
 	add_child(hero)
@@ -146,6 +149,43 @@ func compose_overworld(start_anchor: String = "hub") -> void:
 	_walking = false
 	hero.position = _anchor_position(start_anchor)
 	set_lead_animation(false)
+
+
+const CLOUD_MODEL := "res://assets/kaykit/hexagon/cloud_big.gltf"
+# wrap well off-screen on both sides so a cloud is never seen popping/teleporting
+const CLOUD_WRAP_MIN := -62.0
+const CLOUD_WRAP_MAX := 62.0
+
+
+# Drifting clouds for gentle sky motion. Keeps the cloud already in the set and adds
+# a few more at varied height/scale/speed, so the drift reads as parallax. Each
+# wraps from one side to the other. Driven by _process below.
+func _spawn_clouds() -> void:
+	_clouds = []
+	var rng := _rng()
+	# match clouds by node name OR by the instanced scene path (set clouds can be
+	# auto-named like "@Node3D@39", which the name check alone would miss)
+	for c in _location.get_children():
+		if c is Node3D and (c.name.to_lower().contains("cloud") or c.scene_file_path.to_lower().contains("cloud")):
+			_clouds.append({"node": c, "speed": rng.randf_range(0.5, 0.9)})
+	var spots := [Vector3(16, 11, -4), Vector3(-24, 13, 6), Vector3(4, 14, -18), Vector3(28, 12, -12)]
+	for spot in spots:
+		var cl := _instance_path(CLOUD_MODEL)
+		if cl == null:
+			continue
+		cl.position = spot
+		var s := rng.randf_range(2.2, 3.4)
+		cl.scale = Vector3(s, s, s)
+		_location.add_child(cl)
+		_clouds.append({"node": cl, "speed": rng.randf_range(0.4, 0.9)})
+
+
+func _process(delta: float) -> void:
+	for c in _clouds:
+		var n: Node3D = c.node
+		n.position.x += c.speed * delta
+		if n.position.x > CLOUD_WRAP_MAX:
+			n.position.x = CLOUD_WRAP_MIN
 
 
 func is_overworld() -> bool:

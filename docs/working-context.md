@@ -50,6 +50,22 @@ workspace convention; the godot/ subfolder has .ogg/.wav ready to use). To add a
 context: make a folder + one play_context call. Per-scenario music is an easy next
 step (e.g. a smithy theme for the grind via City-Town Ambient).
 
+## Main menu visual rework (2026-07-14)
+
+The main menu (AppState.MAIN) now shows the island backdrop FULL-SCREEN (no bottom
+UI band -- `_set_menu_fullscreen`), zoomed out + lifted (camera v_offset) so the
+title floats above the island and the buttons sit below it. Start/Stoppen are equal
+size + font (only the panel colour differs -- menu_banner.gd), side by side, low.
+Title is a KayKit cloth banner (single banner_red laid horizontal, pole on the left)
+BAKED to a transparent PNG (`tools/bake_title_banner.gd` -> `assets/ui/title_banner.png`),
+shown as a 2D plate. Title text + banner are rendered together in a SubViewport
+(scenes/menu/menu_screen.tscn: TitleWaver>TitleVP>{TitleBanner,Title}) and the cloth-
+wave shader is applied to the container so text + banner ripple as ONE. Clouds drift
+across the sky (composer _spawn_clouds/_process; wrap at +-62 so they never pop in
+view; clouds matched by name OR instanced-scene path so set clouds aren't missed).
+To re-bake the banner in another colour: edit BANNER in tools/bake_title_banner.gd
+and run `godot --script res://tools/bake_title_banner.gd` (needs a GPU, not headless).
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to

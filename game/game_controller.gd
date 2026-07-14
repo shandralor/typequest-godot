@@ -116,6 +116,8 @@ func _ready() -> void:
 		else:
 			_compose_backdrop()
 			_show_main_menu()
+		if "--burst" in args:
+			_capture_burst()
 		if "--shot" in args:
 			_capture_after(1.0)
 
@@ -600,6 +602,7 @@ func _update_camera(delta: float, snap: bool) -> void:
 		return
 	var rig := _camera_rig()
 	_camera.fov = rig.get("fov", 75.0)   # the overworld uses a tele lens
+	_camera.v_offset = rig.get("v_offset", 0.0)   # shift the framing up/down
 	if snap:
 		_camera.position = rig.pos
 	else:
@@ -611,6 +614,15 @@ func _update_camera(delta: float, snap: bool) -> void:
 # establishing shot at the fork (so the cave on the left and the bridge on the
 # right are both in view as the hero turns to look); medium otherwise.
 func _camera_rig() -> Dictionary:
+	if _app_state == AppState.MAIN and _composer.is_overworld():
+		# the main menu shows the island full-screen, zoomed out so the title floats
+		# above it -- pull the camera back from the overworld framing and widen a touch
+		var ow: Dictionary = _composer.overworld_cam()
+		var look: Vector3 = ow.look
+		var pos: Vector3 = look + (ow.pos - look) * 1.5
+		# v_offset lifts the island up in the frame, leaving brown space at the bottom
+		# for the buttons (like the title floats in the brown space at the top)
+		return {"pos": pos, "look": look, "fov": 34.0, "v_offset": 2.2}
 	if _composer.is_overworld():
 		return _composer.overworld_cam()   # editable markers in the overworld set
 	var lead: Vector3 = _composer.lead_position()
@@ -716,12 +728,45 @@ func _clear_menu() -> void:
 		_menu_screen = null
 
 
+# The main menu shows the 3D scene FULL-SCREEN (no bottom band). Play and the
+# overworld picker use the split (scene on top, UI band below).
+func _set_menu_fullscreen(on: bool) -> void:
+	if _viewport_container != null:
+		# full-width either way; only the bottom edge differs (full screen vs the
+		# top region above the UI band)
+		_viewport_container.anchor_left = 0.0
+		_viewport_container.anchor_top = 0.0
+		_viewport_container.anchor_right = 1.0
+		_viewport_container.anchor_bottom = 1.0 if on else 0.0
+		_viewport_container.offset_left = 0.0
+		_viewport_container.offset_top = 0.0
+		_viewport_container.offset_right = 0.0
+		_viewport_container.offset_bottom = 0.0 if on else float(VIEW_HEIGHT)
+	if _band != null:
+		_band.visible = not on
+
+
+
 func _show_menu(title: String, items: Array) -> void:
 	_clear_menu()
 	var screen := MenuScreenScene.instantiate()
 	_menu_layer.add_child(screen)
 	_menu_screen = screen
-	(screen.get_node("Title") as Label).text = title
+	var title_label := screen.get_node_or_null("TitleWaver/TitleVP/Title") as Label
+	if title_label != null:
+		title_label.text = title
+	# wave the whole title plate (banner + text together): the banner and label are
+	# rendered into TitleVP and the wave shader ripples the combined image
+	var waver := screen.get_node_or_null("TitleWaver") as SubViewportContainer
+	if waver != null:
+		var sh := Shader.new()
+		sh.code = ChoiceBannerScript.WAVE_SHADER
+		var mat := ShaderMaterial.new()
+		mat.shader = sh
+		mat.set_shader_parameter("amplitude", 0.022)
+		mat.set_shader_parameter("frequency", 4.0)
+		mat.set_shader_parameter("speed", 1.7)
+		waver.material = mat
 	var vbox := screen.get_node("Items")
 	for it in items:
 		var banner := MenuBannerScene.instantiate()
@@ -734,7 +779,9 @@ func _show_main_menu() -> void:
 	_app_state = AppState.MAIN
 	_music.play_context("menu")
 	_set_playing_ui(false)
+	_set_menu_fullscreen(true)
 	_clear_ow_banners()
+	_update_camera(0.0, true)
 	_show_menu("TypeQuest", [
 		{"text": "Start", "on_press": _show_overworld_from_menu},
 		{"text": "Stoppen", "on_press": _quit_app, "secondary": true},
@@ -754,6 +801,7 @@ func _show_overworld_from_menu() -> void:
 func _show_overworld(at_anchor: String = "hub") -> void:
 	_app_state = AppState.OVERWORLD
 	_music.play_context("overworld")
+	_set_menu_fullscreen(false)
 	_clear_menu()
 	_set_playing_ui(false)
 	_narration.visible = true
@@ -909,6 +957,7 @@ func _win_message() -> String:
 func _start_scenario(id: String) -> void:
 	_clear_menu()
 	_music.play_context("adventure")
+	_set_menu_fullscreen(false)
 	_set_playing_ui(true)
 	_app_state = AppState.PLAYING
 	_run = RunState.new(Scenarios.build(id), _locale)

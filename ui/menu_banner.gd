@@ -52,17 +52,12 @@ func configure(text: String, secondary: bool = false) -> void:
 	if _label == null:
 		await ready
 	_label.text = "[center][color=#ffffff]%s[/color][/center]" % text
-	# secondary items (Stoppen, Terug) are smaller with a different panel colour
-	if secondary:
-		custom_minimum_size = Vector2(300, 78)
-		_bg.texture = load(PANEL_SECONDARY)
-		_label.offset_top = 12
-		_label.add_theme_font_size_override("normal_font_size", 28)
-	else:
-		custom_minimum_size = Vector2(460, 116)
-		_bg.texture = load(PANEL_PRIMARY)
-		_label.offset_top = 16
-		_label.add_theme_font_size_override("normal_font_size", 38)
+	# all menu items are the SAME size + font; only the panel colour differs
+	# (secondary = Stoppen/Terug use the brown panel, primary = blue).
+	custom_minimum_size = Vector2(320, 92)
+	_label.offset_top = 14
+	_label.add_theme_font_size_override("normal_font_size", 32)
+	_bg.texture = load(PANEL_SECONDARY if secondary else PANEL_PRIMARY)
 
 
 func _gui_input(event: InputEvent) -> void:
