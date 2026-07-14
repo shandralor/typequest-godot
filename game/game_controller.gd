@@ -224,28 +224,6 @@ func _build_layout() -> void:
 	_top_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_top_bar.add_child(_top_prompt)
 
-	# back button (top-left): leave the current scenario, return to the island.
-	# Shown only while playing.
-	_back_button = TextureButton.new()
-	_back_button.texture_normal = load("res://assets/kenney/ui_rpg/buttonLong_brown.png")
-	_back_button.texture_pressed = load("res://assets/kenney/ui_rpg/buttonLong_brown_pressed.png")
-	_back_button.ignore_texture_size = true
-	_back_button.stretch_mode = TextureButton.STRETCH_SCALE
-	_back_button.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	_back_button.offset_left = 24
-	_back_button.offset_top = 20
-	_back_button.offset_right = 200
-	_back_button.offset_bottom = 78
-	_back_button.visible = false
-	_back_button.pressed.connect(_on_back_pressed)
-	ui.add_child(_back_button)
-	var back_label := _make_label(26, HORIZONTAL_ALIGNMENT_CENTER)
-	back_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	back_label.offset_bottom = -6   # sit above the button's bottom lip
-	back_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	back_label.text = "Terug"
-	back_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_back_button.add_child(back_label)
 
 	# --- UI band (bottom): opaque, holds narration + type-along + keyboard ---
 	var band := Control.new()
@@ -285,6 +263,30 @@ func _build_layout() -> void:
 	_keyboard.offset_bottom = -6
 	band.add_child(_keyboard)
 
+	# back button in the band's lower-left (a child of the band, so it draws ON TOP
+	# of the band background). Leaves the current scenario, back to the island.
+	# Shown only while playing.
+	_back_button = TextureButton.new()
+	_back_button.texture_normal = load("res://assets/kenney/ui_rpg/buttonLong_brown.png")
+	_back_button.texture_pressed = load("res://assets/kenney/ui_rpg/buttonLong_brown_pressed.png")
+	_back_button.ignore_texture_size = true
+	_back_button.stretch_mode = TextureButton.STRETCH_SCALE
+	_back_button.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	_back_button.offset_left = 24
+	_back_button.offset_top = -70
+	_back_button.offset_right = 190
+	_back_button.offset_bottom = -16
+	_back_button.visible = false
+	_back_button.pressed.connect(_on_back_pressed)
+	band.add_child(_back_button)
+	var back_label := _make_label(26, HORIZONTAL_ALIGNMENT_CENTER)
+	back_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	back_label.offset_bottom = -6   # sit above the button's bottom lip
+	back_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	back_label.text = "Terug"
+	back_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_back_button.add_child(back_label)
+
 	# choice banners float over the lower part of the scene, above the band
 	_choice_layer = Control.new()
 	_choice_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -316,7 +318,7 @@ func _enter_node() -> void:
 	_composer.compose(node.scene, node.id)
 	_update_camera(0.0, true)   # snap to the new scene's framing
 	_activity.reset()
-	_narration.text = _locale.resolve(node.narration_key)
+	_set_top_prompt(_locale.resolve(node.narration_key))   # instruction in the top bar
 	_set_message("")
 	if node.prerevealed:
 		_prose = TypingState.new("")
@@ -342,7 +344,7 @@ func _begin_choice() -> void:
 	_picked = null
 	_buffer = ""
 	_phase = Phase.CHOICE
-	_narration.text = "typ je keuze:"
+	_set_top_prompt("Typ je keuze.")
 	_show_banners()
 	_highlight_choice()
 
@@ -351,11 +353,12 @@ func _resolve_ending() -> void:
 	var ending = _run.resolve_ending()
 	match ending.type:
 		"setback":
-			_set_message("de grot is eng. terug naar het pad.")
+			_set_message("De grot is eng. Terug naar het pad!")
 			_phase = Phase.PAUSE
 			_after(1.8, _enter_node)
 		"win":
 			_set_message(_win_message() + "\n(druk op enter)")
+			_set_top_prompt("")          # the win message takes over
 			_type_along.visible = false   # no empty panel at the win
 			_keyboard.highlight("")
 			_phase = Phase.WIN
@@ -368,7 +371,7 @@ func _resolve_ending() -> void:
 				_composer.play_lead_oneshot("PickUp")
 			_flash()
 		_:
-			_set_message("einde.")
+			_set_message("Einde.")
 			_phase = Phase.DONE
 
 
@@ -767,7 +770,7 @@ func _set_playing_ui(playing: bool) -> void:
 	# Hide the band's contents during menus (its dark background still fills the
 	# bottom strip, so there is no bare gap). The 3D backdrop shows above it.
 	if _narration != null:
-		_narration.visible = playing
+		_narration.visible = false   # instructions now live in the top bar, not the band
 	if _type_along != null:
 		_type_along.visible = playing
 	if _keyboard != null:
