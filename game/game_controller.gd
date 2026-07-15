@@ -55,6 +55,13 @@ var _candidates: Array = []     # [{ word, choice }]
 var _picked = null
 var _buffer := ""
 
+# archery: per-sentence landing points; the crosshair homes to each as it is typed,
+# a longer sentence lands closer to the bullseye, and an arrow fires per sentence.
+var _arch_ring: Array = []   # Vector2 landing offset (metres on the target) per sentence
+var _arch_span: Array = []   # [start, end) char range per sentence
+var _arch_fired := 0
+var _arch_t := 0.0
+
 # UI
 var _type_along
 var _keyboard
@@ -329,6 +336,8 @@ func _enter_node() -> void:
 		_phase = Phase.PROSE
 		_type_along.set_prose(_prose.target, 0)
 		_highlight_prose()
+		if _composer.is_archery_scene():
+			_setup_archery(_prose.target)
 	_setup_gaze(node)
 	_update_hud()
 
@@ -366,6 +375,8 @@ func _resolve_ending() -> void:
 				_composer.stop_sparks()
 				_composer.vanish_grindstone()            # poof the wheel, reveal the knight
 				_composer.play_lead_loop("Cheering")    # raise the held sword in triumph
+			elif _composer.is_archery_scene():
+				_composer.play_lead_loop("Cheering")    # bullseye! celebrate
 			else:
 				_composer.open_chest()                  # treasure win: open the chest
 				_composer.play_lead_oneshot("PickUp")
@@ -418,11 +429,21 @@ func _prose_char(c: String) -> void:
 	_prose.type_char(c)
 	_type_along.set_prose(_prose.target, _prose.cursor)
 	_highlight_prose()
+	if _composer.is_archery_scene():
+		_archery_check_fire()
 	if _prose.is_complete():
 		_run.score_current(_prose.correct_chars(), _prose.accuracy(), true)
 		_update_hud()
 		if _run.current().is_ending():
-			_resolve_ending()
+			if _composer.is_archery_scene():
+				# let the final arrow land and sit in the bullseye for a beat before
+				# the win message + cheer take over (they would hide the moment)
+				_phase = Phase.PAUSE
+				_composer.hide_crosshair()
+				_keyboard.highlight("")
+				_after(ARCH_WIN_DELAY, _resolve_ending)
+			else:
+				_resolve_ending()
 		else:
 			_begin_choice()
 
@@ -505,6 +526,80 @@ func _highlight_prose() -> void:
 		_keyboard.highlight(_prose.target.substr(_prose.cursor, 1))
 
 
+# --- archery: crosshair + arrows driven by typing ----------------------------
+
+const ARCH_MAX_RADIUS := 1.0   # metres on the target for the shortest sentence
+const ARCH_WIN_DELAY := 4.5     # hold on the arrow in the bullseye before the win
+
+
+# Compute each sentence's char range + landing point. A longer sentence lands its
+# arrow closer to the bullseye; the points are spread around by angle.
+func _setup_archery(prose: String) -> void:
+	_arch_ring = []
+	_arch_span = []
+	_arch_fired = 0
+	_arch_t = 0.0
+	var spans: Array = []
+	var start := 0
+	for i in prose.length():
+		if prose[i] == ".":
+			spans.append([start, i + 1])
+			start = i + 1
+	if spans.is_empty():
+		spans.append([0, prose.length()])
+	# normalise sentence length -> radius (longest = bullseye, shortest = outer ring)
+	var min_len := 9999
+	var max_len := 0
+	for sp in spans:
+		var l: int = sp[1] - sp[0]
+		min_len = mini(min_len, l)
+		max_len = maxi(max_len, l)
+	var span_len: int = maxi(1, max_len - min_len)
+	for i in spans.size():
+		var sp = spans[i]
+		var l: int = sp[1] - sp[0]
+		var radius: float = ARCH_MAX_RADIUS * float(max_len - l) / float(span_len)
+		var angle := float(i) * 2.399963   # golden angle, so arrows spread out
+		_arch_ring.append(Vector2(cos(angle), sin(angle)) * radius)
+		_arch_span.append(sp)
+
+
+func _update_archery(delta: float) -> void:
+	if _phase != Phase.PROSE:
+		return   # freeze the reticle during the win hold (it is hidden by then)
+	_arch_t += delta
+	if _arch_ring.is_empty():
+		return
+	var i := _arch_current_sentence()
+	var ring: Vector2 = _arch_ring[i]
+	var prog := _arch_sentence_progress(i)
+	# home to the ring as the sentence is typed; wander (steadies) early
+	var drift := Vector2(sin(_arch_t * 1.7), cos(_arch_t * 2.3)) * ARCH_MAX_RADIUS * 0.7 * (1.0 - prog)
+	_composer.set_crosshair(ring * prog + drift)
+
+
+func _arch_current_sentence() -> int:
+	for i in _arch_span.size():
+		if _prose.cursor < _arch_span[i][1]:
+			return i
+	return _arch_span.size() - 1
+
+
+func _arch_sentence_progress(i: int) -> float:
+	var sp = _arch_span[i]
+	var len: int = sp[1] - sp[0]
+	if len <= 0:
+		return 1.0
+	return clampf(float(_prose.cursor - sp[0]) / float(len), 0.0, 1.0)
+
+
+# Fire an arrow for each sentence whose end the cursor has now passed.
+func _archery_check_fire() -> void:
+	while _arch_fired < _arch_span.size() and _prose.cursor >= _arch_span[_arch_fired][1]:
+		_composer.fire_arrow(_arch_ring[_arch_fired])
+		_arch_fired += 1
+
+
 func _highlight_choice() -> void:
 	var next_char := ""
 	if _picked == null:
@@ -568,6 +663,8 @@ func _process(delta: float) -> void:
 		_composer.set_lead_moving(p > 0.02)
 		if drive_anim:
 			_composer.set_lead_animation(_phase == Phase.PROSE and act == SceneActivity.Activity.MOVING)
+	elif _composer.is_archery_scene():
+		_update_archery(delta)
 	else:
 		_update_gaze(delta)
 		if drive_anim:
@@ -594,8 +691,8 @@ func _setup_gaze(node) -> void:
 	_gaze_mode = "none"
 	_links_idx = -1
 	_rechts_idx = -1
-	if _composer.is_walking():
-		return
+	if _composer.is_walking() or _composer.is_archery_scene():
+		return   # archery keeps its render-authored downrange facing (no gaze)
 	if _composer.has_landmarks():
 		if node.prerevealed:
 			_gaze_mode = "bridge"   # naGrot: look at the safe bridge it will take
@@ -702,6 +799,10 @@ func _camera_rig() -> Dictionary:
 			return {"pos": lead + Vector3(0.5, 2.2, 4.4), "look": lead + Vector3(0.5, 1.35, 0.6)}
 		# a near front view of the knight grinding the sword on the wheel in front
 		return {"pos": lead + Vector3(0.5, 1.9, 4.0), "look": lead + Vector3(0.55, 0.95, 1.2)}
+	if _composer.is_archery_scene():
+		# over-the-shoulder down the lane: the knight sits in the foreground (bow
+		# glimpsed at his side) and the target reads ahead down the range
+		return {"pos": lead + Vector3(2.3, 3.0, 6.2), "look": lead + Vector3(-0.3, 1.2, -7.5), "fov": 46.0}
 	return {"pos": lead + Vector3(0, 4.2, 9.5), "look": lead + Vector3(0, 1.0, -1.5)}
 
 

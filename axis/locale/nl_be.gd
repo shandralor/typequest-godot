@@ -32,6 +32,10 @@ const CATALOG := {
 	"slijpen.prose": "slijp slijp slijp het grote zwaard. draai het wiel heel snel rond. vonken vliegen door de lucht. de ridder houdt het staal goed vast. het wiel draait rond en rond. kijk de vonken dansen fel. nog een keer en dan nog een. het zwaard wordt heel erg scherp. bijna klaar roept de smid. de laatste vonken spatten hoog. nu is het zwaard weer scherp. de ridder lacht heel blij.",
 	"slijpen.narration": "Zing het slijplied en typ elk woord.",
 	"slijpen.win": "Goed gedaan! Je zwaard is scherp.",
+	# archery session -- sentences grow longer so each arrow lands closer to the bullseye
+	"boog.prose": "de boog is klaar. de ridder mikt goed op het doel. de pijl vliegt snel recht door de lucht. de ridder raakt het doel precies in het midden.",
+	"boog.narration": "Span de boog en typ elk woord.",
+	"boog.win": "Raak! Recht in de roos.",
 	# choice words (typed to pick a fork)
 	"word.verder": "verder",
 	"word.grot": "grot",

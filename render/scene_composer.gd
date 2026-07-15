@@ -45,6 +45,14 @@ const HERO_WORK := "Sawing"     # looped horizontal saw -- small vertical, for g
 const HERO_TOOLS := "res://assets/kaykit/characters/Rig_Medium_Tools.glb"
 const HERO_CHEER := "Cheering"  # looped victory -- raises the held sword at the win
 const HERO_SIM := "res://assets/kaykit/characters/Rig_Medium_Simulation.glb"
+const HERO_AIM := "Ranged_Bow_Aiming_Idle"   # looped bow aim, for archery
+const HERO_SHOOT := "Ranged_Bow_Release"     # one-shot loose, per arrow
+const HERO_RANGED := "res://assets/kaykit/characters/Rig_Medium_CombatRanged.glb"
+
+const TARGET_MODEL := "res://assets/kaykit/hexagon/target.gltf"
+const ARROW_MODEL := "res://assets/kaykit/adventurers/arrow_bow.gltf"
+const TARGET_SCALE := 8.5
+const TARGET_RADIUS := 1.0   # crosshair/arrow spread on the target face (world metres)
 
 # palette
 const C_GRASS := Color(0.34, 0.46, 0.22)
@@ -75,6 +83,11 @@ var _sword: Node3D
 var _grindstone: Node3D
 var _is_overworld := false
 var _clouds: Array = []   # [{ node: Node3D, speed: float }] drifting sky clouds
+var _is_archery_scene := false
+var _target: Node3D          # the archery target
+var _crosshair: Node3D       # reticle on the target face
+var _bow: Node3D             # bow held by the knight (arrow spawn point)
+var _target_face := Vector3.ZERO   # world centre of the target face
 
 
 func compose(descriptor, variant: String = "") -> void:
@@ -86,6 +99,7 @@ func compose(descriptor, variant: String = "") -> void:
 		if p.asset == "chest":
 			_needs_bloom = true   # only the treasure scenes get bloom
 	_is_work_scene = descriptor.location == "forge"
+	_is_archery_scene = descriptor.location == "archery_range"
 	_location = _instance_set(_set_for(descriptor))
 	_location.name = "Location"
 	add_child(_location)
@@ -108,8 +122,13 @@ func compose(descriptor, variant: String = "") -> void:
 	if _is_work_scene:
 		_build_sparks(_anchor_position("grind_point") + Vector3(0.0, 0.7, 0.0))
 		_grindstone = _find_child_containing(_location, "grindstone")
+	if _is_archery_scene:
+		_build_archery_target()
 	set_lead_progress(0.0)
-	set_lead_animation(false)
+	if _is_archery_scene and _lead_anim != null and _lead_anim.has_animation(HERO_AIM):
+		_lead_anim.play(HERO_AIM)   # hold the bow-aim pose (not idle)
+	else:
+		set_lead_animation(false)
 
 
 func _clear() -> void:
@@ -126,6 +145,10 @@ func _clear() -> void:
 	_grindstone = null
 	_is_overworld = false
 	_clouds = []
+	_is_archery_scene = false
+	_target = null
+	_crosshair = null
+	_bow = null
 
 
 ## Compose the overworld island: the editable set (scenes/sets/overworld.tscn) plus
@@ -239,7 +262,8 @@ func _build_hero() -> Node3D:
 	_graft_animations(lib, HERO_MOVE, [HERO_WALK])
 	_graft_animations(lib, HERO_TOOLS, [HERO_WORK])
 	_graft_animations(lib, HERO_SIM, [HERO_CHEER])
-	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK, HERO_CHEER]:
+	_graft_animations(lib, HERO_RANGED, [HERO_AIM, HERO_SHOOT])
+	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK, HERO_CHEER, HERO_AIM]:
 		if lib.has_animation(clip):
 			lib.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 	_lead_anim = ap
@@ -504,6 +528,8 @@ func set_lead_yaw(yaw: float) -> void:
 func _set_for(descriptor) -> String:
 	if descriptor.location == "forge":
 		return "forge"
+	if descriptor.location == "archery_range":
+		return "archery"
 	if descriptor.location == "dungeon":
 		return "dungeon"
 	if descriptor.path == SceneDescriptor.PATH_FORK:
@@ -543,6 +569,8 @@ func build_static(set_name: String) -> Node3D:
 			return _static_dungeon()
 		"forge":
 			return _static_forge()
+		"archery":
+			return _static_archery()
 		"overworld":
 			return _static_overworld()
 		_:
@@ -646,6 +674,146 @@ func _static_forge() -> Node3D:
 		root.add_child(anvil)
 	_treeline(root, rng, ["Tree_1_A_Color1", "Tree_2_A_Color1", "Tree_3_A_Color1"])
 	return root
+
+
+func _static_archery() -> Node3D:
+	var root := Node3D.new()
+	var rng := _rng()
+	root.add_child(_make_ground(Vector2(50, 60), Color(0.32, 0.47, 0.22)))   # grassy range
+	# a dirt shooting lane down the middle
+	root.add_child(_path_segment(Vector3(0, 0, 6), Vector3(0, 0, -8), 3.0))
+	var anchors := {
+		"center": Vector3(0, 0, 4),
+		"line": Vector3(0, 0, 4),          # the shooting line (the knight)
+		"target": Vector3(0, 0.4, -7),     # the target, raised to eye level, downrange
+		"path_near": Vector3(0, 0, 4),
+		"path_far": Vector3(0, 0, -7),
+		"treasure": Vector3(0, 0, -7),
+	}
+	for n in anchors:
+		var m := Marker3D.new()
+		m.name = n
+		m.position = anchors[n]
+		root.add_child(m)
+	# a bucket of arrows beside the knight for flavour
+	var bucket := _instance_path("res://assets/kaykit/hexagon/bucket_arrows.gltf")
+	if bucket != null:
+		bucket.position = Vector3(1.6, 0, 4.2)
+		bucket.scale = Vector3(3, 3, 3)
+		root.add_child(bucket)
+	_treeline(root, rng, ["Tree_1_A_Color1", "Tree_2_A_Color1", "Tree_3_A_Color1"])
+	return root
+
+
+# --- archery (crosshair + arrows) ---------------------------------------------
+
+func is_archery_scene() -> bool:
+	return _is_archery_scene
+
+
+# Build the downrange target (scaled up, facing the knight) and the reticle.
+func _build_archery_target() -> void:
+	var pos := _anchor_position("target")
+	# the target model's origin is at its base, disc offset (0, 0.15, 0.04) in local
+	var disc := pos + Vector3(0.0, 0.15 * TARGET_SCALE, 0.04 * TARGET_SCALE)
+	_target = _instance_path(TARGET_MODEL)
+	if _target != null:
+		_target.position = pos
+		_target.scale = Vector3(TARGET_SCALE, TARGET_SCALE, TARGET_SCALE)
+		add_child(_target)
+	# a wooden post from the ground up to the disc, set back a touch behind it
+	var post_h := disc.y
+	add_child(_make_box(Vector3(0.22, post_h, 0.22), Vector3(pos.x, post_h * 0.5, pos.z - 0.35), Color(0.45, 0.3, 0.17)))
+	_target_face = disc + Vector3(0, 0, 0.25)   # just in front of the disc (+Z, toward the knight)
+	_crosshair = _make_crosshair()
+	_crosshair.position = _target_face
+	add_child(_crosshair)
+	# keep the knight in the bow-aim pose
+	if _lead_anim != null and _lead_anim.has_animation(HERO_AIM):
+		_lead_anim.play(HERO_AIM, 0.3)
+
+
+func _make_crosshair() -> Node3D:
+	var root := Node3D.new()
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.25, 0.15)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.25, 0.15)
+	mat.emission_energy_multiplier = 3.0
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.26
+	torus.outer_radius = 0.34
+	ring.mesh = torus
+	ring.material_override = mat
+	ring.rotation.x = deg_to_rad(90)   # face +Z (toward the camera/knight)
+	root.add_child(ring)
+	for horiz in [true, false]:
+		var bar := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(0.5, 0.05, 0.02) if horiz else Vector3(0.05, 0.5, 0.02)
+		bar.mesh = box
+		bar.material_override = mat
+		root.add_child(bar)
+	return root
+
+
+## Place the reticle on the target face. `offset` is metres from the bullseye
+## (x = right, y = up); clamped to the target radius.
+func set_crosshair(offset: Vector2) -> void:
+	if _crosshair == null:
+		return
+	var o := offset.limit_length(TARGET_RADIUS)
+	_crosshair.position = _target_face + Vector3(o.x, o.y, 0.0)
+
+
+## Hide the reticle -- used once the last arrow lands, so the win pause shows just
+## the arrow in the bullseye (no crosshair over it).
+func hide_crosshair() -> void:
+	if _crosshair != null:
+		_crosshair.visible = false
+
+
+## Loose an arrow to `offset` on the target: a quick bow release, an arrow flies
+## from the bow to that point and sticks.
+func fire_arrow(offset: Vector2) -> void:
+	if _lead_anim != null and _lead_anim.has_animation(HERO_SHOOT):
+		_lead_anim.play(HERO_SHOOT, 0.1)
+		_lead_anim.animation_finished.connect(_back_to_aim, CONNECT_ONE_SHOT)
+	var o := offset.limit_length(TARGET_RADIUS)
+	var land := _target_face + Vector3(o.x, o.y, -0.5)   # into the target face
+	var arrow := _instance_path(ARROW_MODEL)
+	if arrow == null:
+		return
+	arrow.scale = Vector3(2.4, 2.4, 2.4)
+	var start := _bow.global_position if _bow != null else _lead_position_high()
+	arrow.position = start
+	arrow.look_at_from_position(start, land, Vector3.UP)
+	add_child(arrow)
+	var t := create_tween()
+	t.tween_property(arrow, "position", land, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	# ONLY the dead-centre bullseye shot needs re-angling: a straight-down-the-lane
+	# arrow sits end-on to the camera (invisible), so the roos would read empty. The
+	# off-centre arrows flew laterally and already read fine at their flight angle.
+	if o.length() < 0.05:
+		t.tween_callback(_stick_arrow.bind(arrow, land))
+
+
+## Give a landed arrow the classic "stuck in the target" silhouette: shaft into the
+## face but tilted up toward the shooter, so even a centre hit reads clearly.
+func _stick_arrow(arrow: Node3D, land: Vector3) -> void:
+	if is_instance_valid(arrow):
+		arrow.look_at_from_position(land, land + Vector3(0.0, -0.55, -1.0), Vector3.UP)
+
+
+func _back_to_aim(_a: StringName) -> void:
+	if _lead_anim != null and _is_archery_scene and _lead_anim.has_animation(HERO_AIM):
+		_lead_anim.play(HERO_AIM, 0.15)
+
+
+func _lead_position_high() -> Vector3:
+	return lead_position() + Vector3(0, 1.4, 0)
 
 
 # --- overworld island (KayKit hexagon pack) ------------------------------------
@@ -882,6 +1050,22 @@ func _place_prop(prop) -> void:
 				add_child(sword)
 				sword.position = _anchor_position(prop.anchor)
 			_sword = sword
+		"bow":
+			var bow := _instance_asset("bow")
+			bow.name = "Prop_bow"
+			var skb: Skeleton3D = _lead.find_child("Skeleton3D", true, false) if _lead != null else null
+			if skb != null:
+				var ba := BoneAttachment3D.new()
+				ba.bone_name = "handslot.l"   # bow held in the off-hand
+				skb.add_child(ba)
+				ba.add_child(bow)
+				# the model's default grip points the string downrange; spin it so the
+				# string faces the archer and the belly (arrow rest) faces the target
+				bow.rotate_object_local(Vector3.UP, PI)
+			else:
+				add_child(bow)
+				bow.position = _anchor_position("line")
+			_bow = bow
 		"chest":
 			var chest := _instance_asset("chest")
 			chest.name = "Prop_chest"
@@ -1096,6 +1280,9 @@ func _face(node: Node3D, facing: String) -> void:
 		"right":
 			node.rotation.y = deg_to_rad(-90)
 		"away":
+			node.rotation.y = deg_to_rad(180)
+		"downrange":
+			# face the target down the lane (-Z); at yaw 0 the hero faces the camera.
 			node.rotation.y = deg_to_rad(180)
 		_:
 			node.rotation.y = 0.0

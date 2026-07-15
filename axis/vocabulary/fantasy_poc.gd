@@ -24,6 +24,7 @@ const ASSETS := {
 	"grindstone": "res://assets/kaykit/rpgtools_bits/grindstone.gltf",
 	"anvil": "res://assets/kaykit/rpgtools_bits/anvil.gltf",
 	"sword": "res://assets/kaykit/adventurers/sword_1handed.gltf",
+	"bow": "res://assets/kaykit/adventurers/bow_withString.gltf",
 }
 
 static func resolve(asset_id: String) -> String:

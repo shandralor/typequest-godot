@@ -83,6 +83,38 @@ and run `godot --script res://tools/bake_title_banner.gd` (needs a GPU, not head
   to the island at the site you came from; ESC now navigates back too (PLAYING ->
   island -> main menu -> quit) instead of quitting mid-scenario.
 
+## Archery scenario -- boogschieten (2026-07-14)
+
+The `boog` island site now plays: a single-node WIN scenario where the child types
+an archery rhyme (`boog.prose`) while a red crosshair drifts over a downrange target
+and STEADIES toward a ring as each sentence is typed. Longer sentences land their
+arrow CLOSER to the bullseye, so the four arrows march inward across the prose
+(`_setup_archery` maps sentence length -> ring radius; golden-angle spread). Files:
+`content/archery/archery_arc.gd` (START_ID boogschieten, location archery_range,
+hash fnv1a:22c8fd9e), the composer's archery block (`_static_archery`,
+`_build_archery_target`, `set_crosshair`, `fire_arrow`, `_make_crosshair`), and the
+controller's `_setup_archery`/`_update_archery`/`_archery_check_fire`. Registered in
+scenarios.gd, overworld.gd (unlocked), content_validator LOCATION_IDS, test_content.
+
+Staging notes (learned the hard way, keep them):
+- The knight uses the KayKit `Rig_Medium_CombatRanged.glb` clips
+  (`Ranged_Bow_Aiming_Idle` held, `Ranged_Bow_Release` per shot), grafted like the
+  other rigs. These clips are authored facing the OPPOSITE way from the idle/walk
+  clips, so the archer faces downrange at yaw 180 (facing "downrange" in _face), NOT
+  yaw 0.
+- The B3 gaze system (`_setup_gaze`) forced `set_lead_yaw(0)` on standing scenes and
+  overrode the archer's facing -- it now early-returns for archery (like walking) so
+  the render-authored downrange facing holds.
+- The bow model's default grip points the string downrange; the prop gets a 180 deg
+  local-Y spin (`bow.rotate_object_local(Vector3.UP, PI)`) so the string faces the
+  archer and the belly/arrow-rest faces the target.
+- Camera: over-the-shoulder down the lane (knight foreground, bow glimpsed at his
+  side, target ahead). Reference render: `.shots/arch_final.png`.
+
+ROADMAP (owner deferred, do NOT build yet): an alternate/added mode where fewer
+typing ERRORS land the shot closer to center (accuracy -> tighter grouping), on top
+of the current sentence-length mapping. Must still respect A6 (no speed at band-1).
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to
@@ -134,10 +166,10 @@ locates the "grindstone*" node in the set). No camera swing = no exposed walls.
 
 ## Next step (pick up here)
 
-Likely next: the archery scenario (its island site + teaser banner already exist:
-boog -- follow handoff section 5, unlock by filling in its scenario id), or
-profiles (A5) so XP/stars persist and island sites can be EARNED, or the queued
-small fixes above. Keep adventures short.
+The archery scenario (boog) is now DONE (see the section above). Likely next:
+profiles (A5) so XP/stars persist and island sites can be EARNED, the accuracy ->
+closer-to-center archery mode on the roadmap above, or porting the known-good logic
+milestone. Keep adventures short.
 
 ## Older state (kept for reference)
 

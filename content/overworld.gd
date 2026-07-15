@@ -18,6 +18,6 @@ static func sites() -> Array:
 			"anchor": "site_bos", "route": "route_bos", "unlocked": true},
 		{"id": "smidse", "word_key": "site.smidse", "scenario": "grind",
 			"anchor": "site_smidse", "route": "route_smidse", "unlocked": true},
-		{"id": "boog", "word_key": "site.boog", "scenario": "",
-			"anchor": "site_boog", "route": "route_boog", "unlocked": false},
+		{"id": "boog", "word_key": "site.boog", "scenario": "archery",
+			"anchor": "site_boog", "route": "route_boog", "unlocked": true},
 	]
