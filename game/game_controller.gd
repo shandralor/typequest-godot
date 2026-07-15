@@ -1086,7 +1086,7 @@ func _play_brief(idx: int) -> void:
 	_brief_label.modulate.a = 1.0
 	# reveal time scales with length (a gentle typewriter a beginning reader can follow),
 	# then a short hold once complete, then fade out
-	var reveal: float = clampf(line.length() * 0.24, 4.0, 18.0)   # ~1/4 speed: gentle for beginners
+	var reveal: float = clampf(line.length() * 0.18, 3.0, 14.0)   # ~1/3 speed: gentle for beginners
 	var words: int = line.split(" ", false).size()
 	var hold: float = clampf(words * 0.28, 1.2, 3.5)
 	var t := create_tween()
