@@ -26,26 +26,11 @@ const ForgeLocation = preload("res://render/locations/forge.gd")
 const HouseLocation = preload("res://render/locations/house.gd")
 const ArcheryLocation = preload("res://render/locations/archery.gd")
 const OverworldLocation = preload("res://render/locations/overworld.gd")
+const HeroRig = preload("res://render/hero_rig.gd")
 const FOREST_DIR := "res://assets/kaykit/forest_nature/"
 
 const LEAD_ASSETS := ["hero"]
 const SCATTER_SEED := 20260627
-# the hero is the KayKit Knight (B3): its own textured mesh on the shared Rig_Medium
-# skeleton, with idle/walk/pickup grafted in from the Rig_Medium animation sets
-# (same skeleton, so the tracks resolve).
-const HERO_MODEL := "res://assets/kaykit/adventurers/Knight.glb"
-const HERO_GENERAL := "res://assets/kaykit/adventurers/Rig_Medium_General.glb"
-const HERO_MOVE := "res://assets/kaykit/adventurers/Rig_Medium_MovementBasic.glb"
-const HERO_IDLE := "Idle_A"
-const HERO_WALK := "Walking_A"
-const HERO_PICKUP := "PickUp"
-const HERO_WORK := "Sawing"     # looped horizontal saw -- small vertical, for grinding
-const HERO_TOOLS := "res://assets/kaykit/characters/Rig_Medium_Tools.glb"
-const HERO_CHEER := "Cheering"  # looped victory -- raises the held sword at the win
-const HERO_SIM := "res://assets/kaykit/characters/Rig_Medium_Simulation.glb"
-const HERO_AIM := "Ranged_Bow_Aiming_Idle"   # looped bow aim, for archery
-const HERO_SHOOT := "Ranged_Bow_Release"     # one-shot loose, per arrow
-const HERO_RANGED := "res://assets/kaykit/characters/Rig_Medium_CombatRanged.glb"
 
 const TARGET_MODEL := "res://assets/kaykit/hexagon/target.gltf"
 const ARROW_MODEL := "res://assets/kaykit/adventurers/arrow_bow.gltf"
@@ -54,11 +39,7 @@ const TARGET_RADIUS := 1.0   # crosshair/arrow spread on the target face (world 
 
 var _variant := ""
 var _location: Node3D
-var _lead: Node3D
-var _lead_anim: AnimationPlayer
-var _walking := false
-var _travel_start := Vector3(0, 0, 7)
-var _travel_end := Vector3(0, 0, -8)
+var _hero: HeroRig
 var _cave_pos := Vector3.ZERO
 var _bridge_pos := Vector3.ZERO
 var _has_landmarks := false
@@ -81,6 +62,7 @@ var _target_face := Vector3.ZERO   # world centre of the target face
 
 func compose(descriptor, variant: String = "") -> void:
 	_clear()
+	_hero = HeroRig.new()
 	_variant = variant
 	_has_landmarks = descriptor.path == SceneDescriptor.PATH_FORK
 	_needs_bloom = false
@@ -97,13 +79,12 @@ func compose(descriptor, variant: String = "") -> void:
 	_apply_mood(descriptor.mood)
 	for actor in descriptor.actors:
 		var is_lead: bool = actor.asset in LEAD_ASSETS
-		var node := _build_hero() if is_lead else SceneKit.instance_asset(actor.asset)
+		var node := _hero.build() if is_lead else SceneKit.instance_asset(actor.asset)
 		node.name = "Actor_" + actor.asset
 		add_child(node)
 		if is_lead:
-			_lead = node
-			_walking = _is_walking_scene(descriptor, actor)
-			node.position = _travel_start if _walking else _anchor_position(actor.anchor)
+			_hero.set_walking(_is_walking_scene(descriptor, actor))
+			node.position = _hero.travel_start if _hero.walking else _anchor_position(actor.anchor)
 		else:
 			node.position = _anchor_position(actor.anchor)
 		SceneKit.face(node, actor.facing)
@@ -117,8 +98,8 @@ func compose(descriptor, variant: String = "") -> void:
 	set_lead_progress(0.0)
 	if _is_house_scene:
 		set_house_progress(0.0)   # start sunk below the floor, facing the door
-	if _is_archery_scene and _lead_anim != null and _lead_anim.has_animation(HERO_AIM):
-		_lead_anim.play(HERO_AIM)   # hold the bow-aim pose (not idle)
+	if _is_archery_scene and _hero.anim != null and _hero.anim.has_animation(HeroRig.HERO_AIM):
+		_hero.anim.play(HeroRig.HERO_AIM)   # hold the bow-aim pose (not idle)
 	else:
 		set_lead_animation(false)
 
@@ -127,8 +108,7 @@ func _clear() -> void:
 	for c in get_children():
 		c.queue_free()
 	_location = null
-	_lead = null
-	_lead_anim = null
+	_hero = null
 	_chest_lid = null
 	_is_work_scene = false
 	_sparks = null
@@ -151,6 +131,7 @@ func _clear() -> void:
 ## editable Path3D routes.
 func compose_overworld(start_anchor: String = "hub") -> void:
 	_clear()
+	_hero = HeroRig.new()
 	_variant = "overworld"
 	_is_overworld = true
 	_location = _instance_set("overworld")
@@ -158,11 +139,10 @@ func compose_overworld(start_anchor: String = "hub") -> void:
 	add_child(_location)
 	_apply_mood("light", false)   # no distance fog: the island must read crisply
 	_spawn_clouds()
-	var hero := _build_hero()
+	var hero := _hero.build()
 	hero.name = "Actor_hero"
 	add_child(hero)
-	_lead = hero
-	_walking = false
+	_hero.set_walking(false)
 	hero.position = _anchor_position(start_anchor)
 	set_lead_animation(false)
 
@@ -235,55 +215,12 @@ func overworld_cam() -> Dictionary:
 
 ## Directly place the lead (overworld travel along a route).
 func set_lead_position(pos: Vector3) -> void:
-	if _lead != null:
-		_lead.position = pos
-
-
-# Builds the animated hero (B3): mesh + idle from the General rig, with the walk
-# cycle grafted in from the Movement rig (same Rig_Medium skeleton, so the tracks
-# resolve). _lead_anim is then driven by the SceneActivity state.
-func _build_hero() -> Node3D:
-	var hero := SceneKit.instance_path(HERO_MODEL)
-	if hero == null:
-		return SceneKit.red_placeholder("hero")
-	var ap := AnimationPlayer.new()
-	hero.add_child(ap)
-	ap.root_node = NodePath("..")   # resolve tracks against the Knight root
-	var lib := AnimationLibrary.new()
-	ap.add_animation_library("", lib)
-	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP])
-	_graft_animations(lib, HERO_MOVE, [HERO_WALK])
-	_graft_animations(lib, HERO_TOOLS, [HERO_WORK])
-	_graft_animations(lib, HERO_SIM, [HERO_CHEER])
-	_graft_animations(lib, HERO_RANGED, [HERO_AIM, HERO_SHOOT])
-	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK, HERO_CHEER, HERO_AIM]:
-		if lib.has_animation(clip):
-			lib.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
-	_lead_anim = ap
-	return hero
-
-
-# Copy named clips from an animation glb's player into the hero's library. The
-# tracks target Rig_Medium/Skeleton3D bones, which the Knight shares.
-func _graft_animations(lib: AnimationLibrary, glb_path: String, names: Array) -> void:
-	var src := SceneKit.instance_path(glb_path)
-	if src == null:
-		return
-	var sap := src.find_child("AnimationPlayer", true, false) as AnimationPlayer
-	if sap != null:
-		for n in names:
-			if sap.has_animation(n) and not lib.has_animation(n):
-				lib.add_animation(n, sap.get_animation(n).duplicate())
-	src.free()
+	_hero.set_position(pos)
 
 
 ## Cross-fade the hero between its walk and idle clips (B3 in-place aliveness).
 func set_lead_animation(moving: bool) -> void:
-	if _lead_anim == null:
-		return
-	var want := HERO_WALK if moving else HERO_IDLE
-	if _lead_anim.has_animation(want) and _lead_anim.current_animation != want:
-		_lead_anim.play(want, 0.25)
+	_hero.set_animation(moving)
 
 
 func is_work_scene() -> bool:
@@ -293,18 +230,17 @@ func is_work_scene() -> bool:
 ## Play a looping clip on the hero (e.g. Cheering at the win) -- it holds, unlike a
 ## one-shot which settles back to idle.
 func play_lead_loop(anim: String) -> void:
-	if _lead_anim != null and _lead_anim.has_animation(anim) and _lead_anim.current_animation != anim:
-		_lead_anim.play(anim, 0.3)
+	_hero.play_loop(anim)
 
 
 ## Grinding aliveness: the hero plays the work clip and sparks fly while typing,
 ## settling to idle when paused. The sparks heat up (orange -> hot blue-white) with
 ## progress, so the child sees the sharpening getting close to done.
 func set_lead_work(active: bool, progress: float = 0.0) -> void:
-	if _lead_anim != null:
-		var want := HERO_WORK if active else HERO_IDLE
-		if _lead_anim.has_animation(want) and _lead_anim.current_animation != want:
-			_lead_anim.play(want, 0.25)
+	if _hero.anim != null:
+		var want := HeroRig.HERO_WORK if active else HeroRig.HERO_IDLE
+		if _hero.anim.has_animation(want) and _hero.anim.current_animation != want:
+			_hero.anim.play(want, 0.25)
 	if _sparks != null:
 		_sparks.emitting = active
 		# drive the emission (the sparks are unshaded + emissive, so the glow colour
@@ -419,17 +355,7 @@ func _build_sparks(pos: Vector3) -> void:
 
 ## Play a one-shot hero clip (e.g. PickUp at the win), then settle back to idle.
 func play_lead_oneshot(anim: String) -> void:
-	if _lead_anim == null or not _lead_anim.has_animation(anim):
-		return
-	_lead_anim.get_animation(anim).loop_mode = Animation.LOOP_NONE
-	if not _lead_anim.animation_finished.is_connected(_on_lead_oneshot_done):
-		_lead_anim.animation_finished.connect(_on_lead_oneshot_done)
-	_lead_anim.play(anim, 0.2)
-
-
-func _on_lead_oneshot_done(_anim: StringName) -> void:
-	if _lead_anim != null and _lead_anim.has_animation(HERO_IDLE):
-		_lead_anim.play(HERO_IDLE, 0.3)
+	_hero.play_oneshot(anim)
 
 
 ## Hinge the treasure chest lid open (A9 win flourish). The lid is a child node of
@@ -451,11 +377,11 @@ func _is_walking_scene(descriptor, actor) -> bool:
 # --- protagonist motion / gaze (B3) ------------------------------------------
 
 func has_lead() -> bool:
-	return _lead != null
+	return _hero.has()
 
 
 func is_walking() -> bool:
-	return _walking
+	return _hero.is_walking()
 
 
 func has_landmarks() -> bool:
@@ -475,7 +401,7 @@ func bridge_pos() -> Vector3:
 
 
 func lead_position() -> Vector3:
-	return _lead.position if _lead != null else Vector3.ZERO
+	return _hero.position()
 
 
 func anchor_pos(name: String) -> Vector3:
@@ -484,25 +410,17 @@ func anchor_pos(name: String) -> Vector3:
 
 ## Place the lead along the travel path by progress in [0, 1] (walking scenes only).
 func set_lead_progress(p: float) -> void:
-	if _lead != null and _walking:
-		_lead.position = _travel_start.lerp(_travel_end, clampf(p, 0.0, 1.0))
+	_hero.set_progress(p)
 
 
 ## Orient the walking lead: facing travel direction while moving, camera at rest.
 func set_lead_moving(moving: bool) -> void:
-	if _lead == null or not _walking:
-		return
-	if moving:
-		var dir := _travel_end - _travel_start
-		_lead.rotation.y = atan2(dir.x, dir.z)
-	else:
-		_lead.rotation.y = 0.0
+	_hero.set_moving(moving)
 
 
 ## Directly set the standing lead's yaw (the gaze, driven by the controller).
 func set_lead_yaw(yaw: float) -> void:
-	if _lead != null and not _walking:
-		_lead.rotation.y = yaw
+	_hero.set_yaw(yaw)
 
 
 # --- locations ----------------------------------------------------------------
@@ -538,8 +456,7 @@ func _instance_set(set_name: String) -> Node3D:
 
 
 func _read_anchors(descriptor) -> void:
-	_travel_start = _anchor_position("path_near")
-	_travel_end = _anchor_position("path_far")
+	_hero.set_travel(_anchor_position("path_near"), _anchor_position("path_far"))
 	if descriptor.path == SceneDescriptor.PATH_FORK:
 		_cave_pos = _anchor_position("far_left")
 		_bridge_pos = _anchor_position("far_right")
@@ -583,17 +500,17 @@ const HOUSE_MOVE_SPEED := 5.0   # how fast he glides toward the typing target (f
 # non-positive delta snaps (initial placement). Always faces the door. Returns true once
 # in the walking phase.
 func set_house_progress(p: float, delta: float = 0.0) -> bool:
-	if _lead == null:
+	if _hero.node == null:
 		return false
 	var rise := clampf(p / HOUSE_RISE_FRAC, 0.0, 1.0)
 	var walk := clampf((p - HOUSE_RISE_FRAC) / (1.0 - HOUSE_RISE_FRAC), 0.0, 1.0)
-	var base := _travel_start.lerp(_travel_end, walk)
+	var base := _hero.travel_start.lerp(_hero.travel_end, walk)
 	var target := Vector3(base.x, lerpf(HOUSE_STAND_Y - HOUSE_SINK_DROP, HOUSE_STAND_Y, rise), base.z)
 	if delta <= 0.0:
-		_lead.position = target
+		_hero.node.position = target
 	else:
-		_lead.position = _lead.position.lerp(target, clampf(delta * HOUSE_MOVE_SPEED, 0.0, 1.0))
-	_lead.rotation.y = deg_to_rad(180)   # face the door the whole time
+		_hero.node.position = _hero.node.position.lerp(target, clampf(delta * HOUSE_MOVE_SPEED, 0.0, 1.0))
+	_hero.node.rotation.y = deg_to_rad(180)   # face the door the whole time
 	return walk > 0.001
 
 
@@ -621,8 +538,8 @@ func _build_archery_target() -> void:
 	_crosshair.position = _target_face
 	add_child(_crosshair)
 	# keep the knight in the bow-aim pose
-	if _lead_anim != null and _lead_anim.has_animation(HERO_AIM):
-		_lead_anim.play(HERO_AIM, 0.3)
+	if _hero.anim != null and _hero.anim.has_animation(HeroRig.HERO_AIM):
+		_hero.anim.play(HeroRig.HERO_AIM, 0.3)
 
 
 func _make_crosshair() -> Node3D:
@@ -670,16 +587,16 @@ func hide_crosshair() -> void:
 ## Loose an arrow to `offset` on the target: a quick bow release, an arrow flies
 ## from the bow to that point and sticks.
 func fire_arrow(offset: Vector2) -> void:
-	if _lead_anim != null and _lead_anim.has_animation(HERO_SHOOT):
-		_lead_anim.play(HERO_SHOOT, 0.1)
-		_lead_anim.animation_finished.connect(_back_to_aim, CONNECT_ONE_SHOT)
+	if _hero.anim != null and _hero.anim.has_animation(HeroRig.HERO_SHOOT):
+		_hero.anim.play(HeroRig.HERO_SHOOT, 0.1)
+		_hero.anim.animation_finished.connect(_back_to_aim, CONNECT_ONE_SHOT)
 	var o := offset.limit_length(TARGET_RADIUS)
 	var land := _target_face + Vector3(o.x, o.y, -0.5)   # into the target face
 	var arrow := SceneKit.instance_path(ARROW_MODEL)
 	if arrow == null:
 		return
 	arrow.scale = Vector3(2.4, 2.4, 2.4)
-	var start := _bow.global_position if _bow != null else _lead_position_high()
+	var start := _bow.global_position if _bow != null else _hero_position_high()
 	arrow.position = start
 	arrow.look_at_from_position(start, land, Vector3.UP)
 	add_child(arrow)
@@ -700,11 +617,11 @@ func _stick_arrow(arrow: Node3D, land: Vector3) -> void:
 
 
 func _back_to_aim(_a: StringName) -> void:
-	if _lead_anim != null and _is_archery_scene and _lead_anim.has_animation(HERO_AIM):
-		_lead_anim.play(HERO_AIM, 0.15)
+	if _hero.anim != null and _is_archery_scene and _hero.anim.has_animation(HeroRig.HERO_AIM):
+		_hero.anim.play(HeroRig.HERO_AIM, 0.15)
 
 
-func _lead_position_high() -> Vector3:
+func _hero_position_high() -> Vector3:
 	return lead_position() + Vector3(0, 1.4, 0)
 
 
@@ -719,7 +636,7 @@ func _place_prop(prop) -> void:
 			sword.name = "Prop_sword"
 			# attach to the knight's right-hand weapon slot so it is actually held;
 			# the grinding + raise motion then comes from the hand animation
-			var sk: Skeleton3D = _lead.find_child("Skeleton3D", true, false) if _lead != null else null
+			var sk: Skeleton3D = _hero.node.find_child("Skeleton3D", true, false) if _hero.node != null else null
 			if sk != null:
 				var ba := BoneAttachment3D.new()
 				ba.bone_name = "handslot.r"
@@ -733,7 +650,7 @@ func _place_prop(prop) -> void:
 		"bow":
 			var bow := SceneKit.instance_asset("bow")
 			bow.name = "Prop_bow"
-			var skb: Skeleton3D = _lead.find_child("Skeleton3D", true, false) if _lead != null else null
+			var skb: Skeleton3D = _hero.node.find_child("Skeleton3D", true, false) if _hero.node != null else null
 			if skb != null:
 				var ba := BoneAttachment3D.new()
 				ba.bone_name = "handslot.l"   # bow held in the off-hand
