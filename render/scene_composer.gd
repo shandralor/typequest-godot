@@ -18,19 +18,17 @@ extends Node3D
 ## Unknown/missing asset id -> loud RED placeholder, never a silent failure.
 
 const Vocabulary = preload("res://axis/vocabulary/fantasy_poc.gd")
+const SceneKit = preload("res://render/scene_kit.gd")
+const Nature = preload("res://render/locations/nature.gd")
+const ForestLocation = preload("res://render/locations/forest.gd")
+const DungeonLocation = preload("res://render/locations/dungeon.gd")
+const ForgeLocation = preload("res://render/locations/forge.gd")
+const HouseLocation = preload("res://render/locations/house.gd")
+const ArcheryLocation = preload("res://render/locations/archery.gd")
+const OverworldLocation = preload("res://render/locations/overworld.gd")
 const FOREST_DIR := "res://assets/kaykit/forest_nature/"
-const HEX_DIR := "res://assets/kaykit/hexagon/"
-
-# Overworld hex grid: KayKit hexagon tiles measure 2.0 across flats (x) with the
-# top surface at y=0; everything is placed at HEX_SCALE so the knight reads as a
-# figure on a toy island rather than a giant. Axial (q, r) -> world:
-#   x = (q + r/2) * 2.0 * HEX_SCALE,  z = r * 1.7320 * HEX_SCALE
-const HEX_SCALE := 3.0
-const HEX_W := 2.0 * HEX_SCALE          # column step
-const HEX_ROW := 1.7320 * HEX_SCALE     # row step
 
 const LEAD_ASSETS := ["hero"]
-const MISSING_COLOR := Color(1.0, 0.0, 0.0)
 const SCATTER_SEED := 20260627
 # the hero is the KayKit Knight (B3): its own textured mesh on the shared Rig_Medium
 # skeleton, with idle/walk/pickup grafted in from the Rig_Medium animation sets
@@ -53,16 +51,6 @@ const TARGET_MODEL := "res://assets/kaykit/hexagon/target.gltf"
 const ARROW_MODEL := "res://assets/kaykit/adventurers/arrow_bow.gltf"
 const TARGET_SCALE := 8.5
 const TARGET_RADIUS := 1.0   # crosshair/arrow spread on the target face (world metres)
-
-# palette
-const C_GRASS := Color(0.34, 0.46, 0.22)
-const C_DIRT := Color(0.52, 0.40, 0.26)
-const C_WATER := Color(0.20, 0.46, 0.72, 0.78)
-const C_WOOD := Color(0.45, 0.30, 0.17)
-const C_WOOD_DARK := Color(0.32, 0.21, 0.12)
-const C_ROCK_DARK := Color(0.17, 0.17, 0.20)
-const C_CAVE := Color(0.02, 0.02, 0.03)
-const C_STONE := Color(0.13, 0.13, 0.16)
 
 var _variant := ""
 var _location: Node3D
@@ -109,7 +97,7 @@ func compose(descriptor, variant: String = "") -> void:
 	_apply_mood(descriptor.mood)
 	for actor in descriptor.actors:
 		var is_lead: bool = actor.asset in LEAD_ASSETS
-		var node := _build_hero() if is_lead else _instance_asset(actor.asset)
+		var node := _build_hero() if is_lead else SceneKit.instance_asset(actor.asset)
 		node.name = "Actor_" + actor.asset
 		add_child(node)
 		if is_lead:
@@ -118,12 +106,12 @@ func compose(descriptor, variant: String = "") -> void:
 			node.position = _travel_start if _walking else _anchor_position(actor.anchor)
 		else:
 			node.position = _anchor_position(actor.anchor)
-		_face(node, actor.facing)
+		SceneKit.face(node, actor.facing)
 	for prop in descriptor.props:
 		_place_prop(prop)
 	if _is_work_scene:
 		_build_sparks(_anchor_position("grind_point") + Vector3(0.0, 0.7, 0.0))
-		_grindstone = _find_child_containing(_location, "grindstone")
+		_grindstone = SceneKit.find_child_containing(_location, "grindstone")
 	if _is_archery_scene:
 		_build_archery_target()
 	set_lead_progress(0.0)
@@ -198,7 +186,7 @@ func _spawn_clouds() -> void:
 			_clouds.append({"node": c, "speed": rng.randf_range(0.5, 0.9)})
 	var spots := [Vector3(16, 11, -4), Vector3(-24, 13, 6), Vector3(4, 14, -18), Vector3(28, 12, -12)]
 	for spot in spots:
-		var cl := _instance_path(CLOUD_MODEL)
+		var cl := SceneKit.instance_path(CLOUD_MODEL)
 		if cl == null:
 			continue
 		cl.position = spot
@@ -255,9 +243,9 @@ func set_lead_position(pos: Vector3) -> void:
 # cycle grafted in from the Movement rig (same Rig_Medium skeleton, so the tracks
 # resolve). _lead_anim is then driven by the SceneActivity state.
 func _build_hero() -> Node3D:
-	var hero := _instance_path(HERO_MODEL)
+	var hero := SceneKit.instance_path(HERO_MODEL)
 	if hero == null:
-		return _red_placeholder("hero")
+		return SceneKit.red_placeholder("hero")
 	var ap := AnimationPlayer.new()
 	hero.add_child(ap)
 	ap.root_node = NodePath("..")   # resolve tracks against the Knight root
@@ -278,7 +266,7 @@ func _build_hero() -> Node3D:
 # Copy named clips from an animation glb's player into the hero's library. The
 # tracks target Rig_Medium/Skeleton3D bones, which the Knight shares.
 func _graft_animations(lib: AnimationLibrary, glb_path: String, names: Array) -> void:
-	var src := _instance_path(glb_path)
+	var src := SceneKit.instance_path(glb_path)
 	if src == null:
 		return
 	var sap := src.find_child("AnimationPlayer", true, false) as AnimationPlayer
@@ -398,13 +386,6 @@ func _puff_smoke(pos: Vector3) -> void:
 	var t := create_tween()
 	t.tween_interval(1.3)
 	t.tween_callback(p.queue_free)
-
-
-func _find_child_containing(root: Node, needle: String) -> Node3D:
-	for c in root.get_children():
-		if c is Node3D and c.name.to_lower().contains(needle):
-			return c
-	return null
 
 
 func _build_sparks(pos: Vector3) -> void:
@@ -550,7 +531,7 @@ func _set_for(descriptor) -> String:
 func _instance_set(set_name: String) -> Node3D:
 	var path := "res://scenes/sets/%s.tscn" % set_name
 	if ResourceLoader.exists(path):
-		var inst := _instance_path(path)
+		var inst := SceneKit.instance_path(path)
 		if inst != null:
 			return inst
 	return build_static(set_name)
@@ -569,179 +550,21 @@ func _read_anchors(descriptor) -> void:
 func build_static(set_name: String) -> Node3D:
 	match set_name:
 		"forest_fork":
-			return _static_forest(true, false)
+			return ForestLocation.build(true, false, _rng())
 		"forest_bridge":
-			return _static_forest(false, true)
+			return ForestLocation.build(false, true, _rng())
 		"dungeon":
-			return _static_dungeon()
+			return DungeonLocation.build()
 		"forge":
-			return _static_forge()
+			return ForgeLocation.build(_rng())
 		"archery":
-			return _static_archery()
+			return ArcheryLocation.build(_rng())
 		"house":
-			return _static_house()
+			return HouseLocation.build()
 		"overworld":
-			return _static_overworld()
+			return OverworldLocation.build()
 		_:
-			return _static_forest(false, false)
-
-
-func _static_forest(fork: bool, bridge: bool) -> Node3D:
-	var root := Node3D.new()
-	var rng := _rng()
-	# ground extends well beyond the camera so no edge is ever visible
-	root.add_child(_make_ground(Vector2(56, 140), _grass_tint(rng)))
-	var anchors := {
-		"center": Vector3(0, 0, 0),
-		"path_near": Vector3(0, 0, 8),
-		"path_far": Vector3(0, 0, -9),
-		"far": Vector3(0, 0, -12),
-		"far_left": Vector3(-5, 0, -6.5),
-		"far_right": Vector3(5, 0, -6.5),
-		"treasure": Vector3(0, 0, -3.5),
-		"left": Vector3(-3, 0, 0),
-		"right": Vector3(3, 0, 0),
-	}
-	for n in anchors:
-		var m := Marker3D.new()
-		m.name = n
-		m.position = anchors[n]
-		root.add_child(m)
-	if fork:
-		# the path arrives from the front and splits left (cave) / right (bridge)
-		root.add_child(_path_segment(Vector3(0, 0, 13), Vector3(0, 0, 0), 3.0))
-		root.add_child(_path_segment(Vector3(0, 0, 0), anchors["far_left"], 2.4))
-		root.add_child(_path_segment(Vector3(0, 0, 0), anchors["far_right"], 2.4))
-		_build_cave_mouth(root, anchors["far_left"])
-		_build_bridge(root, anchors["far_right"], 5.0, true)
-	elif bridge:
-		root.add_child(_path_segment(Vector3(0, 0, 16), Vector3(0, 0, -16), 3.0))
-		_build_bridge(root, anchors["center"], 0.0, false)
-	else:
-		root.add_child(_path_segment(Vector3(0, 0, 16), Vector3(0, 0, -16), 3.0))
-	_scatter_forest(root, rng, fork)
-	return root
-
-
-func _static_dungeon() -> Node3D:
-	var root := Node3D.new()
-	root.add_child(_make_ground(Vector2(14, 16), Color(0.16, 0.16, 0.19)))
-	root.add_child(_make_box(Vector3(14, 5, 0.5), Vector3(0, 2.5, -7), C_STONE))   # back wall
-	root.add_child(_make_box(Vector3(0.5, 5, 16), Vector3(-7, 2.5, 0), C_STONE))   # left wall
-	root.add_child(_make_box(Vector3(0.5, 5, 16), Vector3(7, 2.5, 0), C_STONE))    # right wall
-	root.add_child(_make_box(Vector3(14, 0.5, 16), Vector3(0, 5.0, 0), Color(0.08, 0.08, 0.10)))  # ceiling
-	var anchors := {
-		"center": Vector3(0, 0, 0),
-		"path_near": Vector3(0, 0, 4),
-		"path_far": Vector3(0, 0, -4),
-		"far": Vector3(0, 0, -5),
-		"far_right": Vector3(2.6, 0, -2.5),
-		"far_left": Vector3(-2.6, 0, -2.5),
-		"left": Vector3(-3, 0, 0),
-		"right": Vector3(3, 0, 0),
-		"treasure": Vector3(0, 0, -3),
-	}
-	for n in anchors:
-		var m := Marker3D.new()
-		m.name = n
-		m.position = anchors[n]
-		root.add_child(m)
-	var barrel := _instance_path("res://assets/kaykit/dungeon/barrel_large.gltf")
-	if barrel != null:
-		barrel.position = Vector3(-2.6, 0, -4.6)
-		root.add_child(barrel)
-	return root
-
-
-func _static_forge() -> Node3D:
-	var root := Node3D.new()
-	var rng := _rng()
-	root.add_child(_make_ground(Vector2(40, 40), Color(0.30, 0.46, 0.22)))   # grassy yard
-	# a thin slab, NOT a coplanar plane (a second plane at y=0 would z-fight/flicker)
-	root.add_child(_make_box(Vector3(6, 0.08, 6), Vector3(0, 0.04, 0), Color(0.34, 0.32, 0.30)))
-	var anchors := {
-		"center": Vector3(0.8, 0, 0),          # in line with the grindstone's x
-		"grind_point": Vector3(0.8, 0, 1.4),   # in front of the knight, toward the camera
-		"path_near": Vector3(0, 0, 3),
-		"path_far": Vector3(0, 0, -3),
-		"treasure": Vector3(0, 0, -3),
-	}
-	for n in anchors:
-		var m := Marker3D.new()
-		m.name = n
-		m.position = anchors[n]
-		root.add_child(m)
-	var grind := _instance_path("res://assets/kaykit/rpgtools_bits/grindstone.gltf")
-	if grind != null:
-		grind.position = anchors["grind_point"]
-		grind.rotation.y = deg_to_rad(90)
-		root.add_child(grind)
-	var anvil := _instance_path("res://assets/kaykit/rpgtools_bits/anvil.gltf")
-	if anvil != null:
-		anvil.position = Vector3(-1.8, 0, 0.6)
-		anvil.rotation.y = deg_to_rad(-40)
-		root.add_child(anvil)
-	_treeline(root, rng, ["Tree_1_A_Color1", "Tree_2_A_Color1", "Tree_3_A_Color1"])
-	return root
-
-
-const DUNGEON_DIR := "res://assets/kaykit/dungeon/"
-const C_HOUSE_WALL := Color(0.62, 0.52, 0.40)   # warm plaster
-const C_HOUSE_FLOOR := Color(0.46, 0.32, 0.20)  # wood boards
-
-
-# The intro interior: a warm room the knight walks across, from the bed (front, by the
-# camera) to the doorway (back) it steps out of into the overworld. Big and TALL with a
-# ceiling, so the camera (which sits just inside the front) only ever sees the interior
-# -- no looking over the walls. KayKit Dungeon pieces (bed, doorway, torch) on box walls.
-const HOUSE_H := 10.0   # wall height (tall enough to fill the frame)
-
-func _static_house() -> Node3D:
-	var root := Node3D.new()
-	root.add_child(_make_box(Vector3(13.0, 0.2, 19.0), Vector3(0, 0.1, 0), C_HOUSE_FLOOR))  # top at y=HOUSE_STAND_Y
-	# side walls (full depth) + a back wall split around a doorway gap + a ceiling
-	root.add_child(_make_box(Vector3(0.4, HOUSE_H, 19.0), Vector3(-6.3, HOUSE_H * 0.5, 0), C_HOUSE_WALL))
-	root.add_child(_make_box(Vector3(0.4, HOUSE_H, 19.0), Vector3(6.3, HOUSE_H * 0.5, 0), C_HOUSE_WALL))
-	root.add_child(_make_box(Vector3(4.8, HOUSE_H, 0.4), Vector3(-3.9, HOUSE_H * 0.5, -9.3), C_HOUSE_WALL))
-	root.add_child(_make_box(Vector3(4.8, HOUSE_H, 0.4), Vector3(3.9, HOUSE_H * 0.5, -9.3), C_HOUSE_WALL))
-	root.add_child(_make_box(Vector3(3.2, 5.0, 0.4), Vector3(0, 7.5, -9.3), C_HOUSE_WALL))   # lintel over the door
-	root.add_child(_make_box(Vector3(13.0, 0.4, 19.0), Vector3(0, HOUSE_H, 0), Color(0.30, 0.24, 0.18)))  # ceiling
-	var anchors := {
-		"center": Vector3(0, 0, 0),
-		"path_near": Vector3(0, 0, 4.5),    # rises here (low in the frame)
-		"path_far": Vector3(0, 0, -7.6),    # in front of the door (exit)
-		"treasure": Vector3(0, 0, -7.6),
-	}
-	for n in anchors:
-		var m := Marker3D.new()
-		m.name = n
-		m.position = anchors[n]
-		root.add_child(m)
-	_house_prop(root, "bed_decorated", Vector3(-3.6, 0, 4.8), 90.0, 1.3)
-	_house_prop(root, "wall_doorway", Vector3(0, 0, -9.3), 0.0, 1.4)
-	_house_prop(root, "table_small", Vector3(4.3, 0, 4.4), -20.0, 1.2)
-	_house_prop(root, "barrel_small", Vector3(4.7, 0, -4.5), 0.0, 1.2)
-	_house_prop(root, "torch_lit", Vector3(-6.0, 2.4, -3.0), 0.0, 1.2)
-	# warm glows so the enclosed room reads cozy, not flat/dark
-	for spot in [Vector3(0, 6.0, 3.0), Vector3(0, 6.0, -6.0)]:
-		var lamp := OmniLight3D.new()
-		lamp.position = spot
-		lamp.light_color = Color(1.0, 0.86, 0.62)
-		lamp.omni_range = 22.0
-		lamp.light_energy = 1.6
-		root.add_child(lamp)
-	return root
-
-
-func _house_prop(root: Node3D, model: String, pos: Vector3, yaw_deg: float, scale: float) -> Node3D:
-	var inst := _instance_path(DUNGEON_DIR + model + ".gltf")
-	if inst == null:
-		return null
-	inst.position = pos
-	inst.rotation.y = deg_to_rad(yaw_deg)
-	inst.scale = Vector3(scale, scale, scale)
-	root.add_child(inst)
-	return inst
+			return ForestLocation.build(false, false, _rng())
 
 
 func is_house_scene() -> bool:
@@ -774,35 +597,6 @@ func set_house_progress(p: float, delta: float = 0.0) -> bool:
 	return walk > 0.001
 
 
-func _static_archery() -> Node3D:
-	var root := Node3D.new()
-	var rng := _rng()
-	root.add_child(_make_ground(Vector2(50, 60), Color(0.32, 0.47, 0.22)))   # grassy range
-	# a dirt shooting lane down the middle
-	root.add_child(_path_segment(Vector3(0, 0, 6), Vector3(0, 0, -8), 3.0))
-	var anchors := {
-		"center": Vector3(0, 0, 4),
-		"line": Vector3(0, 0, 4),          # the shooting line (the knight)
-		"target": Vector3(0, 0.4, -7),     # the target, raised to eye level, downrange
-		"path_near": Vector3(0, 0, 4),
-		"path_far": Vector3(0, 0, -7),
-		"treasure": Vector3(0, 0, -7),
-	}
-	for n in anchors:
-		var m := Marker3D.new()
-		m.name = n
-		m.position = anchors[n]
-		root.add_child(m)
-	# a bucket of arrows beside the knight for flavour
-	var bucket := _instance_path("res://assets/kaykit/hexagon/bucket_arrows.gltf")
-	if bucket != null:
-		bucket.position = Vector3(1.6, 0, 4.2)
-		bucket.scale = Vector3(3, 3, 3)
-		root.add_child(bucket)
-	_treeline(root, rng, ["Tree_1_A_Color1", "Tree_2_A_Color1", "Tree_3_A_Color1"])
-	return root
-
-
 # --- archery (crosshair + arrows) ---------------------------------------------
 
 func is_archery_scene() -> bool:
@@ -814,14 +608,14 @@ func _build_archery_target() -> void:
 	var pos := _anchor_position("target")
 	# the target model's origin is at its base, disc offset (0, 0.15, 0.04) in local
 	var disc := pos + Vector3(0.0, 0.15 * TARGET_SCALE, 0.04 * TARGET_SCALE)
-	_target = _instance_path(TARGET_MODEL)
+	_target = SceneKit.instance_path(TARGET_MODEL)
 	if _target != null:
 		_target.position = pos
 		_target.scale = Vector3(TARGET_SCALE, TARGET_SCALE, TARGET_SCALE)
 		add_child(_target)
 	# a wooden post from the ground up to the disc, set back a touch behind it
 	var post_h := disc.y
-	add_child(_make_box(Vector3(0.22, post_h, 0.22), Vector3(pos.x, post_h * 0.5, pos.z - 0.35), Color(0.45, 0.3, 0.17)))
+	add_child(SceneKit.make_box(Vector3(0.22, post_h, 0.22), Vector3(pos.x, post_h * 0.5, pos.z - 0.35), Color(0.45, 0.3, 0.17)))
 	_target_face = disc + Vector3(0, 0, 0.25)   # just in front of the disc (+Z, toward the knight)
 	_crosshair = _make_crosshair()
 	_crosshair.position = _target_face
@@ -881,7 +675,7 @@ func fire_arrow(offset: Vector2) -> void:
 		_lead_anim.animation_finished.connect(_back_to_aim, CONNECT_ONE_SHOT)
 	var o := offset.limit_length(TARGET_RADIUS)
 	var land := _target_face + Vector3(o.x, o.y, -0.5)   # into the target face
-	var arrow := _instance_path(ARROW_MODEL)
+	var arrow := SceneKit.instance_path(ARROW_MODEL)
 	if arrow == null:
 		return
 	arrow.scale = Vector3(2.4, 2.4, 2.4)
@@ -914,218 +708,6 @@ func _lead_position_high() -> Vector3:
 	return lead_position() + Vector3(0, 1.4, 0)
 
 
-# --- overworld island (KayKit hexagon pack) ------------------------------------
-
-func _hex_world(q: int, r: int) -> Vector3:
-	return Vector3((float(q) + float(r) * 0.5) * HEX_W, 0.0, float(r) * HEX_ROW)
-
-
-func _pull_toward(from: Vector3, to: Vector3, dist: float) -> Vector3:
-	return from + (to - from).normalized() * dist
-
-
-func _hex_tile(root: Node3D, model: String, q: int, r: int, yaw_deg: float = 0.0) -> Node3D:
-	var inst := _instance_path(HEX_DIR + model + ".gltf")
-	if inst == null:
-		inst = _red_placeholder(model)
-	inst.position = _hex_world(q, r)
-	inst.scale = Vector3.ONE * HEX_SCALE
-	inst.rotation.y = deg_to_rad(yaw_deg)
-	root.add_child(inst)
-	return inst
-
-
-# A decorated model standing ON a tile (building, trees, mountain, flag), turned
-# to face the hub so fronts read from the camera.
-func _hex_decor(root: Node3D, model: String, q: int, r: int, face_hub: bool = true) -> Node3D:
-	var inst := _instance_path(HEX_DIR + model + ".gltf")
-	if inst == null:
-		inst = _red_placeholder(model)
-	var pos := _hex_world(q, r)
-	inst.position = pos
-	inst.scale = Vector3.ONE * HEX_SCALE
-	if face_hub and pos.length() > 0.1:
-		inst.rotation.y = atan2(-pos.x, -pos.z)
-	root.add_child(inst)
-	return inst
-
-
-## The small one-screen island (radius-2 land, water ring): the hub crossroads in
-## the middle, dirt paths to the three sites (bos / smidse / boog), decoration, and
-## the named markers + editable Path3D routes the game reads. Baked to
-## scenes/sets/overworld.tscn -- arrange it in the editor; a LARGER island later
-## only means editing that set (nothing here assumes one screen).
-func _static_overworld() -> Node3D:
-	var root := Node3D.new()
-	# land: every axial coord within radius 2
-	for q in range(-2, 3):
-		for r in range(-2, 3):
-			if abs(q + r) <= 2:
-				_hex_tile(root, "hex_grass", q, r)
-	# water ring at radius 3
-	for q in range(-3, 4):
-		for r in range(-3, 4):
-			var s := -q - r
-			if maxi(abs(q), maxi(abs(r), abs(s))) == 3:
-				_hex_tile(root, "hex_water", q, r)
-	# sites: the buildings/forest sit on the site tile; the ARRIVAL anchor is pulled
-	# toward the hub so the knight stands in front of them, never inside them
-	_hex_decor(root, "building_blacksmith_red", 2, -2)
-	_hex_decor(root, "building_archeryrange_red", 1, 1)
-	# the bos site tile stays open grass; the forest frames it on the neighbours
-	_hex_decor(root, "trees_A_large", -2, 1)
-	_hex_decor(root, "trees_A_medium", -1, -1)
-	_hex_decor(root, "trees_B_medium", -2, 2)
-	# decoration (the owner adds/moves more in the editor)
-	_hex_decor(root, "mountain_A_grass_trees", 0, -2)
-	_hex_decor(root, "building_windmill_red", 1, -2)
-	_hex_decor(root, "building_home_A_red", 2, -1)
-	_hex_decor(root, "tree_single_A", 2, 0, false)
-	_hex_decor(root, "flag_red", -2, 0, false).position += Vector3(0.9, 0, 2.2)
-	_hex_decor(root, "flag_red", 2, -2, false).position += Vector3(-2.4, 0, 1.6)
-	_hex_decor(root, "flag_red", 1, 1, false).position += Vector3(-2.4, 0, -1.2)
-	# a couple of drifting-height clouds for storybook depth
-	for c in [[-1.5, -2.0, 10.0], [1.8, 1.2, 13.0]]:
-		var cloud := _instance_path(HEX_DIR + "cloud_big.gltf")
-		if cloud != null:
-			cloud.position = _hex_world(0, 0) + Vector3(c[0] * HEX_W, c[2], c[1] * HEX_ROW)
-			cloud.scale = Vector3.ONE * HEX_SCALE
-			root.add_child(cloud)
-	var hub := _hex_world(0, 0)
-	# arrival spots: on the site tile but pulled 2.6 units toward the hub
-	var arrive := {
-		"bos": _pull_toward(_hex_world(-2, 0), hub, 2.6),
-		"smidse": _pull_toward(_hex_world(2, -2), hub, 2.6),
-		"boog": _pull_toward(_hex_world(1, 1), hub, 2.6),
-	}
-	# dirt paths from the hub over the via tile to each arrival spot
-	var via := {
-		"bos": [_hex_world(-1, 0), arrive["bos"]],
-		"smidse": [_hex_world(1, -1), arrive["smidse"]],
-		"boog": [_hex_world(0, 1), arrive["boog"]],
-	}
-	for site in via:
-		var prev: Vector3 = hub
-		for wp in via[site]:
-			root.add_child(_path_segment(prev, wp, 1.7))
-			prev = wp
-	# markers the game reads (hero start, site spots, camera framing)
-	var anchors := {
-		"hub": hub,
-		"site_bos": arrive["bos"],
-		"site_smidse": arrive["smidse"],
-		"site_boog": arrive["boog"],
-		"camera_pos": Vector3(0, 30.0, 34.0),
-		"camera_look": Vector3(0, 0, -2.0),
-	}
-	for n in anchors:
-		var m := Marker3D.new()
-		m.name = n
-		m.position = anchors[n]
-		root.add_child(m)
-	# editable travel routes (hub -> site); the knight walks these curves
-	for site in via:
-		var path := Path3D.new()
-		path.name = "route_" + site
-		var curve := Curve3D.new()
-		curve.add_point(hub)
-		for wp in via[site]:
-			curve.add_point(wp)
-		path.curve = curve
-		root.add_child(path)
-	return root
-
-
-# --- forest dressing ----------------------------------------------------------
-
-func _scatter_forest(root: Node3D, rng: RandomNumberGenerator, is_fork: bool) -> void:
-	var trees := ["Tree_1_A_Color1", "Tree_2_A_Color1", "Tree_2_B_Color1",
-		"Tree_3_A_Color1", "Tree_4_A_Color1"]
-	var bushes := ["Bush_1_A_Color1", "Bush_2_A_Color1", "Bush_3_A_Color1"]
-	var grasses := ["Grass_1_A_Color1", "Grass_2_A_Color1"]
-	var rocks := ["Rock_1_A_Color1", "Rock_2_A_Color1", "Rock_3_A_Color1"]
-	# scattered trees through the mid field
-	_scatter(root, rng, trees, 26, 3.0, 18.0, -26.0, 16.0, 0.9, 1.5)
-	# a dense far treeline ring so the horizon is always blocked (immersion)
-	_treeline(root, rng, trees)
-	_scatter(root, rng, bushes, 20, 2.0, 16.0, -22.0, 15.0, 0.8, 1.4)
-	_scatter(root, rng, grasses, 30, 1.6, 18.0, -22.0, 15.0, 0.8, 1.3)
-	_scatter(root, rng, rocks, 12, 2.2, 16.0, -20.0, 14.0, 0.6, 1.2)
-
-
-func _scatter(root: Node3D, rng: RandomNumberGenerator, names: Array, count: int,
-		min_x: float, max_x: float, min_z: float, max_z: float, min_s: float, max_s: float) -> void:
-	for i in range(count):
-		var inst := _instance_path(FOREST_DIR + names[rng.randi() % names.size()] + ".gltf")
-		if inst == null:
-			continue
-		var side := -1.0 if rng.randf() < 0.5 else 1.0
-		inst.position = Vector3(side * rng.randf_range(min_x, max_x), 0, rng.randf_range(min_z, max_z))
-		inst.rotation.y = rng.randf_range(0.0, TAU)
-		var s := rng.randf_range(min_s, max_s)
-		inst.scale = Vector3(s, s, s)
-		root.add_child(inst)
-
-
-func _treeline(root: Node3D, rng: RandomNumberGenerator, trees: Array) -> void:
-	# a ring of larger trees at the field edge to hide the horizon
-	for i in range(40):
-		var inst := _instance_path(FOREST_DIR + trees[rng.randi() % trees.size()] + ".gltf")
-		if inst == null:
-			continue
-		var ang := TAU * float(i) / 40.0 + rng.randf_range(-0.05, 0.05)
-		var r := rng.randf_range(22.0, 27.0)
-		inst.position = Vector3(sin(ang) * r, 0, cos(ang) * r)
-		inst.rotation.y = rng.randf_range(0.0, TAU)
-		var s := rng.randf_range(1.3, 1.9)
-		inst.scale = Vector3(s, s, s)
-		root.add_child(inst)
-
-
-func _build_cave_mouth(root: Node3D, pos: Vector3) -> void:
-	# an arch of large real rocks framing a dark opening that faces the fork (+z)
-	var placements := [
-		["Rock_1_A_Color1", Vector3(-2.4, 0, 0.3), 3.6, 0.3],
-		["Rock_2_A_Color1", Vector3(2.5, 0, 0.2), 3.8, -0.5],
-		["Rock_3_A_Color1", Vector3(0, 0, -1.6), 4.4, 0.0],     # back mound
-		["Rock_2_A_Color1", Vector3(-1.4, 2.6, -0.4), 2.8, 1.1], # lintel left
-		["Rock_1_A_Color1", Vector3(1.5, 2.8, -0.4), 3.0, 2.0],  # lintel right
-	]
-	for p in placements:
-		var rock := _instance_path(FOREST_DIR + p[0] + ".gltf")
-		if rock != null:
-			rock.position = pos + p[1]
-			rock.scale = Vector3.ONE * p[2]
-			rock.rotation.y = p[3]
-			root.add_child(rock)
-	# a dark recess inside the arch reads as the cave depth
-	root.add_child(_make_box(Vector3(2.2, 2.8, 1.6), pos + Vector3(0, 1.4, -0.6), C_CAVE))
-
-
-func _build_bridge(root: Node3D, center: Vector3, _river_width: float, small: bool) -> void:
-	# a river crossing the path with a plank deck over it, rails and posts. The
-	# water sits just ABOVE the grass so it is visible (a stylized river, not a
-	# carved channel), banked by darker strips.
-	var span := 2.2 if small else 3.4
-	var depth := 4.0 if small else 5.5
-	var width := 11.0 if small else 64.0
-	var water := _make_ground(Vector2(width, depth), C_WATER)
-	water.position = center + Vector3(0, 0.04, 0)
-	_make_transparent(water)
-	root.add_child(water)
-	for sz in [-1.0, 1.0]:
-		root.add_child(_make_box(Vector3(width, 0.12, 0.5), center + Vector3(0, 0.06, sz * depth * 0.5), C_WOOD_DARK))  # bank
-	var deck_len := depth + 1.0
-	root.add_child(_make_box(Vector3(span, 0.18, deck_len), center + Vector3(0, 0.16, 0), C_WOOD))  # deck
-	for sx in [-1.0, 1.0]:
-		root.add_child(_make_box(Vector3(0.16, 0.7, deck_len), center + Vector3(sx * span * 0.5, 0.55, 0), C_WOOD_DARK))  # rail
-		for sz in [-1.0, 1.0]:
-			root.add_child(_make_box(Vector3(0.24, 1.0, 0.24), center + Vector3(sx * span * 0.5, 0.4, sz * depth * 0.5), C_WOOD_DARK))  # post
-	for i in range(int(deck_len / 0.6)):
-		var z := -deck_len * 0.5 + 0.3 + i * 0.6
-		root.add_child(_make_box(Vector3(span - 0.12, 0.04, 0.42), center + Vector3(0, 0.26, z), C_WOOD_DARK))  # slats
-
-
 # --- props --------------------------------------------------------------------
 
 func _place_prop(prop) -> void:
@@ -1133,7 +715,7 @@ func _place_prop(prop) -> void:
 		"bridge":
 			pass  # the river + bridge are baked into the forest_bridge location set
 		"sword":
-			var sword := _instance_asset("sword")
+			var sword := SceneKit.instance_asset("sword")
 			sword.name = "Prop_sword"
 			# attach to the knight's right-hand weapon slot so it is actually held;
 			# the grinding + raise motion then comes from the hand animation
@@ -1149,7 +731,7 @@ func _place_prop(prop) -> void:
 				sword.position = _anchor_position(prop.anchor)
 			_sword = sword
 		"bow":
-			var bow := _instance_asset("bow")
+			var bow := SceneKit.instance_asset("bow")
 			bow.name = "Prop_bow"
 			var skb: Skeleton3D = _lead.find_child("Skeleton3D", true, false) if _lead != null else null
 			if skb != null:
@@ -1165,7 +747,7 @@ func _place_prop(prop) -> void:
 				bow.position = _anchor_position("line")
 			_bow = bow
 		"chest":
-			var chest := _instance_asset("chest")
+			var chest := SceneKit.instance_asset("chest")
 			chest.name = "Prop_chest"
 			chest.scale = Vector3(2.5, 2.5, 2.5)
 			add_child(chest)
@@ -1177,7 +759,7 @@ func _place_prop(prop) -> void:
 			_chest_lid = chest.find_child("chest_gold_lid", true, false)
 			_stage_treasure(cpos)
 		_:
-			var node := _instance_asset(prop.asset)
+			var node := SceneKit.instance_asset(prop.asset)
 			node.name = "Prop_" + prop.asset
 			add_child(node)
 			node.position = _anchor_position(prop.anchor)
@@ -1218,7 +800,7 @@ func _stage_treasure(pos: Vector3) -> void:
 	add_child(halo)
 	var rng := _rng()
 	for i in range(7):
-		var bush := _instance_path(FOREST_DIR + "Bush_2_A_Color1.gltf")
+		var bush := SceneKit.instance_path(FOREST_DIR + "Bush_2_A_Color1.gltf")
 		if bush != null:
 			var ang := TAU * float(i) / 7.0
 			bush.position = pos + Vector3(sin(ang) * 2.4, 0, cos(ang) * 2.4)
@@ -1271,95 +853,6 @@ func _apply_mood(mood: String, with_fog: bool = true) -> void:
 
 # --- asset resolution ---------------------------------------------------------
 
-func _instance_asset(asset_id: String) -> Node3D:
-	var path: String = Vocabulary.resolve(asset_id)
-	if path == "":
-		return _red_placeholder(asset_id)
-	var inst := _instance_path(path)
-	return inst if inst != null else _red_placeholder(asset_id)
-
-
-func _instance_path(path: String) -> Node3D:
-	if not ResourceLoader.exists(path):
-		return null
-	var packed = load(path)
-	if packed is PackedScene:
-		var inst = packed.instantiate()
-		if inst is Node3D:
-			inst.scene_file_path = path  # so the bake tool can save it as an instance
-			return inst
-	return null
-
-
-func _red_placeholder(asset_id: String) -> Node3D:
-	push_error("Unknown/missing asset id '%s' -- rendering RED placeholder" % asset_id)
-	var root := Node3D.new()
-	var mi := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3.ONE
-	mi.mesh = box
-	mi.position.y = 0.5
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = MISSING_COLOR
-	mat.emission_enabled = true
-	mat.emission = MISSING_COLOR
-	mi.material_override = mat
-	root.add_child(mi)
-	var label := Label3D.new()
-	label.text = "MISSING: " + asset_id
-	label.position.y = 1.6
-	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	label.modulate = MISSING_COLOR
-	root.add_child(label)
-	return root
-
-
-# --- geometry helpers ---------------------------------------------------------
-
-func _make_ground(size: Vector2, color: Color) -> MeshInstance3D:
-	var mi := MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = size
-	mi.mesh = plane
-	mi.material_override = _mat(color)
-	mi.name = "Ground"
-	return mi
-
-
-func _make_box(size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
-	var mi := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = size
-	mi.mesh = box
-	mi.position = pos
-	mi.material_override = _mat(color)
-	return mi
-
-
-func _path_segment(from: Vector3, to: Vector3, width: float) -> MeshInstance3D:
-	var mid := (from + to) * 0.5
-	var length := from.distance_to(to)
-	var dir := to - from
-	var mi := _make_box(Vector3(width, 0.05, length), mid + Vector3(0, 0.02, 0), C_DIRT)
-	mi.rotation.y = atan2(dir.x, dir.z)
-	mi.name = "Path"
-	return mi
-
-
-func _mat(color: Color) -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = 1.0
-	return mat
-
-
-func _make_transparent(mi: MeshInstance3D) -> void:
-	var mat: StandardMaterial3D = mi.material_override
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.roughness = 0.1
-	mat.metallic = 0.3
-
-
 # --- placement helpers --------------------------------------------------------
 
 func _anchor_position(anchor: String) -> Vector3:
@@ -1369,26 +862,6 @@ func _anchor_position(anchor: String) -> Vector3:
 			return (m as Node3D).position
 	push_warning("Unknown anchor '%s' -- placing at origin" % anchor)
 	return Vector3.ZERO
-
-
-func _face(node: Node3D, facing: String) -> void:
-	match facing:
-		"left":
-			node.rotation.y = deg_to_rad(90)
-		"right":
-			node.rotation.y = deg_to_rad(-90)
-		"away":
-			node.rotation.y = deg_to_rad(180)
-		"downrange":
-			# face the target down the lane (-Z); at yaw 0 the hero faces the camera.
-			node.rotation.y = deg_to_rad(180)
-		_:
-			node.rotation.y = 0.0
-
-
-func _grass_tint(rng: RandomNumberGenerator) -> Color:
-	# small per-scene variation so forest scenes are not identical
-	return C_GRASS + Color(rng.randf_range(-0.04, 0.04), rng.randf_range(-0.05, 0.05), rng.randf_range(-0.03, 0.03), 0)
 
 
 func _rng() -> RandomNumberGenerator:
