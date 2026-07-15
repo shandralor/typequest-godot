@@ -50,3 +50,15 @@ no attribution required. We credit anyway: AlkaKrab makes excellent game music,
 please go support the artist. In `assets/audio/music/` (a curated calm/exploration
 selection), grouped by context (`menu/`, `overworld/`, `adventure/`). The crossfading
 playlist player is `audio/music_player.gd`.
+
+## Fonts -- SIL / OFL
+
+**Andika** by **SIL International** -- https://software.sil.org/andika/
+License: **SIL Open Font License 1.1** (`assets/fonts/Andika-OFL.txt`). Designed for
+LITERACY and beginning readers (clear, unambiguous letterforms). The app-wide default
+font (`gui/theme/custom_font`): all reading/typing text, keyboard, HUD, prompts.
+
+**MedievalSharp** by **Wojciech Kalinowski** -- https://fonts.google.com/specimen/MedievalSharp
+License: **SIL Open Font License 1.1** (`assets/fonts/MedievalSharp-OFL.txt`). A light
+medieval face used ONLY for decorative headings (the menu title + Start/Opties/Stoppen
+banners), kept off the prose so it never hurts a beginning reader.

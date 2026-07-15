@@ -208,6 +208,37 @@ child types a few practice words and he walks out the door into the overworld.
 - Reference renders: `.shots/intro_brief.png`, `.shots/intro_start2.png`,
   `.shots/intro_neardoor.png`, `.shots/intro_exit.png`.
 
+## Composer refactor + intro briefing + fonts (2026-07-15)
+
+**render/ refactor (Phases 1-3, committed):** scene_composer.gd was a 1397-line
+god-object; now 787 and a COORDINATOR. Extracted, behaviour-identical:
+- `render/scene_kit.gd` (SceneKit): generic primitives (mat, make_ground/box/
+  path_segment, instance_path/asset, red_placeholder, face) + the colour palette.
+- `render/locations/*.gd`: one builder per location (forest/dungeon/forge/house/
+  archery/overworld) + `nature.gd` (treeline, grass_tint). `build_static` dispatches
+  to them -- a NEW scene is a new file. Note: runtime scenes load the baked
+  scenes/sets/*.tscn; the builders are the fallback + bake source.
+- `render/hero_rig.gd` (HeroRig): the Knight node, its AnimationPlayer + grafted
+  clips, and all lead motion/animation. The composer holds `_hero` and delegates its
+  public API, so game_controller.gd is UNCHANGED. Scenario mechanics reach the hero
+  via `_hero.node` / `_hero.anim`.
+- Phase 4 (mechanics -> effect components) was DEFERRED on purpose: B4 says don't
+  generalise until a SECOND consumer exists, and it would not shrink the composer
+  (game_controller API must stay stable). Revisit when a 2nd archery/forge-like scene
+  appears.
+
+**Intro briefing = a typewriter (game_controller `_play_brief`):** the explanation
+sentences (`INTRO_BRIEFING` in nl_be.gd) TYPE OUT character by character, wrapped to
+~2 centred lines (`_brief_label`, width `BRIEF_W`=1040), then hold + fade. Reveal
+speed is ~1/4 (0.24 s/char, clamp 4-18 s) so a beginning reader can follow; hold
+scales with word count. Typing input stays disabled until the briefing ends.
+
+**Fonts (SIL OFL, assets/fonts/, credited):** app-wide default is **Andika**
+(`project.godot` gui/theme/custom_font) -- a literacy/early-reader face for ALL
+prose/keyboard/HUD. **MedievalSharp** is applied ONLY to decorative headings (the
+menu title + menu banners) via `add_theme_font_override` -- kept off the prose so it
+never hurts a beginning reader.
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to

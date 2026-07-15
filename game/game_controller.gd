@@ -18,6 +18,7 @@ const KeyboardInput = preload("res://input/keyboard_input.gd")
 const KeyboardSettings = preload("res://game/keyboard_settings.gd")
 const AppProgress = preload("res://game/app_progress.gd")
 const IntroArc = preload("res://content/intro/intro_arc.gd")
+const MEDIEVAL_FONT = preload("res://assets/fonts/MedievalSharp-Regular.ttf")
 const TypeAlongPanel = preload("res://ui/type_along.gd")
 const KeyboardGuide = preload("res://ui/keyboard_guide.gd")
 const ChoiceBannerScript = preload("res://ui/choice_banner.gd")
@@ -84,7 +85,7 @@ var _top_bar: NinePatchRect   # small brown bar at the top (the overworld prompt
 var _top_prompt: Label
 var _brief_label: Label       # intro briefing text that rolls across the screen
 
-const BRIEF_W := 1920.0       # window width; the briefing slides in/out by this much
+const BRIEF_W := 1040.0       # briefing text box width (wraps long sentences to ~2 lines)
 var _back_button: TextureButton   # leave a scenario, back to the island
 
 # overworld (the walkable scenario picker)
@@ -253,15 +254,17 @@ func _build_layout() -> void:
 	_top_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_top_bar.add_child(_top_prompt)
 
-	# intro briefing text: rolls across the scene sentence by sentence before typing
-	_brief_label = _make_label(48, HORIZONTAL_ALIGNMENT_CENTER)
-	_brief_label.size = Vector2(BRIEF_W, 120.0)
-	_brief_label.position = Vector2(BRIEF_W, 232.0)
+	# intro briefing text: typed out sentence by sentence before typing starts,
+	# centered and wrapped to a couple of lines so a beginning reader can follow
+	_brief_label = _make_label(50, HORIZONTAL_ALIGNMENT_CENTER)
+	_brief_label.size = Vector2(BRIEF_W, 260.0)
+	_brief_label.position = Vector2((1920.0 - BRIEF_W) * 0.5, 150.0)
 	_brief_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_brief_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_brief_label.add_theme_color_override("font_color", Color("fdf5e6"))
 	_brief_label.add_theme_color_override("font_outline_color", Color(0.12, 0.08, 0.05))
 	_brief_label.add_theme_constant_override("outline_size", 10)
+	_brief_label.add_theme_constant_override("line_spacing", 8)
 	_brief_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_brief_label.visible = false
 	ui.add_child(_brief_label)
@@ -988,6 +991,7 @@ func _show_menu(title: String, items: Array) -> void:
 	var title_label := screen.get_node_or_null("TitleWaver/TitleVP/Title") as Label
 	if title_label != null:
 		title_label.text = title
+		title_label.add_theme_font_override("font", MEDIEVAL_FONT)   # decorative heading
 	# wave the whole title plate (banner + text together): the banner and label are
 	# rendered into TitleVP and the wave shader ripples the combined image
 	var waver := screen.get_node_or_null("TitleWaver") as SubViewportContainer
@@ -1076,12 +1080,19 @@ func _play_brief(idx: int) -> void:
 	if idx >= lines.size():
 		_end_briefing()
 		return
-	_brief_label.text = lines[idx]
-	_brief_label.position.x = BRIEF_W            # start off the right edge
+	var line: String = lines[idx]
+	_brief_label.text = line
+	_brief_label.visible_ratio = 0.0             # type it out, character by character
+	_brief_label.modulate.a = 1.0
+	# reveal time scales with length (a gentle typewriter a beginning reader can follow),
+	# then a short hold once complete, then fade out
+	var reveal: float = clampf(line.length() * 0.24, 4.0, 18.0)   # ~1/4 speed: gentle for beginners
+	var words: int = line.split(" ", false).size()
+	var hold: float = clampf(words * 0.28, 1.2, 3.5)
 	var t := create_tween()
-	t.tween_property(_brief_label, "position:x", 0.0, 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.tween_interval(2.6)                          # hold, readable
-	t.tween_property(_brief_label, "position:x", -BRIEF_W, 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	t.tween_property(_brief_label, "visible_ratio", 1.0, reveal)
+	t.tween_interval(hold)
+	t.tween_property(_brief_label, "modulate:a", 0.0, 0.6)
 	t.tween_callback(_play_brief.bind(idx + 1))
 
 

@@ -7,6 +7,7 @@ extends Control
 ## reorder in the editor. Emits `pressed` on click.
 
 const ChoiceBanner = preload("res://ui/choice_banner.gd")
+const MEDIEVAL_FONT = preload("res://assets/fonts/MedievalSharp-Regular.ttf")
 const PANEL_PRIMARY := "res://assets/kenney/ui_rpg/panel_blue.png"
 const PANEL_SECONDARY := "res://assets/kenney/ui_rpg/panel_brown.png"
 
@@ -42,6 +43,7 @@ func _ready() -> void:
 	_label.offset_top = 16
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_label.add_theme_font_size_override("normal_font_size", 38)
+	_label.add_theme_font_override("normal_font", MEDIEVAL_FONT)   # medieval heading
 	add_child(_label)
 
 	mouse_entered.connect(func(): _hover = true)
