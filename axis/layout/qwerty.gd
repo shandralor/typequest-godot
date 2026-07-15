@@ -1,24 +1,19 @@
-class_name BeAzertyLayout
+class_name QwertyLayout
 extends RefCounted
 
-## Keyboard-layout axis (brief A3/A8) + the principle behind B1/B6. Belgian AZERTY
-## (`be-latin1`), the PoC layout. Engine-independent DATA: it maps a physical key
-## POSITION to the character it produces and the finger that should press it.
+## Keyboard-layout axis (brief A3/A8): US QWERTY, the second supported layout. Same
+## engine-independent DATA contract as BeAzertyLayout -- it maps a physical key
+## POSITION (named by its US-QWERTY label) to the character it produces and the
+## finger that presses it. Because we deliberately do NOT teach one row at a time
+## (the teaching mechanism is VOLUME of motivated typing, not drills), a second
+## layout drops in safely: the same prose is taught on another board with no logic
+## change. The child picks the layout that matches their physical keyboard.
 ##
-## POSITION is named by the US-QWERTY label of that physical key (a stable,
-## engine-neutral name for "the key in that spot"). The input adapter (render
-## side, B1) maps Godot's physical keycode -> this position label, so the child is
-## scored on true AZERTY POSITIONS no matter what layout the OS is set to. Swap
-## this table for QWERTY and the same prose is taught on another layout, with no
-## logic change.
-##
-## Belgian AZERTY facts carried (A8): the home row carries NO vowels
-## (q s d f g h j k l m); all Dutch vowels live on the TOP row (a z e r t y u i o p).
-## The home-row anchor is f/j -- the one kept scaffold, highlighted from the start.
+## On QWERTY the position label IS the letter (Q -> q, W -> w, ...), so the map is
+## the identity for letters; `m` sits on the bottom row (not the home row as on
+## AZERTY). Fingers follow standard touch typing; f/j stay the home-row anchor.
 ##
 ## PoC scope (A8): 3 letter rows + space + period, lowercase, no AltGr, no Shift.
-## (On a physical be-latin1 board "." is Shift+";"; for the no-Shift PoC we bind the
-## period POSITION directly so the child can type it. Revisit when Shift enters scope.)
 
 # finger ids
 const L_PINKY := "left_pinky"
@@ -31,23 +26,23 @@ const R_RING := "right_ring"
 const R_PINKY := "right_pinky"
 const THUMB := "thumb"
 
-const LAYOUT_ID := "azerty"
-const DISPLAY_NAME := "AZERTY"
+const LAYOUT_ID := "qwerty"
+const DISPLAY_NAME := "QWERTY"
 const HOME_ANCHORS := ["F", "J"]   # the kept f/j orientation scaffold (A1/A8)
 
 # [US-position label, produced char, finger]
 const ROWS := [
-	# top row (all vowels live here on AZERTY)
-	["Q", "a", L_PINKY], ["W", "z", L_RING], ["E", "e", L_MIDDLE], ["R", "r", L_INDEX],
+	# top row
+	["Q", "q", L_PINKY], ["W", "w", L_RING], ["E", "e", L_MIDDLE], ["R", "r", L_INDEX],
 	["T", "t", L_INDEX], ["Y", "y", R_INDEX], ["U", "u", R_INDEX], ["I", "i", R_MIDDLE],
 	["O", "o", R_RING], ["P", "p", R_PINKY],
-	# home row (no vowels; f/j are the anchor)
-	["A", "q", L_PINKY], ["S", "s", L_RING], ["D", "d", L_MIDDLE], ["F", "f", L_INDEX],
+	# home row (f/j are the anchor)
+	["A", "a", L_PINKY], ["S", "s", L_RING], ["D", "d", L_MIDDLE], ["F", "f", L_INDEX],
 	["G", "g", L_INDEX], ["H", "h", R_INDEX], ["J", "j", R_INDEX], ["K", "k", R_MIDDLE],
-	["L", "l", R_RING], ["SEMICOLON", "m", R_PINKY],
-	# bottom row
-	["Z", "w", L_PINKY], ["X", "x", L_RING], ["C", "c", L_MIDDLE], ["V", "v", L_INDEX],
-	["B", "b", L_INDEX], ["N", "n", R_INDEX],
+	["L", "l", R_RING],
+	# bottom row (m lives here on QWERTY)
+	["Z", "z", L_PINKY], ["X", "x", L_RING], ["C", "c", L_MIDDLE], ["V", "v", L_INDEX],
+	["B", "b", L_INDEX], ["N", "n", R_INDEX], ["M", "m", R_INDEX],
 	# space + period
 	["SPACE", " ", THUMB], ["PERIOD", ".", R_RING],
 ]
@@ -55,9 +50,9 @@ const ROWS := [
 # The on-screen keyboard's letter rows, in display order (space + period are added
 # by the guide itself, being layout-neutral).
 const KEYBOARD_ROWS := [
-	["a", "z", "e", "r", "t", "y", "u", "i", "o", "p"],
-	["q", "s", "d", "f", "g", "h", "j", "k", "l", "m"],
-	["w", "x", "c", "v", "b", "n"],
+	["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+	["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+	["z", "x", "c", "v", "b", "n", "m"],
 ]
 
 # Lazily-built lookups (char -> {position, finger}, position -> char).

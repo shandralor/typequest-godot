@@ -14,7 +14,8 @@ const SceneComposerScript = preload("res://render/scene_composer.gd")
 const TypingState = preload("res://logic/typing.gd")
 const RunState = preload("res://logic/run_state.gd")
 const SceneActivity = preload("res://logic/scene_activity.gd")
-const AzertyInput = preload("res://input/azerty_input.gd")
+const KeyboardInput = preload("res://input/keyboard_input.gd")
+const KeyboardSettings = preload("res://game/keyboard_settings.gd")
 const TypeAlongPanel = preload("res://ui/type_along.gd")
 const KeyboardGuide = preload("res://ui/keyboard_guide.gd")
 const ChoiceBannerScript = preload("res://ui/choice_banner.gd")
@@ -98,8 +99,13 @@ const DEMO_INTERVAL := 0.10
 
 func _ready() -> void:
 	_locale = LocaleNlBe.new()
-	_build_layout()
 	var args := OS.get_cmdline_user_args()
+	# debug: force a keyboard layout for this run (--layout=azerty|qwerty), transient
+	# so it does not overwrite the persisted choice; must run BEFORE the UI is built.
+	var layout_arg := _arg_value(args, "--layout")
+	if layout_arg != "":
+		KeyboardSettings.set_transient(layout_arg)
+	_build_layout()
 	_demo = "--demo" in args
 	# debug: pick a scenario (--scenario=ID), jump to a node (--scene=ID), and
 	# pre-type N chars (--type=N)
@@ -123,6 +129,10 @@ func _ready() -> void:
 	else:
 		if _arg_value(args, "--menu") in ["world", "scenarios"]:
 			_show_overworld()
+		elif _arg_value(args, "--menu") == "options":
+			_compose_backdrop()
+			_show_main_menu()
+			_show_options()   # debug: jump straight to the options screen
 		else:
 			_compose_backdrop()
 			_show_main_menu()
@@ -401,7 +411,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if _app_state == AppState.OVERWORLD:
 		if _ow_walk == null:   # ignore keys while the knight is traveling
-			var oc := AzertyInput.char_for_physical(event.physical_keycode)
+			var oc := KeyboardInput.char_for_physical(event.physical_keycode)
 			if oc != "":
 				get_viewport().set_input_as_handled()
 				_ow_char(oc)
@@ -411,7 +421,7 @@ func _input(event: InputEvent) -> void:
 	if _phase == Phase.WIN and event.keycode == KEY_ENTER:
 		_show_overworld(_ow_at)   # finishing + enter returns to the island
 		return
-	var c := AzertyInput.char_for_physical(event.physical_keycode)
+	var c := KeyboardInput.char_for_physical(event.physical_keycode)
 	if c != "":
 		get_viewport().set_input_as_handled()
 		_on_char(c)
@@ -954,12 +964,39 @@ func _show_main_menu() -> void:
 	_update_camera(0.0, true)
 	_show_menu("TypeQuest", [
 		{"text": "Start", "on_press": _show_overworld_from_menu},
+		{"text": "Opties", "on_press": _show_options},
 		{"text": "Stoppen", "on_press": _quit_app, "secondary": true},
 	])
 
 
 func _show_overworld_from_menu() -> void:
 	_show_overworld(_ow_at)
+
+
+# --- options (main menu) ------------------------------------------------------
+
+## The options screen. Currently one setting: the keyboard layout (AZERTY/QWERTY),
+## a parent/setup choice matching the child's physical keyboard. Persists across
+## runs (KeyboardSettings -> user://settings.cfg).
+func _show_options() -> void:
+	_app_state = AppState.MAIN
+	_set_playing_ui(false)
+	_set_menu_fullscreen(true)
+	_show_menu("Opties", [
+		{"text": _kbd_item_text(), "on_press": _toggle_keyboard_layout},
+		{"text": "Terug", "on_press": _show_main_menu, "secondary": true},
+	])
+
+
+func _kbd_item_text() -> String:
+	return "Toetsenbord: %s" % KeyboardSettings.active_name()
+
+
+func _toggle_keyboard_layout() -> void:
+	KeyboardSettings.cycle()
+	if _keyboard != null:
+		_keyboard.rebuild()   # redraw the on-screen board for the new layout
+	_show_options()           # re-render the item with the updated label
 
 
 # --- overworld (the walkable scenario picker) ---------------------------------

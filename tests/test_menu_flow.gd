@@ -2,8 +2,8 @@ extends SceneTree
 
 ## Integration check: the shell navigation wiring. Start -> the OVERWORLD island;
 ## typing a site word starts the travel; travel completion starts the scenario.
-## Also checks the prefix rules: a locked site's word is rejected where it diverges
-## from unlocked words, and shared prefixes (bos/boog) never shadow a site.
+## Also checks the prefix rules: a key matching no site word is rejected, and
+## shared prefixes (bos/boog) never shadow a site.
 
 func _initialize() -> void:
 	var game = load("res://scenes/game.tscn").instantiate()
@@ -19,12 +19,14 @@ func _initialize() -> void:
 	await process_frame
 	fail += _check(game._app_state == game.AppState.OVERWORLD, "Start -> overworld")
 	fail += _check(game._ow_banners.size() == 3, "three site banners on the island")
-	fail += _check(game._ow_candidates.size() == 2, "two unlocked sites (boog is a teaser)")
-	# locked teaser: 'boo' (only boog's prefix) is rejected at the divergence
+	fail += _check(game._ow_candidates.size() == 3, "three unlocked sites (bos/smidse/boog)")
+	# a key matching no site word is rejected (buffer unchanged)
+	game._ow_char("x")
+	fail += _check(game._ow_buffer == "", "non-matching key rejected")
+	# shared prefix bos/boog: 'bo' is ambiguous (buffered, no site shadowed yet)
 	for c in ["b", "o"]:
 		game._ow_char(c)
-	game._ow_char("o")   # 'boo' matches only the LOCKED boog -> rejected
-	fail += _check(game._ow_buffer == "bo", "locked site word rejected at divergence")
+	fail += _check(game._ow_buffer == "bo", "shared prefix 'bo' buffered")
 	# completing 'bos' starts the travel to the forest
 	game._ow_char("s")
 	fail += _check(game._ow_walk != null, "typing 'bos' starts the travel")

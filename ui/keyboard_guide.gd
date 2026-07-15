@@ -7,14 +7,9 @@ extends Control
 ## change). The home-row anchor f/j is marked from the start (A1/A8). Keys use the
 ## Kenney CC0 square-button sprite.
 
-const Layout = preload("res://axis/layout/be_azerty.gd")
+const Settings = preload("res://game/keyboard_settings.gd")
 const KEY_TEX := "res://assets/kenney/ui_rpg/buttonSquare_beige.png"
 
-const ROWS := [
-	["a", "z", "e", "r", "t", "y", "u", "i", "o", "p"],
-	["q", "s", "d", "f", "g", "h", "j", "k", "l", "m"],
-	["w", "x", "c", "v", "b", "n"],
-]
 const FINGER_COLORS := {
 	"left_pinky": Color("e57373"), "left_ring": Color("ffb74d"),
 	"left_middle": Color("fff176"), "left_index": Color("81c784"),
@@ -30,13 +25,26 @@ var _keys: Dictionary = {}   # char -> NinePatchRect
 
 
 func _ready() -> void:
+	_build()
+
+
+## (Re)build the on-screen keyboard from the ACTIVE layout's rows -- call after the
+## keyboard layout is switched in the options so the guide reflects the new board.
+func rebuild() -> void:
+	for c in get_children():
+		c.queue_free()
+	_keys.clear()
+	_build()
+
+
+func _build() -> void:
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", GAP)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER          # center rows vertically
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)        # fill the keyboard area
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(vbox)
-	for row in ROWS:
+	for row in Settings.keyboard_rows():
 		vbox.add_child(_make_row(row))
 	var extra := HBoxContainer.new()
 	extra.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -67,7 +75,7 @@ func _make_key(ch: String, label_text: String, size: Vector2) -> NinePatchRect:
 	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	var guide := Layout.guidance_for_char(ch)
+	var guide := Settings.guidance_for_char(ch)
 	var is_anchor: bool = guide.get("is_home_anchor", false)
 	lbl.add_theme_color_override("font_color", Color("7a1f0a") if is_anchor else Color("3b2a1a"))
 	lbl.add_theme_font_size_override("font_size", 26)
@@ -81,5 +89,5 @@ func highlight(next_char: String) -> void:
 	for ch in _keys:
 		_keys[ch].modulate = IDLE_MODULATE
 	if next_char != "" and _keys.has(next_char):
-		var guide := Layout.guidance_for_char(next_char)
+		var guide := Settings.guidance_for_char(next_char)
 		_keys[next_char].modulate = FINGER_COLORS.get(guide.get("finger", ""), Color.WHITE)

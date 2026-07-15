@@ -115,6 +115,41 @@ ROADMAP (owner deferred, do NOT build yet): an alternate/added mode where fewer
 typing ERRORS land the shot closer to center (accuracy -> tighter grouping), on top
 of the current sentence-length mapping. Must still respect A6 (no speed at band-1).
 
+## Keyboard layout switch -- AZERTY / QWERTY (2026-07-15)
+
+The keyboard-layout AXIS now has a second layout and a runtime switch. Because we
+deliberately do NOT teach one row at a time (volume of motivated typing, not
+drills), a second layout drops in safely; the child picks the one matching their
+physical board.
+
+- `axis/layout/qwerty.gd` (new): US QWERTY, same pure-data contract as
+  `be_azerty.gd` (char_at_position / guidance_for_char / supports_text +
+  LAYOUT_ID / DISPLAY_NAME / KEYBOARD_ROWS / keyboard_rows()). `m` lives on the
+  bottom row here (vs SEMICOLON on AZERTY). f/j stay the home anchor.
+- Both layouts now expose `KEYBOARD_ROWS` / `keyboard_rows()` so the on-screen
+  keyboard (B6) renders from the ACTIVE layout instead of a hardcoded row list.
+- `game/keyboard_settings.gd` (new, NOT pure -- kept out of axis/): holds the
+  active layout id, persists to `user://settings.cfg`, and delegates
+  char_at_position / guidance_for_char / keyboard_rows to the active layout. This
+  is the single place the render/input side asks "which layout".
+- `input/keyboard_input.gd` (renamed from azerty_input.gd, class KeyboardInput):
+  physical keycode -> neutral US position -> ACTIVE layout char. KEY_TO_POSITION
+  now also maps KEY_M (QWERTY's m) alongside KEY_SEMICOLON (AZERTY's m).
+- `ui/keyboard_guide.gd`: builds rows + guidance from KeyboardSettings; gained a
+  `rebuild()` called when the layout is switched.
+- Main menu has an "Opties" item -> options screen with a "Toetsenbord: AZERTY/
+  QWERTY" toggle (cycles, persists, rebuilds the board) + "Terug".
+- Debug flags: `--layout=azerty|qwerty` (transient, does not clobber the saved
+  choice) and `--menu=options` (jump to the options screen for screenshots).
+- `tests/test_layouts.gd` (new, in run.sh): round-trips every char on each layout,
+  asserts both layouts type all content (swap never breaks typeability, A3), and
+  that keyboard rows cover the 26 letters once each. NOTE: also fixed a stale
+  assertion in test_menu_flow left over from the archery commit (boog is now
+  unlocked, so all three sites are selectable).
+- Content validator still checks typeability against AZERTY as the canonical
+  charset -- both layouts cover a-z + space + period, so this stays valid.
+- Reference renders: `.shots/kb_qwerty.png`, `.shots/kb_options.png`.
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to

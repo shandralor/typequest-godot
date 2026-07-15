@@ -5,7 +5,7 @@ set -u
 cd "$(dirname "$0")/.."
 godot --headless --import --path . >/dev/null 2>&1
 
-tests=(test_fnv1a test_logic test_content test_purity test_render_logic test_menu_flow)
+tests=(test_fnv1a test_logic test_content test_purity test_render_logic test_menu_flow test_layouts)
 fail=0
 for t in "${tests[@]}"; do
 	godot --headless --script "res://tests/$t.gd" >"/tmp/tq_$t.log" 2>&1
