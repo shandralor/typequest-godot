@@ -83,7 +83,8 @@ var _app_state := AppState.MAIN
 var _music
 var _top_bar: NinePatchRect   # small brown bar at the top (the overworld prompt)
 var _top_prompt: Label
-var _brief_label: Label       # intro briefing text that rolls across the screen
+var _brief_label: Label       # intro briefing text (typed out, kept on screen)
+var _brief_tween: Tween       # drives the briefing typewriter (killed on bail-out)
 
 const BRIEF_W := 1040.0       # briefing text box width (wraps long sentences to ~2 lines)
 var _back_button: TextureButton   # leave a scenario, back to the island
@@ -256,9 +257,9 @@ func _build_layout() -> void:
 
 	# intro briefing text: typed out sentence by sentence before typing starts,
 	# centered and wrapped to a couple of lines so a beginning reader can follow
-	_brief_label = _make_label(50, HORIZONTAL_ALIGNMENT_CENTER)
-	_brief_label.size = Vector2(BRIEF_W, 260.0)
-	_brief_label.position = Vector2((1920.0 - BRIEF_W) * 0.5, 150.0)
+	_brief_label = _make_label(38, HORIZONTAL_ALIGNMENT_CENTER)
+	_brief_label.size = Vector2(BRIEF_W, 400.0)
+	_brief_label.position = Vector2((1920.0 - BRIEF_W) * 0.5, 100.0)
 	_brief_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_brief_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_brief_label.add_theme_color_override("font_color", Color("fdf5e6"))
@@ -947,7 +948,9 @@ func _set_playing_ui(playing: bool) -> void:
 	if _back_button != null:
 		_back_button.visible = playing
 	if not playing and _brief_label != null:
-		_brief_label.visible = false   # end any in-flight intro briefing
+		if _brief_tween != null:
+			_brief_tween.kill()   # cancel any in-flight briefing typewriter
+		_brief_label.visible = false
 		_intro_briefing = false
 
 
@@ -1069,34 +1072,34 @@ func _begin_briefing() -> void:
 	_type_along.visible = false
 	_keyboard.visible = false
 	_choice_layer.visible = false
-	_brief_label.visible = true
-	_play_brief(0)
-
-
-func _play_brief(idx: int) -> void:
-	if not _intro_briefing:
-		return   # bailed out (ESC / back) while a roll was mid-flight
+	# stack ALL sentences and type them out one after another, keeping them on screen
+	# until the whole explanation is shown (then reveal the typing UI)
 	var lines: Array = _locale.briefing()
-	if idx >= lines.size():
-		_end_briefing()
-		return
-	var line: String = lines[idx]
-	_brief_label.text = line
-	_brief_label.visible_ratio = 0.0             # type it out, character by character
+	var full := ""
+	var ends: Array = []
+	for i in lines.size():
+		if i > 0:
+			full += "\n"
+		full += str(lines[i])
+		ends.append(full.length())
+	_brief_label.text = full
+	_brief_label.visible_ratio = 0.0
 	_brief_label.modulate.a = 1.0
-	# reveal time scales with length (a gentle typewriter a beginning reader can follow),
-	# then a short hold once complete, then fade out
-	var reveal: float = clampf(line.length() * 0.18, 3.0, 14.0)   # ~1/3 speed: gentle for beginners
-	var words: int = line.split(" ", false).size()
-	var hold: float = clampf(words * 0.28, 1.2, 3.5)
-	var t := create_tween()
-	t.tween_property(_brief_label, "visible_ratio", 1.0, reveal)
-	t.tween_interval(hold)
-	t.tween_property(_brief_label, "modulate:a", 0.0, 0.6)
-	t.tween_callback(_play_brief.bind(idx + 1))
+	_brief_label.visible = true
+	var total: float = float(maxi(full.length(), 1))
+	_brief_tween = create_tween()
+	for i in lines.size():
+		var seg_len: int = str(lines[i]).length()
+		var dur: float = clampf(seg_len * 0.18, 3.0, 14.0)   # ~1/3 speed, gentle for beginners
+		_brief_tween.tween_property(_brief_label, "visible_ratio", float(ends[i]) / total, dur)
+		_brief_tween.tween_interval(0.7)   # a beat between sentences
+	_brief_tween.tween_interval(2.0)       # final hold, everything visible
+	_brief_tween.tween_callback(_end_briefing)
 
 
 func _end_briefing() -> void:
+	if not _intro_briefing:
+		return   # already ended / bailed out (ESC / back)
 	_intro_briefing = false
 	_brief_label.visible = false
 	# reveal the typing UI so the child can move the knight
