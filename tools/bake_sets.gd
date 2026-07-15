@@ -15,7 +15,7 @@ extends SceneTree
 ## only bakes the sets you NAME -- with no arguments it just lists them.
 
 const Composer = preload("res://render/scene_composer.gd")
-const SETS := ["forest_straight", "forest_fork", "forest_bridge", "dungeon", "forge", "overworld"]
+const SETS := ["forest_straight", "forest_fork", "forest_bridge", "dungeon", "forge", "overworld", "archery", "house"]
 const OUT_DIR := "res://scenes/sets"
 
 

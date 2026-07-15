@@ -6,6 +6,9 @@ extends SceneTree
 ## shared prefixes (bos/boog) never shadow a site.
 
 func _initialize() -> void:
+	# pretend the intro was already seen so Start goes straight to the island (the
+	# intro-first path is a separate flow); transient -> no disk write.
+	load("res://game/app_progress.gd").set_intro_seen_transient(true)
 	var game = load("res://scenes/game.tscn").instantiate()
 	get_root().add_child(game)
 	await process_frame

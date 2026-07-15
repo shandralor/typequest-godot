@@ -172,6 +172,42 @@ scale); the rest sit dimmed. Doubles as a colour->finger legend and a live guide
 - Reference renders: `.shots/nails_v1.png` (right middel active), `.shots/nails_thumb.png`
   (both thumbs on space), `.shots/nails_overworld.png` (legend hidden).
 
+## Intro scenario -- wake up + leave the house (2026-07-15)
+
+A one-time onboarding that plays before the overworld on the first Start. The knight
+wakes in a house interior, a short explanation ROLLS across the screen, then the
+child types a few practice words and he walks out the door into the overworld.
+
+- `content/intro/intro_arc.gd`: single WALKING node, location "house", short prose
+  (hash fnv1a:9ff934d5). Prose "ik sta op. ik loop naar de deur." (few practice
+  words); narration "Typ de woorden." (short top-bar prompt during typing).
+- Briefing sentences: `axis/locale/nl_be.gd` `INTRO_BRIEFING` (a plain, editable
+  list -- read-aloud, so NO hash/band/layout constraints; edit/add/reorder freely).
+  game_controller rolls each in from the right, holds ~2.6s, slides off left, THEN
+  reveals the typing UI (`_begin_briefing`/`_play_brief`/`_end_briefing`,
+  `_brief_label`, `_intro_briefing` gates input).
+- House interior: `render/scene_composer.gd` `_static_house()` -- big, TALL, enclosed
+  (walls + ceiling + door lintel) so only the inside is ever seen; KayKit Dungeon
+  pieces (bed, doorway, torch, tables, barrel) + warm OmniLights. Baked to an
+  editable `scenes/sets/house.tscn` (also `archery.tscn`); bake_sets SETS extended.
+  IMPORTANT: house.tscn has OWNER EDITS (wall shield, shelves) -- do NOT re-bake it
+  without asking (would overwrite them).
+- Getting-up: the knight starts sunk below the floor (`HOUSE_SINK_DROP`) and RISES
+  over the first `HOUSE_RISE_FRAC` of typing, then WALKS; position is SMOOTHED
+  (`set_house_progress(p, delta)` lerp, `HOUSE_MOVE_SPEED`) so it reads fluid. He
+  stands on the floor TOP (`HOUSE_STAND_Y` = 0.2, the box floor's top) so his feet
+  do not sink; always faces the door. Fixed interior camera (is_house_scene branch).
+- Persistence: `game/app_progress.gd` -- `intro_seen` in user://settings.cfg (the
+  A5 seed). Start plays the intro once, then goes straight to the island; `--intro`
+  forces a replay; Opties has "Intro opnieuw tonen" (resets the flag);
+  `--scenario=intro` / `--menu=options` are debug entries.
+- Also: overworld now has a "Terug" button -> main menu (`_on_back_pressed` handles
+  OVERWORLD); the top bar auto-sizes to its text (`_set_top_prompt`).
+- test_content + test_layouts include IntroArc; test_menu_flow sets intro_seen
+  transiently so Start -> island regardless of machine state.
+- Reference renders: `.shots/intro_brief.png`, `.shots/intro_start2.png`,
+  `.shots/intro_neardoor.png`, `.shots/intro_exit.png`.
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to

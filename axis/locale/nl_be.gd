@@ -36,6 +36,10 @@ const CATALOG := {
 	"boog.prose": "de boog is klaar. de ridder mikt goed op het doel. de pijl vliegt snel recht door de lucht. de ridder raakt het doel precies in het midden.",
 	"boog.narration": "Span de boog en typ elk woord.",
 	"boog.win": "Raak! Recht in de roos.",
+	# intro -- short words teach the core move: type the words and the knight walks out
+	"intro.prose": "ik sta op. ik loop naar de deur.",
+	"intro.narration": "Typ de woorden.",
+	"intro.win": "Goed gedaan! Kies nu waar je heen gaat.",
 	# choice words (typed to pick a fork)
 	"word.verder": "verder",
 	"word.grot": "grot",
@@ -48,6 +52,19 @@ const CATALOG := {
 	"overworld.narration": "Waar ga je naartoe? Typ het woord.",
 	"overworld.locked": "Nog niet open",
 }
+
+# Intro briefing: read-aloud sentences that roll across the screen one by one BEFORE
+# the typing starts (game_controller plays them). Not typed -- so free capitals and
+# punctuation, no band/hash/layout constraints. EDIT / ADD / REORDER these freely.
+const INTRO_BRIEFING := [
+	"Dit is jouw ridder.",
+	"Hij zal bewegen als je de woorden typt die je onderaan ziet verschijnen.",
+	"Volg zo goed mogelijk de aanwijzingen voor het plaatsen van je vingers.",
+]
+
+
+func briefing() -> Array:
+	return INTRO_BRIEFING
 
 
 func resolve(key: String) -> String:

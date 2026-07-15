@@ -19,7 +19,7 @@ const Fnv1a = preload("res://logic/fnv1a.gd")
 const Layout = preload("res://axis/layout/be_azerty.gd")
 const Vocabulary = preload("res://axis/vocabulary/fantasy_poc.gd")
 
-const LOCATION_IDS := ["forest_path", "dungeon", "forge", "archery_range"]
+const LOCATION_IDS := ["forest_path", "dungeon", "forge", "archery_range", "house"]
 # The band must not encode per-key or per-finger gating (A2/A3). `charSet` legitimately
 # names a coarse character class (e.g. "lower-no-altgr"), so we flag only "finger".
 const FORBIDDEN_BAND_TERMS := ["finger"]

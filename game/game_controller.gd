@@ -16,6 +16,8 @@ const RunState = preload("res://logic/run_state.gd")
 const SceneActivity = preload("res://logic/scene_activity.gd")
 const KeyboardInput = preload("res://input/keyboard_input.gd")
 const KeyboardSettings = preload("res://game/keyboard_settings.gd")
+const AppProgress = preload("res://game/app_progress.gd")
+const IntroArc = preload("res://content/intro/intro_arc.gd")
 const TypeAlongPanel = preload("res://ui/type_along.gd")
 const KeyboardGuide = preload("res://ui/keyboard_guide.gd")
 const ChoiceBannerScript = preload("res://ui/choice_banner.gd")
@@ -80,6 +82,9 @@ var _app_state := AppState.MAIN
 var _music
 var _top_bar: NinePatchRect   # small brown bar at the top (the overworld prompt)
 var _top_prompt: Label
+var _brief_label: Label       # intro briefing text that rolls across the screen
+
+const BRIEF_W := 1920.0       # window width; the briefing slides in/out by this much
 var _back_button: TextureButton   # leave a scenario, back to the island
 
 # overworld (the walkable scenario picker)
@@ -93,6 +98,10 @@ const OW_BANNER_LIFT := Vector3(0, 7.2, 0)   # banner floats this far above a si
 
 # demo / capture
 var _demo := false
+var _in_intro := false      # the wake-up-and-leave-the-house intro is running
+var _intro_briefing := false  # the intro explanation is rolling (typing is disabled)
+var _force_intro := false   # --intro dev flag: replay the intro even once seen
+var _intro_reset := false   # options: intro-seen was just cleared (confirmation label)
 var _demo_accum := 0.0
 const DEMO_INTERVAL := 0.10
 
@@ -105,6 +114,7 @@ func _ready() -> void:
 	var layout_arg := _arg_value(args, "--layout")
 	if layout_arg != "":
 		KeyboardSettings.set_transient(layout_arg)
+	_force_intro = "--intro" in args   # replay the intro regardless of the seen flag
 	_build_layout()
 	_demo = "--demo" in args
 	# debug: pick a scenario (--scenario=ID), jump to a node (--scene=ID), and
@@ -112,7 +122,9 @@ func _ready() -> void:
 	var jump := _arg_value(args, "--scene")
 	var scen := _arg_value(args, "--scenario")
 	if _demo or jump != "" or scen != "":
-		if jump != "" or scen != "":
+		if scen == "intro":
+			_start_intro()
+		elif jump != "" or scen != "":
 			_start_scenario(scen if scen != "" else "band1")
 		else:
 			_show_overworld()   # a bare --demo plays from the island, like a child
@@ -240,6 +252,19 @@ func _build_layout() -> void:
 	_top_prompt.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_top_prompt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_top_bar.add_child(_top_prompt)
+
+	# intro briefing text: rolls across the scene sentence by sentence before typing
+	_brief_label = _make_label(48, HORIZONTAL_ALIGNMENT_CENTER)
+	_brief_label.size = Vector2(BRIEF_W, 120.0)
+	_brief_label.position = Vector2(BRIEF_W, 232.0)
+	_brief_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_brief_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_brief_label.add_theme_color_override("font_color", Color("fdf5e6"))
+	_brief_label.add_theme_color_override("font_outline_color", Color(0.12, 0.08, 0.05))
+	_brief_label.add_theme_constant_override("outline_size", 10)
+	_brief_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_brief_label.visible = false
+	ui.add_child(_brief_label)
 
 
 	# --- UI band (bottom): opaque, holds narration + type-along + keyboard ---
@@ -370,6 +395,16 @@ func _begin_choice() -> void:
 
 func _resolve_ending() -> void:
 	var ending = _run.resolve_ending()
+	if _in_intro:
+		# the knight has reached the door -- a beat, then out into the overworld
+		_set_message(_win_message())
+		_set_top_prompt("")
+		_type_along.visible = false
+		_keyboard.highlight("")
+		_phase = Phase.PAUSE
+		_flash()
+		_after(3.0, _finish_intro)
+		return
 	match ending.type:
 		"setback":
 			_set_message("De grot is eng. Terug naar het pad!")
@@ -428,6 +463,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _on_char(c: String) -> void:
+	if _intro_briefing:
+		return   # typing is inert while the intro explanation is rolling
 	match _phase:
 		Phase.PROSE:
 			_prose_char(c)
@@ -665,7 +702,14 @@ func _process(delta: float) -> void:
 	var act := _activity.update(p, delta)
 	# Don't drive idle/walk during WIN/PAUSE -- a one-shot (e.g. PickUp) is playing.
 	var drive_anim := _phase == Phase.PROSE or _phase == Phase.CHOICE
-	if _composer.is_walking():
+	if _composer.is_house_scene():
+		# intro: rise out of the floor, then glide to the door (facing it throughout);
+		# the walk clip plays only in the walk phase, gated by the activity hysteresis
+		# so it reads fluid (matches the other walking scenes)
+		var in_walk: bool = _composer.set_house_progress(p, delta)
+		if drive_anim:
+			_composer.set_lead_animation(_phase == Phase.PROSE and in_walk and act == SceneActivity.Activity.MOVING)
+	elif _composer.is_walking():
 		_composer.set_lead_progress(p)
 		# Facing and the walk clip are separate: face the travel direction once
 		# underway and KEEP facing it on pauses (only the fresh idle pose, no typing
@@ -794,6 +838,10 @@ func _camera_rig() -> Dictionary:
 		# labels have sky room above the hexes
 		return {"pos": look2 + (ow2.pos - look2) * 1.12, "look": look2, "fov": ow2.get("fov", 30.0)}
 	var lead: Vector3 = _composer.lead_position()
+	if _composer.is_house_scene():
+		# a fixed frame from INSIDE the room (near the front), looking down it at the
+		# doorway -- walls + ceiling enclose the view so only the interior is seen
+		return {"pos": Vector3(0, 4.7, 9.2), "look": Vector3(0, 1.2, -4.5), "fov": 54.0}
 	if _composer.is_walking():
 		return {"pos": lead + CAM_OFFSET, "look": lead + Vector3(0, CAM_LOOK_Y, 0)}
 	if _composer.has_landmarks():
@@ -895,11 +943,16 @@ func _set_playing_ui(playing: bool) -> void:
 		_choice_layer.visible = playing
 	if _back_button != null:
 		_back_button.visible = playing
+	if not playing and _brief_label != null:
+		_brief_label.visible = false   # end any in-flight intro briefing
+		_intro_briefing = false
 
 
 func _on_back_pressed() -> void:
 	if _app_state == AppState.PLAYING:
-		_show_overworld(_ow_at)
+		_show_overworld(_ow_at)   # leave a scenario, back to the island
+	elif _app_state == AppState.OVERWORLD:
+		_show_main_menu()         # leave the island, back to the main menu
 
 
 func _clear_menu() -> void:
@@ -957,6 +1010,7 @@ func _show_menu(title: String, items: Array) -> void:
 
 func _show_main_menu() -> void:
 	_app_state = AppState.MAIN
+	_intro_reset = false   # fresh options label next time
 	_music.play_context("menu")
 	_set_top_prompt("")
 	_set_playing_ui(false)
@@ -971,7 +1025,75 @@ func _show_main_menu() -> void:
 
 
 func _show_overworld_from_menu() -> void:
-	_show_overworld(_ow_at)
+	# the wake-up intro plays once (unless --intro forces a replay); afterwards Start
+	# goes straight to the island
+	if _force_intro or not AppProgress.intro_seen():
+		_start_intro()
+	else:
+		_show_overworld(_ow_at)
+
+
+# --- intro (wake up, walk out of the house, into the world) -------------------
+
+func _start_intro() -> void:
+	_clear_menu()
+	_music.play_context("adventure")
+	_set_top_prompt("")
+	_set_menu_fullscreen(false)
+	_set_playing_ui(true)
+	_app_state = AppState.PLAYING
+	_in_intro = true
+	_ow_at = "hub"
+	_run = RunState.new(IntroArc.build(), _locale)
+	_enter_node()
+	_begin_briefing()   # roll the explanation first, then reveal the typing box
+
+
+func _finish_intro() -> void:
+	_in_intro = false
+	_intro_briefing = false
+	AppProgress.set_intro_seen(true)
+	_show_overworld("hub")
+
+
+# --- intro briefing: explanation sentences roll across before typing ----------
+
+func _begin_briefing() -> void:
+	_intro_briefing = true
+	# hide the typing UI + top prompt; the scene stays as the backdrop (knight asleep)
+	_set_top_prompt("")
+	_type_along.visible = false
+	_keyboard.visible = false
+	_choice_layer.visible = false
+	_brief_label.visible = true
+	_play_brief(0)
+
+
+func _play_brief(idx: int) -> void:
+	if not _intro_briefing:
+		return   # bailed out (ESC / back) while a roll was mid-flight
+	var lines: Array = _locale.briefing()
+	if idx >= lines.size():
+		_end_briefing()
+		return
+	_brief_label.text = lines[idx]
+	_brief_label.position.x = BRIEF_W            # start off the right edge
+	var t := create_tween()
+	t.tween_property(_brief_label, "position:x", 0.0, 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.tween_interval(2.6)                          # hold, readable
+	t.tween_property(_brief_label, "position:x", -BRIEF_W, 0.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	t.tween_callback(_play_brief.bind(idx + 1))
+
+
+func _end_briefing() -> void:
+	_intro_briefing = false
+	_brief_label.visible = false
+	# reveal the typing UI so the child can move the knight
+	_type_along.visible = true
+	_keyboard.visible = true
+	_keyboard.set_hands_visible(true)
+	_choice_layer.visible = true
+	_set_top_prompt(_locale.resolve(_run.current().narration_key))
 
 
 # --- options (main menu) ------------------------------------------------------
@@ -985,12 +1107,24 @@ func _show_options() -> void:
 	_set_menu_fullscreen(true)
 	_show_menu("Opties", [
 		{"text": _kbd_item_text(), "on_press": _toggle_keyboard_layout},
+		{"text": _intro_item_text(), "on_press": _reset_intro},
 		{"text": "Terug", "on_press": _show_main_menu, "secondary": true},
 	])
 
 
 func _kbd_item_text() -> String:
 	return "Toetsenbord: %s" % KeyboardSettings.active_name()
+
+
+func _intro_item_text() -> String:
+	return "Intro is gereset" if _intro_reset else "Intro opnieuw tonen"
+
+
+# Clear the intro-seen flag so the wake-up intro plays again on the next Start.
+func _reset_intro() -> void:
+	AppProgress.set_intro_seen(false)
+	_intro_reset = true
+	_show_options()   # re-render with the confirmation label
 
 
 func _toggle_keyboard_layout() -> void:
@@ -1019,6 +1153,8 @@ func _show_overworld(at_anchor: String = "hub") -> void:
 	_type_along.set_plain("")
 	_keyboard.visible = true
 	_choice_layer.visible = true
+	if _back_button != null:
+		_back_button.visible = true   # island -> main menu (also on ESC)
 	_composer.compose_overworld(at_anchor)
 	_ow_at = at_anchor
 	_ow_buffer = ""
@@ -1061,6 +1197,14 @@ func _set_top_prompt(text: String) -> void:
 		return
 	_top_bar.visible = text != ""
 	_top_prompt.text = text
+	# size the bar to the text so longer explanations do not spill over its edges
+	if text != "":
+		var font := _top_prompt.get_theme_font("font")
+		var fs := _top_prompt.get_theme_font_size("font_size")
+		var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var half: float = clampf(w * 0.5 + 46.0, 300.0, 900.0)
+		_top_bar.offset_left = -half
+		_top_bar.offset_right = half
 
 
 # Banners float above their site, projected from the 3D anchor each frame -- so a

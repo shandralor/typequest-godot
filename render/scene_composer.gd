@@ -84,6 +84,7 @@ var _grindstone: Node3D
 var _is_overworld := false
 var _clouds: Array = []   # [{ node: Node3D, speed: float }] drifting sky clouds
 var _is_archery_scene := false
+var _is_house_scene := false   # the intro interior (wake up, walk out the door)
 var _target: Node3D          # the archery target
 var _crosshair: Node3D       # reticle on the target face
 var _bow: Node3D             # bow held by the knight (arrow spawn point)
@@ -100,6 +101,7 @@ func compose(descriptor, variant: String = "") -> void:
 			_needs_bloom = true   # only the treasure scenes get bloom
 	_is_work_scene = descriptor.location == "forge"
 	_is_archery_scene = descriptor.location == "archery_range"
+	_is_house_scene = descriptor.location == "house"
 	_location = _instance_set(_set_for(descriptor))
 	_location.name = "Location"
 	add_child(_location)
@@ -125,6 +127,8 @@ func compose(descriptor, variant: String = "") -> void:
 	if _is_archery_scene:
 		_build_archery_target()
 	set_lead_progress(0.0)
+	if _is_house_scene:
+		set_house_progress(0.0)   # start sunk below the floor, facing the door
 	if _is_archery_scene and _lead_anim != null and _lead_anim.has_animation(HERO_AIM):
 		_lead_anim.play(HERO_AIM)   # hold the bow-aim pose (not idle)
 	else:
@@ -146,6 +150,7 @@ func _clear() -> void:
 	_is_overworld = false
 	_clouds = []
 	_is_archery_scene = false
+	_is_house_scene = false
 	_target = null
 	_crosshair = null
 	_bow = null
@@ -530,6 +535,8 @@ func _set_for(descriptor) -> String:
 		return "forge"
 	if descriptor.location == "archery_range":
 		return "archery"
+	if descriptor.location == "house":
+		return "house"
 	if descriptor.location == "dungeon":
 		return "dungeon"
 	if descriptor.path == SceneDescriptor.PATH_FORK:
@@ -571,6 +578,8 @@ func build_static(set_name: String) -> Node3D:
 			return _static_forge()
 		"archery":
 			return _static_archery()
+		"house":
+			return _static_house()
 		"overworld":
 			return _static_overworld()
 		_:
@@ -674,6 +683,95 @@ func _static_forge() -> Node3D:
 		root.add_child(anvil)
 	_treeline(root, rng, ["Tree_1_A_Color1", "Tree_2_A_Color1", "Tree_3_A_Color1"])
 	return root
+
+
+const DUNGEON_DIR := "res://assets/kaykit/dungeon/"
+const C_HOUSE_WALL := Color(0.62, 0.52, 0.40)   # warm plaster
+const C_HOUSE_FLOOR := Color(0.46, 0.32, 0.20)  # wood boards
+
+
+# The intro interior: a warm room the knight walks across, from the bed (front, by the
+# camera) to the doorway (back) it steps out of into the overworld. Big and TALL with a
+# ceiling, so the camera (which sits just inside the front) only ever sees the interior
+# -- no looking over the walls. KayKit Dungeon pieces (bed, doorway, torch) on box walls.
+const HOUSE_H := 10.0   # wall height (tall enough to fill the frame)
+
+func _static_house() -> Node3D:
+	var root := Node3D.new()
+	root.add_child(_make_box(Vector3(13.0, 0.2, 19.0), Vector3(0, 0.1, 0), C_HOUSE_FLOOR))  # top at y=HOUSE_STAND_Y
+	# side walls (full depth) + a back wall split around a doorway gap + a ceiling
+	root.add_child(_make_box(Vector3(0.4, HOUSE_H, 19.0), Vector3(-6.3, HOUSE_H * 0.5, 0), C_HOUSE_WALL))
+	root.add_child(_make_box(Vector3(0.4, HOUSE_H, 19.0), Vector3(6.3, HOUSE_H * 0.5, 0), C_HOUSE_WALL))
+	root.add_child(_make_box(Vector3(4.8, HOUSE_H, 0.4), Vector3(-3.9, HOUSE_H * 0.5, -9.3), C_HOUSE_WALL))
+	root.add_child(_make_box(Vector3(4.8, HOUSE_H, 0.4), Vector3(3.9, HOUSE_H * 0.5, -9.3), C_HOUSE_WALL))
+	root.add_child(_make_box(Vector3(3.2, 5.0, 0.4), Vector3(0, 7.5, -9.3), C_HOUSE_WALL))   # lintel over the door
+	root.add_child(_make_box(Vector3(13.0, 0.4, 19.0), Vector3(0, HOUSE_H, 0), Color(0.30, 0.24, 0.18)))  # ceiling
+	var anchors := {
+		"center": Vector3(0, 0, 0),
+		"path_near": Vector3(0, 0, 4.5),    # rises here (low in the frame)
+		"path_far": Vector3(0, 0, -7.6),    # in front of the door (exit)
+		"treasure": Vector3(0, 0, -7.6),
+	}
+	for n in anchors:
+		var m := Marker3D.new()
+		m.name = n
+		m.position = anchors[n]
+		root.add_child(m)
+	_house_prop(root, "bed_decorated", Vector3(-3.6, 0, 4.8), 90.0, 1.3)
+	_house_prop(root, "wall_doorway", Vector3(0, 0, -9.3), 0.0, 1.4)
+	_house_prop(root, "table_small", Vector3(4.3, 0, 4.4), -20.0, 1.2)
+	_house_prop(root, "barrel_small", Vector3(4.7, 0, -4.5), 0.0, 1.2)
+	_house_prop(root, "torch_lit", Vector3(-6.0, 2.4, -3.0), 0.0, 1.2)
+	# warm glows so the enclosed room reads cozy, not flat/dark
+	for spot in [Vector3(0, 6.0, 3.0), Vector3(0, 6.0, -6.0)]:
+		var lamp := OmniLight3D.new()
+		lamp.position = spot
+		lamp.light_color = Color(1.0, 0.86, 0.62)
+		lamp.omni_range = 22.0
+		lamp.light_energy = 1.6
+		root.add_child(lamp)
+	return root
+
+
+func _house_prop(root: Node3D, model: String, pos: Vector3, yaw_deg: float, scale: float) -> Node3D:
+	var inst := _instance_path(DUNGEON_DIR + model + ".gltf")
+	if inst == null:
+		return null
+	inst.position = pos
+	inst.rotation.y = deg_to_rad(yaw_deg)
+	inst.scale = Vector3(scale, scale, scale)
+	root.add_child(inst)
+	return inst
+
+
+func is_house_scene() -> bool:
+	return _is_house_scene
+
+
+const HOUSE_RISE_FRAC := 0.16   # first slice of typing: the knight rises out of the floor
+const HOUSE_STAND_Y := 0.2      # the floor's TOP surface -- where the knight's feet rest
+const HOUSE_SINK_DROP := 1.0    # how far below standing he starts (getting-up illusion)
+const HOUSE_MOVE_SPEED := 5.0   # how fast he glides toward the typing target (fluidity)
+
+
+# Drive the intro knight by typing progress: he RISES out of the floor in place over
+# the first slice (getting up), then WALKS to the door. His position is SMOOTHED toward
+# the typing target each frame (delta > 0) so he glides instead of snapping per key; a
+# non-positive delta snaps (initial placement). Always faces the door. Returns true once
+# in the walking phase.
+func set_house_progress(p: float, delta: float = 0.0) -> bool:
+	if _lead == null:
+		return false
+	var rise := clampf(p / HOUSE_RISE_FRAC, 0.0, 1.0)
+	var walk := clampf((p - HOUSE_RISE_FRAC) / (1.0 - HOUSE_RISE_FRAC), 0.0, 1.0)
+	var base := _travel_start.lerp(_travel_end, walk)
+	var target := Vector3(base.x, lerpf(HOUSE_STAND_Y - HOUSE_SINK_DROP, HOUSE_STAND_Y, rise), base.z)
+	if delta <= 0.0:
+		_lead.position = target
+	else:
+		_lead.position = _lead.position.lerp(target, clampf(delta * HOUSE_MOVE_SPEED, 0.0, 1.0))
+	_lead.rotation.y = deg_to_rad(180)   # face the door the whole time
+	return walk > 0.001
 
 
 func _static_archery() -> Node3D:
