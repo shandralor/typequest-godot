@@ -34,6 +34,11 @@ License: **Creative Commons Zero (CC0)**. In `assets/kenney/ui_rpg/` (panels,
 square/long buttons, bars). 9-slice panels and buttons back the type-along panel,
 the on-screen keyboard keys, and the HUD.
 
+**Monster Builder Pack** by **Kenney Vleugels** -- https://kenney.nl/assets/monster-builder-pack
+License: **Creative Commons Zero (CC0)**. In `assets/kenney/monster/` -- two body
+shapes (`body_whiteC`, `body_whiteD`) tinted per finger colour as the fingertip
+legend beside the on-screen keyboard.
+
 ## Music -- AlkaKrab
 
 Background music from **AlkaKrab** -- *50 Fantasy Open World RPG Tracks*.

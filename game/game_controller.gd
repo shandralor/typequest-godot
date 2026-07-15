@@ -886,6 +886,7 @@ func _set_playing_ui(playing: bool) -> void:
 		_type_along.visible = playing
 	if _keyboard != null:
 		_keyboard.visible = playing
+		_keyboard.set_hands_visible(playing)   # finger legend only during a scenario
 	if _hud != null:
 		_hud.visible = playing
 	if _message != null:

@@ -150,6 +150,28 @@ physical board.
   charset -- both layouts cover a-z + space + period, so this stays valid.
 - Reference renders: `.shots/kb_qwerty.png`, `.shots/kb_options.png`.
 
+## Finger legend beside the keyboard (2026-07-15)
+
+The on-screen keyboard (B6) now has a finger LEGEND flanking it: two staggered
+groups of Kenney "nail" sprites stand in for the fingertips (no drawn hand), each
+tinted with its finger colour and captioned with the Dutch finger name
+(pink/ring/middel/wijs/duim). The fingertip needed right now pops (full colour +
+scale); the rest sit dimmed. Doubles as a colour->finger legend and a live guide.
+
+- `ui/finger_hand.gd` (new, FingerHand): absolute-positioned nail sprites + labels,
+  one instance per hand (right mirrored). `configure(prefix, colors, mirror)` +
+  `highlight(finger_id)`.
+- `ui/keyboard_guide.gd`: `_build` now lays out [left hand][keys][right hand] in a
+  centered HBox; `highlight()` drives the matching fingertip via `_drive_hands`
+  (thumb = space lights BOTH hands); `set_hands_visible()` hides the legend where it
+  is noise.
+- The legend shows only DURING a scenario -- hidden in the overworld (site-name
+  typing), via `_set_playing_ui` -> `set_hands_visible(playing)`.
+- Asset: Kenney Monster Builder Pack (CC0), `assets/kenney/monster/body_whiteC.png`
+  (fingers) + `body_whiteD.png` (thumb), tinted via modulate. Credited in CREDITS.md.
+- Reference renders: `.shots/nails_v1.png` (right middel active), `.shots/nails_thumb.png`
+  (both thumbs on space), `.shots/nails_overworld.png` (legend hidden).
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to

@@ -22,6 +22,8 @@ const GAP := 5
 const IDLE_MODULATE := Color(0.82, 0.82, 0.82)
 
 var _keys: Dictionary = {}   # char -> NinePatchRect
+var _left_hand: FingerHand
+var _right_hand: FingerHand
 
 
 func _ready() -> void:
@@ -38,12 +40,25 @@ func rebuild() -> void:
 
 
 func _build() -> void:
+	# a row: [left-hand nails] [key rows] [right-hand nails], the group centered
+	var hbox := HBoxContainer.new()
+	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 30)
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(hbox)
+
+	_left_hand = FingerHand.new()
+	_left_hand.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hbox.add_child(_left_hand)
+	_left_hand.configure("left_", FINGER_COLORS, false)
+
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", GAP)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER          # center rows vertically
-	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)        # fill the keyboard area
+	vbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(vbox)
+	hbox.add_child(vbox)
 	for row in Settings.keyboard_rows():
 		vbox.add_child(_make_row(row))
 	var extra := HBoxContainer.new()
@@ -52,6 +67,11 @@ func _build() -> void:
 	extra.add_child(_make_key(" ", "spatie", Vector2(250, 50)))
 	extra.add_child(_make_key(".", ".", KEY_SIZE))
 	vbox.add_child(extra)
+
+	_right_hand = FingerHand.new()
+	_right_hand.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	hbox.add_child(_right_hand)
+	_right_hand.configure("right_", FINGER_COLORS, true)
 
 
 func _make_row(chars: Array) -> HBoxContainer:
@@ -84,10 +104,35 @@ func _make_key(ch: String, label_text: String, size: Vector2) -> NinePatchRect:
 	return key
 
 
-## Highlight the key for the next expected character (or "" to clear all).
+## Highlight the key for the next expected character (or "" to clear all). Also
+## lights the matching fingertip on the legend beside the keyboard.
 func highlight(next_char: String) -> void:
 	for ch in _keys:
 		_keys[ch].modulate = IDLE_MODULATE
+	var finger := ""
 	if next_char != "" and _keys.has(next_char):
 		var guide := Settings.guidance_for_char(next_char)
-		_keys[next_char].modulate = FINGER_COLORS.get(guide.get("finger", ""), Color.WHITE)
+		finger = guide.get("finger", "")
+		_keys[next_char].modulate = FINGER_COLORS.get(finger, Color.WHITE)
+	_drive_hands(finger)
+
+
+## Show/hide the finger legend without touching the keys (the overworld types site
+## names, where per-finger coaching is just noise -- hide the hands there).
+func set_hands_visible(v: bool) -> void:
+	if _left_hand != null:
+		_left_hand.visible = v
+	if _right_hand != null:
+		_right_hand.visible = v
+
+
+func _drive_hands(finger: String) -> void:
+	if _left_hand == null or _right_hand == null:
+		return
+	# the thumb is shared (space) -- light it on both hands
+	if finger == "thumb":
+		_left_hand.highlight("thumb")
+		_right_hand.highlight("thumb")
+	else:
+		_left_hand.highlight(finger if finger.begins_with("left") else "")
+		_right_hand.highlight(finger if finger.begins_with("right") else "")
