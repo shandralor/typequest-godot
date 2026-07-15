@@ -297,3 +297,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.547255, 0, 1.9820333)
 
 [node name="Bush_2_C_Color12" parent="." unique_id=1641758692 instance=ExtResource("17_lx5m5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5566535, 0, 3.2550087)
+
+[node name="building_home_A_red3" parent="." unique_id=460301446 instance=ExtResource("10_xg86a")]
+transform = Transform3D(-2.2482615, 0, 1.3058792, 0, 2.6, 0, -1.3058792, 0, -2.2482615, -1.9750538, 0, 2.8982239)
