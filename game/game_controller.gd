@@ -414,7 +414,8 @@ func _begin_choice() -> void:
 func _resolve_ending() -> void:
 	var ending = _run.resolve_ending()
 	if _in_intro:
-		# the knight has reached the door -- a beat, then out into the overworld
+		# the knight has reached the door: it swings open, a beat, then out into the world
+		_composer.house_open_door()
 		_set_message(_win_message())
 		_set_top_prompt("")
 		_type_along.visible = false

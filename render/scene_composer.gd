@@ -54,6 +54,7 @@ var _is_overworld := false
 var _clouds: Array = []   # [{ node: Node3D, speed: float }] drifting sky clouds
 var _is_archery_scene := false
 var _is_house_scene := false   # the intro interior (wake up, walk out the door)
+var _house_door: Node3D      # the doorway leaf that swings open at the intro end
 var _target: Node3D          # the archery target
 var _crosshair: Node3D       # reticle on the target face
 var _bow: Node3D             # bow held by the knight (arrow spawn point)
@@ -119,6 +120,7 @@ func _clear() -> void:
 	_clouds = []
 	_is_archery_scene = false
 	_is_house_scene = false
+	_house_door = null
 	_target = null
 	_crosshair = null
 	_bow = null
@@ -547,6 +549,18 @@ func house_pickup_key() -> void:
 	if kr != null:
 		kr.visible = false
 	play_lead_oneshot(HeroRig.HERO_PICKUP)
+
+
+# Swing the doorway leaf open (the intro flourish as the knight leaves). The door mesh
+# hinges near its own origin, so a yaw on the leaf reads as a door opening.
+func house_open_door() -> void:
+	if _house_door == null and _location != null:
+		_house_door = _location.find_child("wall_doorway_door", true, false) as Node3D
+	if _house_door == null:
+		return
+	var t := create_tween()
+	t.tween_property(_house_door, "rotation:y", deg_to_rad(100), 0.7) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 # --- archery (crosshair + arrows) ---------------------------------------------

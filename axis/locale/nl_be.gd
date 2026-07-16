@@ -40,7 +40,7 @@ const CATALOG := {
 	# (4 sentences = 4 legs: rise, fetch the sword, fetch the key, leave)
 	"intro.prose": "de ridder staat op. hij pakt zijn zwaard. hij loopt naar de kast en pakt de sleutel. daarna opent hij de deur.",
 	"intro.narration": "Typ de woorden.",
-	"intro.win": "Goed gedaan! Kies nu waar je heen gaat.",
+	"intro.win": "Klaar voor het avontuur!",
 	# choice words (typed to pick a fork)
 	"word.verder": "verder",
 	"word.grot": "grot",
