@@ -53,6 +53,58 @@ consumer" B4 was waiting for. Quick wins + the optimization pass slot in opportu
 
 ---
 
+## Session 2 additions (2026-07-16, batch 2) -- review pass + campaign spine
+
+Owner play-tested Wave 1 and added near-term fixes, an intro/house rework, and a CAMPAIGN
+PROGRESSION SPINE (forest first, cave obligatory, meeting the skeleton unlocks the rest).
+Some REWORKS just-built pieces (the intro fetch-quest, all-sites-unlocked, gold treasure).
+The campaign spine becomes "Wave 1.5" between the done Wave 1 and the Wave 2 surfaces.
+
+**Near-term fixes (a cleanup pass first)**
+- **F1. Snap the eyeballed south hexes to the grid** (overworld.tscn). Grid = x multiples
+  of 3, z multiples of 5.196, rows alternate parity. Owner's placed ~z15.573/x2.958,8.900
+  -> 15.588 / 3, 9; water ~z20.833 -> 20.784.
+- **F2. Fix the rise-from-bed animation**: knight rises through the bed/floor -> move the
+  rise point beside the bed + rebalance the fixed intro camera.
+- **F3. Fix the smidse see-through** (forge.gd): outside shows on the right at the end ->
+  add/extend the right wall or fix the win-camera framing.
+- **F4. Forest transition beat**: after a choice word (grot/brug), walk the knight toward
+  the chosen path ~1-2s before composing the next scene (no brutal cut).
+
+**Intro + house items rework**
+- **H1. Intro = a MORNING WALK**; the sword + keys are LOOKED AT, not taken (a hint says
+  come back / needed later). Remove the pickup legs from intro.prose -> re-hash. Flows into
+  scenario 1 (the forest, the only unlocked site per C1).
+- **H2. Sword + keys become CONDITIONAL house items** (like the bow): visible, fetched
+  later when their requirement is met, hidden once collected. 2nd/3rd consumer -> GENERALISE
+  `_apply_house_locks` + house_pickup_* + has_<item> flags into a DATA list (the G8 hotspot).
+
+**Campaign progression spine (Wave 1.5)**
+- **C1. Sites are EARNED**: only bos open at start; smidse + boog locked until
+  `met_skeleton` (overworld.gd `unlocked` -> flag check; locked shows overworld.locked).
+- **C2. Cave obligatory before the bridge -- FENCE gate**: keep the kruispunt fork, but a
+  fence locks `brug` until the cave is done; seeing the skeleton sets `met_skeleton`, then
+  the knight JUMPS THE FENCE out of fear to cross (slight naGrot/brug text edit -> re-hash).
+- **C3. Post-cave cutscene**: the hero realises they must TRAIN + MAINTAIN WEAPONS before
+  facing the skeleton -- motivates the smidse + boog just unlocked.
+- **C4. Bridge treasure is NOT gold** -- a hint / first COLLECTIBLE that appears in the
+  house (rework schat.prose + reward; ties to H2 + objectives). Which collectible: TBD.
+
+**Overworld life**
+- **O1. Windmill**: animate the blades turning; make it a destination that shows a "come
+  back later" (overworld.locked) banner on arrival. A placeholder site.
+
+**Design / UX**
+- **U1. Transparent scoring**: stars/xp come from ACCURACY (scoring.gd: xp = 20 +
+  correct_chars x (0.5+0.5xacc); stars done->1 / >=.85->2 / >=.95->3; zero speed). Make it
+  visible + encouraging (win / progress screen), never judgmental. Folds into G9.
+- **U2. Reuse the choice banners** (ui/choice_banner.gd) in more scenes (cutscene, G10).
+
+Re-sequence: F1-F4 + O1 (cleanup) -> Wave 1.5 campaign (C1 -> C2 -> H1/H2 -> C3 -> C4) ->
+U1 with the progress screen -> then Wave 2 (quest log, progress screen, characters).
+
+---
+
 ## Seeded backlog (already deferred before this session)
 
 - **A. Objectives / discoverability** (owner-confirmed: map badge + nudge, reusable):

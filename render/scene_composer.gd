@@ -492,6 +492,16 @@ func is_house_scene() -> bool:
 	return _is_house_scene
 
 
+# Fork scenes (the forest crossroads) expose the cave (left) + bridge (right) world
+# positions so the controller can walk the hero toward the chosen path before the cut.
+func has_fork() -> bool:
+	return _has_landmarks
+
+
+func fork_pos(side: String) -> Vector3:
+	return _cave_pos if side == "left" else _bridge_pos
+
+
 const LOCKED_GHOST := 0.55   # transparency for a locked (not-yet-unlocked) house item
 
 

@@ -87,6 +87,9 @@ var _message: Label
 var _hud: Label
 var _choice_layer: Control
 var _banners: Array = []
+# a short walk toward the chosen path before the scene cut (fork: cave/bridge)
+var _walkoff: Dictionary = {}
+const CHOICE_WALK_DUR := 1.4
 var _ui: Control
 var _menu_layer: Control
 var _menu_screen: Control
@@ -562,8 +565,12 @@ func _choice_char(c: String) -> void:
 	_update_banner_highlight()
 	_highlight_choice()
 	if _picked != null and _buffer == _picked.word:
+		var hint: String = _picked.choice.hint
 		_run.choose(_locale.resolve(_picked.choice.word_key))
-		_enter_node()
+		if _composer.has_fork() and (hint == "left" or hint == "right"):
+			_begin_choice_walk(_composer.fork_pos(hint))   # stroll toward cave/bridge first
+		else:
+			_enter_node()
 
 
 # --- view helpers ------------------------------------------------------------
@@ -608,6 +615,20 @@ func _update_banner_highlight() -> void:
 		else:
 			e.banner.set_typed(0)
 			e.banner.set_active(false)
+
+
+# Walk the hero a couple of steps toward the chosen fork path, then cut to the scene.
+func _begin_choice_walk(dest: Vector3) -> void:
+	_clear_banners()
+	_set_top_prompt("")
+	_keyboard.highlight("")
+	_phase = Phase.PAUSE
+	var from: Vector3 = _composer.lead_position()
+	_walkoff = {"from": from, "to": from.lerp(dest, 0.5), "t": 0.0, "dur": CHOICE_WALK_DUR}
+	var d: Vector3 = dest - from
+	if d.length() > 0.001:
+		_composer.set_lead_yaw(atan2(d.x, d.z))
+	_composer.set_lead_animation(true)
 
 
 func _clear_banners() -> void:
@@ -889,6 +910,18 @@ func _process(delta: float) -> void:
 			_composer.set_lead_animation(false)
 		_update_camera(delta, false)
 		return
+	if not _walkoff.is_empty():
+		# the hero strolls a couple of steps toward the chosen path before the scene
+		# cuts -- softens the fork transition (no brutal switch)
+		_walkoff.t += delta
+		var wf: float = clampf(_walkoff.t / _walkoff.dur, 0.0, 1.0)
+		_composer.set_lead_position(_walkoff.from.lerp(_walkoff.to, wf))
+		_composer.set_lead_animation(true)
+		_update_camera(delta, false)
+		if wf >= 1.0:
+			_walkoff = {}
+			_enter_node()
+		return
 	var p := _typing_progress()
 	var act := _activity.update(p, delta)
 	# Don't drive idle/walk during WIN/PAUSE -- a one-shot (e.g. PickUp) is playing.
@@ -1044,8 +1077,9 @@ func _camera_rig() -> Dictionary:
 		if _phase == Phase.WIN:
 			# SAME frontal angle as grinding (the wheel poofs away at the win, so no
 			# swing is needed -- a swing would expose the smithy walls from outside).
-			# Just raised a touch to frame the cheering knight + raised sword.
-			return {"pos": lead + Vector3(0.5, 2.2, 4.4), "look": lead + Vector3(0.5, 1.35, 0.6)}
+			# Just raised a touch to frame the cheering knight + raised sword. A tighter
+			# FOV crops the smithy's open front-right edge (no outside showing at the win).
+			return {"pos": lead + Vector3(0.3, 2.1, 4.0), "look": lead + Vector3(0.3, 1.3, 0.6), "fov": 46.0}
 		# a near front view of the knight grinding the sword on the wheel in front
 		return {"pos": lead + Vector3(0.5, 1.9, 4.0), "look": lead + Vector3(0.55, 0.95, 1.2)}
 	if _composer.is_archery_scene():
