@@ -142,8 +142,9 @@ func _ready() -> void:
 			_run.current_id = jump
 			_enter_node()
 		var pretype := int(_arg_value(args, "--type"))
-		if pretype > 0 and _intro_briefing:
-			_end_briefing()   # debug: skip the intro briefing so --type can drive the walk
+		# debug: skip the intro briefing so --type / --demo / --burst can drive the walk
+		if _intro_briefing and (pretype > 0 or _demo or "--burst" in args):
+			_end_briefing()
 		for i in range(pretype):
 			if _phase == Phase.PROSE and not _prose.is_complete():
 				_on_char(_prose.target.substr(_prose.cursor, 1))
