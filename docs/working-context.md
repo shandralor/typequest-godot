@@ -326,6 +326,17 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Roadmap captured (2026-07-16)
+
+A full brain-dump + ordered backlog now lives in **docs/roadmap.md** (10 new owner
+ideas -- character variety, character picker, star cosmetics, scroll quest log, island
+expansion, item-gated puzzles, ability-gated diversity, de-hardcoding, progress screen,
+typing fight -- folded with the pre-existing backlog into 4 build waves). NEXT BUILD =
+Wave 1: the objectives/discoverability layer (map badge + read-aloud nudge, "get your
+bow") then the bow fetch payoff. Two foundations gate most of it: the objectives/flag
+spine + real persistence (A5). One design knot to settle early: variant/dynamic prose
+vs. the A4 safety hash + band limits.
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to
