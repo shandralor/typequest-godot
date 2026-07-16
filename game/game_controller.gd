@@ -66,6 +66,14 @@ var _arch_span: Array = []   # [start, end) char range per sentence
 var _arch_fired := 0
 var _arch_t := 0.0
 
+# house intro: one sentence = one leg of a waypoint walk (rise, fetch sword, fetch key,
+# leave). The knight glides toward the current leg's waypoint as its sentence is typed,
+# and picks up the sword/key when he arrives (the cursor passes that leg's end).
+var _house_span: Array = []      # [start, end) char range per sentence
+var _house_way: Array = []       # Vector3 waypoint per sentence (leg s ends here)
+var _house_pickups: Array = []   # [sentence_index, "sword"/"key"] events, in order
+var _house_pick := 0
+
 # UI
 var _type_along
 var _keyboard
@@ -133,7 +141,10 @@ func _ready() -> void:
 		if jump != "":
 			_run.current_id = jump
 			_enter_node()
-		for i in range(int(_arg_value(args, "--type"))):
+		var pretype := int(_arg_value(args, "--type"))
+		if pretype > 0 and _intro_briefing:
+			_end_briefing()   # debug: skip the intro briefing so --type can drive the walk
+		for i in range(pretype):
 			if _phase == Phase.PROSE and not _prose.is_complete():
 				_on_char(_prose.target.substr(_prose.cursor, 1))
 		if "--shot" in args:
@@ -377,6 +388,8 @@ func _enter_node() -> void:
 		_highlight_prose()
 		if _composer.is_archery_scene():
 			_setup_archery(_prose.target)
+		if _composer.is_house_scene():
+			_setup_house(_prose.target)
 	_setup_gaze(node)
 	_update_hud()
 
@@ -482,6 +495,8 @@ func _prose_char(c: String) -> void:
 	_highlight_prose()
 	if _composer.is_archery_scene():
 		_archery_check_fire()
+	if _composer.is_house_scene():
+		_house_check_pickup()
 	if _prose.is_complete():
 		_run.score_current(_prose.correct_chars(), _prose.accuracy(), true)
 		_update_hud()
@@ -651,6 +666,103 @@ func _archery_check_fire() -> void:
 		_arch_fired += 1
 
 
+# --- house intro: one sentence = one leg of a waypoint walk -------------------
+
+# Map each sentence to a leg + its destination waypoint. Sentence 0 rises in place at
+# path_near; sentences 1.. walk to sword_point, key_point, then the door (path_far).
+# The sword is fetched at the end of leg 1, the key at the end of leg 2.
+func _setup_house(prose: String) -> void:
+	_house_span = _sentence_spans(prose)
+	_house_pickups = []
+	_house_pick = 0
+	var stops := ["path_near", "sword_point", "key_point", "path_far"]
+	_house_way = []
+	for i in _house_span.size():
+		var anchor: String = stops[i] if i < stops.size() else "path_far"
+		_house_way.append(_composer.anchor_pos(anchor))
+	if _house_span.size() >= 2:
+		_house_pickups.append([1, "sword"])
+	if _house_span.size() >= 3:
+		_house_pickups.append([2, "key"])
+
+
+func _update_house(delta: float) -> bool:
+	if _house_way.is_empty():
+		return false
+	var s := _house_current_sentence()
+	var prog := _house_sentence_progress(s)
+	var stand: float = _composer.house_stand_y()
+	var sink: float = _composer.house_sink_drop()
+	var target: Vector3
+	var yaw: float
+	if s == 0:
+		# rise in place at the first waypoint, oriented toward the first walk
+		var w0: Vector3 = _house_way[0]
+		target = Vector3(w0.x, lerpf(stand - sink, stand, prog), w0.z)
+		yaw = _house_leg_yaw(1) if _house_way.size() > 1 else PI
+	else:
+		var from: Vector3 = _house_way[s - 1]
+		var to: Vector3 = _house_way[s]
+		var base := from.lerp(to, prog)
+		target = Vector3(base.x, stand, base.z)
+		yaw = _house_leg_yaw(s)
+	_composer.house_move_to(target, delta, yaw)
+	return s >= 1   # walking (not the initial rise)
+
+
+# Yaw that faces along leg `s` (from waypoint s-1 to s); falls back to the door.
+func _house_leg_yaw(s: int) -> float:
+	if s <= 0 or s >= _house_way.size():
+		return PI
+	var dir: Vector3 = _house_way[s] - _house_way[s - 1]
+	if dir.length() < 0.001:
+		return PI
+	return atan2(dir.x, dir.z)
+
+
+func _house_current_sentence() -> int:
+	for i in _house_span.size():
+		if _prose.cursor < _house_span[i][1]:
+			return i
+	return _house_span.size() - 1
+
+
+func _house_sentence_progress(i: int) -> float:
+	var sp = _house_span[i]
+	var span_len: int = sp[1] - sp[0]
+	if span_len <= 0:
+		return 1.0
+	return clampf(float(_prose.cursor - sp[0]) / float(span_len), 0.0, 1.0)
+
+
+# Pick up the sword / key when the cursor passes the end of that leg's sentence.
+func _house_check_pickup() -> void:
+	while _house_pick < _house_pickups.size():
+		var ev = _house_pickups[_house_pick]
+		var s: int = ev[0]
+		if s < _house_span.size() and _prose.cursor >= _house_span[s][1]:
+			if ev[1] == "sword":
+				_composer.house_pickup_sword()
+			else:
+				_composer.house_pickup_key()
+			_house_pick += 1
+		else:
+			break
+
+
+# Split prose into [start, end) char ranges, one per sentence (ends after each '.').
+func _sentence_spans(prose: String) -> Array:
+	var spans: Array = []
+	var start := 0
+	for i in prose.length():
+		if prose[i] == ".":
+			spans.append([start, i + 1])
+			start = i + 1
+	if spans.is_empty():
+		spans.append([0, prose.length()])
+	return spans
+
+
 func _highlight_choice() -> void:
 	var next_char := ""
 	if _picked == null:
@@ -707,10 +819,9 @@ func _process(delta: float) -> void:
 	# Don't drive idle/walk during WIN/PAUSE -- a one-shot (e.g. PickUp) is playing.
 	var drive_anim := _phase == Phase.PROSE or _phase == Phase.CHOICE
 	if _composer.is_house_scene():
-		# intro: rise out of the floor, then glide to the door (facing it throughout);
-		# the walk clip plays only in the walk phase, gated by the activity hysteresis
-		# so it reads fluid (matches the other walking scenes)
-		var in_walk: bool = _composer.set_house_progress(p, delta)
+		# intro: rise, then glide leg by leg to the shelves / cabinet / door as each
+		# sentence is typed; the walk clip is gated by the activity hysteresis (fluid)
+		var in_walk: bool = _update_house(delta)
 		if drive_anim:
 			_composer.set_lead_animation(_phase == Phase.PROSE and in_walk and act == SceneActivity.Activity.MOVING)
 	elif _composer.is_walking():

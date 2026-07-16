@@ -37,6 +37,7 @@ var anim: AnimationPlayer
 var walking := false
 var travel_start := Vector3(0, 0, 7)
 var travel_end := Vector3(0, 0, -8)
+var _oneshot := false   # a one-shot (e.g. PickUp) is playing -- do not let walk/idle stomp it
 
 
 # Builds the animated hero (B3): mesh + idle from the General rig, with the walk
@@ -81,8 +82,8 @@ func _graft_animations(lib: AnimationLibrary, glb_path: String, names: Array) ->
 
 ## Cross-fade the hero between its walk and idle clips (B3 in-place aliveness).
 func set_animation(moving: bool) -> void:
-	if anim == null:
-		return
+	if anim == null or _oneshot:
+		return   # let an in-flight one-shot (PickUp) finish before walk/idle resumes
 	var want := HERO_WALK if moving else HERO_IDLE
 	if anim.has_animation(want) and anim.current_animation != want:
 		anim.play(want, 0.25)
@@ -102,10 +103,12 @@ func play_oneshot(anim_name: String) -> void:
 	anim.get_animation(anim_name).loop_mode = Animation.LOOP_NONE
 	if not anim.animation_finished.is_connected(_on_oneshot_done):
 		anim.animation_finished.connect(_on_oneshot_done)
+	_oneshot = true
 	anim.play(anim_name, 0.2)
 
 
 func _on_oneshot_done(_anim: StringName) -> void:
+	_oneshot = false
 	if anim != null and anim.has_animation(HERO_IDLE):
 		anim.play(HERO_IDLE, 0.3)
 

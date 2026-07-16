@@ -7,6 +7,8 @@
 [ext_resource type="PackedScene" uid="uid://dnv80spklli14" path="res://assets/kaykit/dungeon/torch_lit.gltf" id="5_mhodq"]
 [ext_resource type="PackedScene" uid="uid://bdgfy4r1m25nx" path="res://assets/kaykit/dungeon/shelves.gltf" id="6_37gw0"]
 [ext_resource type="PackedScene" uid="uid://dt1pfvqv7f4gy" path="res://assets/kaykit/dungeon/sword_shield_gold.gltf" id="7_wkfiq"]
+[ext_resource type="PackedScene" uid="uid://yc6wsb0opp7p" path="res://assets/kaykit/adventurers/sword_1handed.gltf" id="9_swrd"]
+[ext_resource type="PackedScene" uid="uid://dchoqj0tef20o" path="res://assets/kaykit/dungeon/keyring_hanging.gltf" id="10_key"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_midvf"]
 albedo_color = Color(0.46, 0.32, 0.2, 1)
@@ -130,3 +132,18 @@ transform = Transform3D(0.023414694, 0, -0.9997258, 0, 1, 0, 0.9997258, 0, 0.023
 
 [node name="sword_shield_gold2" parent="." unique_id=774512240 instance=ExtResource("7_wkfiq")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1178517, 2.8436065, -9.001488)
+
+[node name="sword_point" type="Marker3D" parent="." unique_id=411000001]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.7, 0, 0.9)
+
+[node name="key_point" type="Marker3D" parent="." unique_id=411000002]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.1, 0, -1.5)
+
+[node name="cabinet" parent="." unique_id=411000003 instance=ExtResource("6_37gw0")]
+transform = Transform3D(-0.023414694, 0, 0.9997258, 0, 1, 0, -0.9997258, 0, -0.023414694, -6.35, 0.8370838, -1.5)
+
+[node name="shelf_sword" parent="." unique_id=411000004 instance=ExtResource("9_swrd")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 5.9, 1.35, 0.86)
+
+[node name="cabinet_key" parent="." unique_id=411000005 instance=ExtResource("10_key")]
+transform = Transform3D(1.4, 0, 0, 0, 1.4, 0, 0, 0, 1.4, -5.2, 1.5, -1.5)

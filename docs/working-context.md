@@ -239,6 +239,36 @@ prose/keyboard/HUD. **MedievalSharp** is applied ONLY to decorative headings (th
 menu title + menu banners) via `add_theme_font_override` -- kept off the prose so it
 never hurts a beginning reader.
 
+## Intro fetch-quest: sword + key, then exit (2026-07-16)
+
+The intro is now a 4-leg waypoint walk (one typed sentence = one leg), not a single
+bed->door walk. Prose `intro.prose` = "ik sta op. ik pak mijn zwaard. ik pak de
+sleutel. ik ga naar buiten." (hash fnv1a:ca6010db): rise -> walk to the shelves + take
+the sword -> walk to the cabinet + take the key -> walk to the door -> overworld.
+
+- Reused the ARCHERY per-sentence pattern: `_setup_house`/`_update_house`/
+  `_house_check_pickup`/`_house_current_sentence`/`_house_sentence_progress` +
+  shared `_sentence_spans` in game_controller.gd, mirroring `_setup_archery` etc.
+  Waypoints come from anchors `path_near`, `sword_point`, `key_point`, `path_far`.
+- Composer: `house_move_to(target, delta, yaw)` (generalized the old
+  set_house_progress), `set_house_start()` (sunk init), `house_pickup_sword()` /
+  `house_pickup_key()` (hide the shelf/cabinet display prop by name via
+  SceneKit.find_child_containing, attach sword to handslot.r, play PickUp). Extracted
+  a shared `_attach_to_hand(node, bone, offset)` helper (sword + bow now use it).
+- HeroRig: added a `_oneshot` lock so a PickUp one-shot is not stomped by the
+  per-frame walk/idle driver during the walk (set in play_oneshot, cleared in
+  _on_oneshot_done; set_animation early-returns while locked). Safe for existing
+  one-shots (they fired when the driver was inactive).
+- scenes/sets/house.tscn (hand-edited, NOT re-baked -- has owner's shelves2 +
+  shield): added `cabinet` (the `shelves` model, id 6_37gw0, mirrored from the
+  owner's right-wall shelves to the left wall), `shelf_sword` (adventurers
+  sword_1handed on the right shelves), `cabinet_key` (keyring_hanging on the cabinet),
+  and Marker3D anchors `sword_point`/`key_point`. NOTE: `shelf_large` is a thin wall
+  PLANK (not a standing cabinet) -- the tall `shelves` model is the cabinet.
+- Debug: `--type=N` on the intro now calls `_end_briefing()` first so screenshots can
+  drive the walk (the briefing otherwise blocks input). Beats verified:
+  `.shots/house_sword.png`, `.shots/house_cab4.png`, `.shots/house_exit.png`.
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to

@@ -97,7 +97,7 @@ func compose(descriptor, variant: String = "") -> void:
 		_build_archery_target()
 	set_lead_progress(0.0)
 	if _is_house_scene:
-		set_house_progress(0.0)   # start sunk below the floor, facing the door
+		set_house_start()   # start sunk below the floor at path_near, facing the door
 	if _is_archery_scene and _hero.anim != null and _hero.anim.has_animation(HeroRig.HERO_AIM):
 		_hero.anim.play(HeroRig.HERO_AIM)   # hold the bow-aim pose (not idle)
 	else:
@@ -494,24 +494,59 @@ const HOUSE_SINK_DROP := 1.0    # how far below standing he starts (getting-up i
 const HOUSE_MOVE_SPEED := 5.0   # how fast he glides toward the typing target (fluidity)
 
 
-# Drive the intro knight by typing progress: he RISES out of the floor in place over
-# the first slice (getting up), then WALKS to the door. His position is SMOOTHED toward
-# the typing target each frame (delta > 0) so he glides instead of snapping per key; a
-# non-positive delta snaps (initial placement). Always faces the door. Returns true once
-# in the walking phase.
-func set_house_progress(p: float, delta: float = 0.0) -> bool:
+# The floor top the knight stands on / how far below he starts (controller reads these
+# to compute the rise as he gets up).
+func house_stand_y() -> float:
+	return HOUSE_STAND_Y
+
+
+func house_sink_drop() -> float:
+	return HOUSE_SINK_DROP
+
+
+# Move the intro knight toward `target`, SMOOTHED each frame (delta > 0) so he glides
+# instead of snapping; a non-positive delta snaps (initial placement). `yaw` sets his
+# facing (radians). The controller computes the waypoint + rise Y and passes it in.
+func house_move_to(target: Vector3, delta: float = 0.0, yaw: float = PI) -> void:
 	if _hero.node == null:
-		return false
-	var rise := clampf(p / HOUSE_RISE_FRAC, 0.0, 1.0)
-	var walk := clampf((p - HOUSE_RISE_FRAC) / (1.0 - HOUSE_RISE_FRAC), 0.0, 1.0)
-	var base := _hero.travel_start.lerp(_hero.travel_end, walk)
-	var target := Vector3(base.x, lerpf(HOUSE_STAND_Y - HOUSE_SINK_DROP, HOUSE_STAND_Y, rise), base.z)
+		return
 	if delta <= 0.0:
 		_hero.node.position = target
 	else:
 		_hero.node.position = _hero.node.position.lerp(target, clampf(delta * HOUSE_MOVE_SPEED, 0.0, 1.0))
-	_hero.node.rotation.y = deg_to_rad(180)   # face the door the whole time
-	return walk > 0.001
+	_hero.node.rotation.y = yaw
+
+
+# Initial sunk placement for the house intro (called once from compose(), delta = 0):
+# he starts below the floor at path_near, facing the door.
+func set_house_start() -> void:
+	if _hero.node == null:
+		return
+	var s := _hero.travel_start
+	house_move_to(Vector3(s.x, HOUSE_STAND_Y - HOUSE_SINK_DROP, s.z), 0.0, deg_to_rad(180))
+
+
+# The knight takes his sword off the shelf: hide the displayed shelf sword, put the
+# vocabulary sword in his right hand, and play the pickup one-shot.
+func house_pickup_sword() -> void:
+	var shelf := SceneKit.find_child_containing(_location, "shelf_sword")
+	if shelf != null:
+		shelf.visible = false
+	var sword := SceneKit.instance_asset("sword")
+	sword.name = "Prop_sword"
+	if not _attach_to_hand(sword, "handslot.r", Vector3(0.0, 0.0, 0.0)):
+		add_child(sword)
+		sword.position = lead_position()
+	_sword = sword
+	play_lead_oneshot(HeroRig.HERO_PICKUP)
+
+
+# The knight takes the key from the cabinet: hide the displayed keyring + play pickup.
+func house_pickup_key() -> void:
+	var kr := SceneKit.find_child_containing(_location, "cabinet_key")
+	if kr != null:
+		kr.visible = false
+	play_lead_oneshot(HeroRig.HERO_PICKUP)
 
 
 # --- archery (crosshair + arrows) ---------------------------------------------
@@ -627,6 +662,21 @@ func _hero_position_high() -> Vector3:
 
 # --- props --------------------------------------------------------------------
 
+# Attach `node` to the hero skeleton's named bone slot (e.g. handslot.r/.l) at a local
+# offset, so it is actually held and follows the hand animation. Returns false if the
+# hero has no Skeleton3D (caller should place it in the world instead).
+func _attach_to_hand(node: Node3D, bone_name: String, offset: Vector3) -> bool:
+	var sk: Skeleton3D = _hero.node.find_child("Skeleton3D", true, false) if _hero.node != null else null
+	if sk == null:
+		return false
+	var ba := BoneAttachment3D.new()
+	ba.bone_name = bone_name
+	sk.add_child(ba)
+	ba.add_child(node)
+	node.position = offset
+	return true
+
+
 func _place_prop(prop) -> void:
 	match prop.asset:
 		"bridge":
@@ -636,26 +686,14 @@ func _place_prop(prop) -> void:
 			sword.name = "Prop_sword"
 			# attach to the knight's right-hand weapon slot so it is actually held;
 			# the grinding + raise motion then comes from the hand animation
-			var sk: Skeleton3D = _hero.node.find_child("Skeleton3D", true, false) if _hero.node != null else null
-			if sk != null:
-				var ba := BoneAttachment3D.new()
-				ba.bone_name = "handslot.r"
-				sk.add_child(ba)
-				ba.add_child(sword)
-				sword.position = Vector3(0.4, 0.11, 0.0)   # nudge onto the wheel
-			else:
+			if not _attach_to_hand(sword, "handslot.r", Vector3(0.4, 0.11, 0.0)):
 				add_child(sword)
 				sword.position = _anchor_position(prop.anchor)
 			_sword = sword
 		"bow":
 			var bow := SceneKit.instance_asset("bow")
 			bow.name = "Prop_bow"
-			var skb: Skeleton3D = _hero.node.find_child("Skeleton3D", true, false) if _hero.node != null else null
-			if skb != null:
-				var ba := BoneAttachment3D.new()
-				ba.bone_name = "handslot.l"   # bow held in the off-hand
-				skb.add_child(ba)
-				ba.add_child(bow)
+			if _attach_to_hand(bow, "handslot.l", Vector3.ZERO):   # held in the off-hand
 				# the model's default grip points the string downrange; spin it so the
 				# string faces the archer and the belly (arrow rest) faces the target
 				bow.rotate_object_local(Vector3.UP, PI)
