@@ -52,6 +52,7 @@ var _sword: Node3D
 var _grindstone: Node3D
 var _is_overworld := false
 var _clouds: Array = []   # [{ node: Node3D, speed: float }] drifting sky clouds
+var _windmill_fan: Node3D   # the overworld windmill sail, spun in _process
 var _is_archery_scene := false
 var _is_house_scene := false   # the intro interior (wake up, walk out the door)
 var _house_door: Node3D      # the doorway leaf that swings open at the intro end
@@ -120,6 +121,7 @@ func _clear() -> void:
 	_grindstone = null
 	_is_overworld = false
 	_clouds = []
+	_windmill_fan = null
 	_is_archery_scene = false
 	_is_house_scene = false
 	_house_door = null
@@ -143,6 +145,7 @@ func compose_overworld(start_anchor: String = "hub") -> void:
 	add_child(_location)
 	_apply_mood("light", false)   # no distance fog: the island must read crisply
 	_spawn_clouds()
+	_windmill_fan = _location.find_child("building_windmill_top_fan_red", true, false) as Node3D
 	var hero := _hero.build()
 	hero.name = "Actor_hero"
 	add_child(hero)
@@ -186,6 +189,8 @@ func _process(delta: float) -> void:
 		n.position.x += c.speed * delta
 		if n.position.x > CLOUD_WRAP_MAX:
 			n.position.x = CLOUD_WRAP_MIN
+	if _windmill_fan != null:
+		_windmill_fan.rotate_object_local(Vector3(0, 0, 1), 0.9 * delta)   # sails turn
 
 
 func is_overworld() -> bool:
