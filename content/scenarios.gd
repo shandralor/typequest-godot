@@ -8,6 +8,7 @@ extends RefCounted
 const Band1Arc = preload("res://content/band1/band1_arc.gd")
 const GrindArc = preload("res://content/grind/grind_arc.gd")
 const ArcheryArc = preload("res://content/archery/archery_arc.gd")
+const HomeArc = preload("res://content/home/home_arc.gd")
 
 
 static func list() -> Array:
@@ -15,6 +16,7 @@ static func list() -> Array:
 		{"id": "band1", "title": "De ridder en de schat"},
 		{"id": "grind", "title": "Slijp je zwaard"},
 		{"id": "archery", "title": "Boogschieten"},
+		{"id": "home", "title": "Thuis"},
 	]
 
 
@@ -24,5 +26,7 @@ static func build(id: String):
 			return GrindArc.build()
 		"archery":
 			return ArcheryArc.build()
+		"home":
+			return HomeArc.build()
 		_:
 			return Band1Arc.build()

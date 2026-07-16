@@ -13,6 +13,7 @@ const Band1Arc = preload("res://content/band1/band1_arc.gd")
 const GrindArc = preload("res://content/grind/grind_arc.gd")
 const ArcheryArc = preload("res://content/archery/archery_arc.gd")
 const IntroArc = preload("res://content/intro/intro_arc.gd")
+const HomeArc = preload("res://content/home/home_arc.gd")
 const LocaleNlBe = preload("res://axis/locale/nl_be.gd")
 const Band1Spec = preload("res://content/band1/band_spec.gd")
 const OverworldSites = preload("res://content/overworld.gd")
@@ -22,7 +23,7 @@ const Layout = preload("res://axis/layout/be_azerty.gd")
 
 func _initialize() -> void:
 	var total := 0
-	for graph in [Band1Arc.build(), GrindArc.build(), ArcheryArc.build(), IntroArc.build()]:
+	for graph in [Band1Arc.build(), GrindArc.build(), ArcheryArc.build(), IntroArc.build(), HomeArc.build()]:
 		var problems = ContentValidator.validate(graph, LocaleNlBe.new(), Band1Spec.SPEC)
 		for p in problems:
 			print("PROBLEM: ", p)

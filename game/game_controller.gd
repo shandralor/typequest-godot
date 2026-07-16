@@ -73,6 +73,9 @@ var _house_span: Array = []      # [start, end) char range per sentence
 var _house_way: Array = []       # Vector3 waypoint per sentence (leg s ends here)
 var _house_pickups: Array = []   # [sentence_index, "sword"/"key"] events, in order
 var _house_pick := 0
+# house return visit (not the intro): a simple walk in, door -> room, over the prose
+var _house_visit_from := Vector3.ZERO
+var _house_visit_to := Vector3.ZERO
 
 # UI
 var _type_along
@@ -390,7 +393,10 @@ func _enter_node() -> void:
 		if _composer.is_archery_scene():
 			_setup_archery(_prose.target)
 		if _composer.is_house_scene():
-			_setup_house(_prose.target)
+			if _in_intro:
+				_setup_house(_prose.target)         # rise + fetch quest (the intro)
+			else:
+				_setup_house_visit(_prose.target)   # a return visit: just walk in
 	_setup_gaze(node)
 	_update_hud()
 
@@ -441,6 +447,8 @@ func _resolve_ending() -> void:
 				_composer.play_lead_loop("Cheering")    # raise the held sword in triumph
 			elif _composer.is_archery_scene():
 				_composer.play_lead_loop("Cheering")    # bullseye! celebrate
+			elif _composer.is_house_scene():
+				_composer.play_lead_loop("Cheering")    # a return visit: a small wave, no chest
 			else:
 				_composer.open_chest()                  # treasure win: open the chest
 				_composer.play_lead_oneshot("PickUp")
@@ -752,6 +760,31 @@ func _house_check_pickup() -> void:
 			break
 
 
+# A RETURN visit (not the intro): the knight enters at the door and walks into the room
+# as the whole prose is typed -- no rise, no fetch. This is the foundation for later
+# "get an item from home" visits (add an item + a `*_point` anchor + a leg).
+func _setup_house_visit(_prose_text: String) -> void:
+	_house_visit_from = _composer.anchor_pos("path_far")   # the door
+	_house_visit_to = _composer.anchor_pos("center")       # into the room
+	var stand: float = _composer.house_stand_y()
+	_composer.house_move_to(Vector3(_house_visit_from.x, stand, _house_visit_from.z), 0.0, _house_visit_yaw())
+
+
+func _update_house_visit(delta: float) -> bool:
+	var prog := _prose.progress()
+	var stand: float = _composer.house_stand_y()
+	var base := _house_visit_from.lerp(_house_visit_to, prog)
+	_composer.house_move_to(Vector3(base.x, stand, base.z), delta, _house_visit_yaw())
+	return prog > 0.001
+
+
+func _house_visit_yaw() -> float:
+	var dir: Vector3 = _house_visit_to - _house_visit_from
+	if dir.length() < 0.001:
+		return 0.0
+	return atan2(dir.x, dir.z)
+
+
 # Split prose into [start, end) char ranges, one per sentence (ends after each '.').
 func _sentence_spans(prose: String) -> Array:
 	var spans: Array = []
@@ -822,8 +855,9 @@ func _process(delta: float) -> void:
 	var drive_anim := _phase == Phase.PROSE or _phase == Phase.CHOICE
 	if _composer.is_house_scene():
 		# intro: rise, then glide leg by leg to the shelves / cabinet / door as each
-		# sentence is typed; the walk clip is gated by the activity hysteresis (fluid)
-		var in_walk: bool = _update_house(delta)
+		# sentence is typed; a return visit just walks in. Walk clip gated by the
+		# activity hysteresis (fluid).
+		var in_walk: bool = _update_house(delta) if _in_intro else _update_house_visit(delta)
 		if drive_anim:
 			_composer.set_lead_animation(_phase == Phase.PROSE and in_walk and act == SceneActivity.Activity.MOVING)
 	elif _composer.is_walking():

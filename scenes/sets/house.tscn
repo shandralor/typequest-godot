@@ -8,7 +8,12 @@
 [ext_resource type="PackedScene" uid="uid://bdgfy4r1m25nx" path="res://assets/kaykit/dungeon/shelves.gltf" id="6_37gw0"]
 [ext_resource type="PackedScene" uid="uid://dt1pfvqv7f4gy" path="res://assets/kaykit/dungeon/sword_shield_gold.gltf" id="7_wkfiq"]
 [ext_resource type="PackedScene" uid="uid://yc6wsb0opp7p" path="res://assets/kaykit/adventurers/sword_1handed.gltf" id="9_swrd"]
+[ext_resource type="PackedScene" uid="uid://du2mkojrkc5ki" path="res://assets/kaykit/forest_nature/Tree_1_C_Color1.gltf" id="10_g5ji1"]
 [ext_resource type="PackedScene" uid="uid://dchoqj0tef20o" path="res://assets/kaykit/dungeon/keyring_hanging.gltf" id="10_key"]
+[ext_resource type="PackedScene" uid="uid://cxhfwx74k32cs" path="res://assets/kaykit/forest_nature/Tree_2_A_Color1.gltf" id="11_nhkgf"]
+[ext_resource type="PackedScene" uid="uid://bfwqst3iv5jcc" path="res://assets/kaykit/forest_nature/Tree_2_B_Color1.gltf" id="12_qtuwl"]
+[ext_resource type="PackedScene" uid="uid://dfkv2dluo4xkt" path="res://assets/kaykit/forest_nature/Tree_2_C_Color1.gltf" id="13_uxnme"]
+[ext_resource type="PackedScene" uid="uid://b6r4brnyw7ggr" path="res://assets/kaykit/forest_nature/Tree_2_D_Color1.gltf" id="14_ka4xk"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_midvf"]
 albedo_color = Color(0.46, 0.32, 0.2, 1)
@@ -147,3 +152,18 @@ transform = Transform3D(-0.033219803, -0.0428293, -1.9992656, 1.9997241, -0.0007
 
 [node name="cabinet_key" parent="." unique_id=411000005 instance=ExtResource("10_key")]
 transform = Transform3D(0.089232646, 0, 0.99601084, 0, 1, 0, -0.99601084, 0, 0.089232646, -5.4453187, 2.233201, -1.1236377)
+
+[node name="Tree_1_C_Color12" parent="." unique_id=1253895590 instance=ExtResource("10_g5ji1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4843044, 0, -19.824451)
+
+[node name="Tree_2_A_Color12" parent="." unique_id=347477687 instance=ExtResource("11_nhkgf")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4364643, 0, -19.824451)
+
+[node name="Tree_2_B_Color12" parent="." unique_id=193144872 instance=ExtResource("12_qtuwl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4843044, 0, -17.20635)
+
+[node name="Tree_2_C_Color12" parent="." unique_id=748653917 instance=ExtResource("13_uxnme")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.809637, 0, -19.824451)
+
+[node name="Tree_2_D_Color12" parent="." unique_id=803618692 instance=ExtResource("14_ka4xk")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6067219, 0, -14.377336)

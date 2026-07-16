@@ -97,8 +97,10 @@ func compose(descriptor, variant: String = "") -> void:
 	if _is_archery_scene:
 		_build_archery_target()
 	set_lead_progress(0.0)
-	if _is_house_scene:
-		set_house_start()   # start sunk below the floor at path_near, facing the door
+	if _is_house_scene and _hero.walking:
+		# the INTRO (a walking scene starting at path_near) sinks him for the getting-up
+		# rise; a RETURN visit (starts at path_far/door, not walking) just stands there
+		set_house_start()
 	if _is_archery_scene and _hero.anim != null and _hero.anim.has_animation(HeroRig.HERO_AIM):
 		_hero.anim.play(HeroRig.HERO_AIM)   # hold the bow-aim pose (not idle)
 	else:

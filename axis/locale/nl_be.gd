@@ -41,6 +41,10 @@ const CATALOG := {
 	"intro.prose": "de ridder staat op. hij pakt zijn zwaard. hij loopt naar de kast en pakt de sleutel. daarna opent hij de deur.",
 	"intro.narration": "Typ de woorden.",
 	"intro.win": "Klaar voor het avontuur!",
+	# home -- a RETURN visit to the house (overworld "thuis" site): walk in, look around
+	"home.prose": "de ridder is weer thuis. hij loopt naar binnen en kijkt rond.",
+	"home.narration": "Typ de woorden.",
+	"home.win": "Tot de volgende keer!",
 	# choice words (typed to pick a fork)
 	"word.verder": "verder",
 	"word.grot": "grot",
@@ -50,6 +54,7 @@ const CATALOG := {
 	"site.bos": "bos",
 	"site.smidse": "smidse",
 	"site.boog": "boog",
+	"site.thuis": "thuis",
 	"overworld.narration": "Waar ga je naartoe? Typ het woord.",
 	"overworld.locked": "Nog niet open",
 }

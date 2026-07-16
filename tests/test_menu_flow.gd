@@ -21,8 +21,8 @@ func _initialize() -> void:
 	start.pressed.emit()
 	await process_frame
 	fail += _check(game._app_state == game.AppState.OVERWORLD, "Start -> overworld")
-	fail += _check(game._ow_banners.size() == 3, "three site banners on the island")
-	fail += _check(game._ow_candidates.size() == 3, "three unlocked sites (bos/smidse/boog)")
+	fail += _check(game._ow_banners.size() == 4, "four site banners on the island")
+	fail += _check(game._ow_candidates.size() == 4, "four unlocked sites (bos/smidse/boog/thuis)")
 	# a key matching no site word is rejected (buffer unchanged)
 	game._ow_char("x")
 	fail += _check(game._ow_buffer == "", "non-matching key rejected")

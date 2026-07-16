@@ -10,7 +10,8 @@ extends RefCounted
 ## becomes derived from stars/XP without changing this shape. A site with an empty
 ## scenario is a TEASER: shown greyed on the map, not selectable.
 ##
-## Site words are owner-approved one by one (2026-07-02: bos, smidse, boog).
+## Site words are owner-approved one by one (2026-07-02: bos, smidse, boog;
+## 2026-07-16: thuis -- the revisitable house, reuses scenes/sets/house.tscn).
 
 static func sites() -> Array:
 	return [
@@ -20,4 +21,6 @@ static func sites() -> Array:
 			"anchor": "site_smidse", "route": "route_smidse", "unlocked": true},
 		{"id": "boog", "word_key": "site.boog", "scenario": "archery",
 			"anchor": "site_boog", "route": "route_boog", "unlocked": true},
+		{"id": "thuis", "word_key": "site.thuis", "scenario": "home",
+			"anchor": "site_home", "route": "route_home", "unlocked": true},
 	]

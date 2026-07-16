@@ -75,6 +75,13 @@ _data = {
 }
 point_count = 3
 
+[sub_resource type="Curve3D" id="Curve3D_home"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -0.8, 0, 1.2, 0, 0, 0, 0, 0, 0, -1.6, 0, 2.3),
+"tilts": PackedFloat32Array(0, 0, 0)
+}
+point_count = 3
+
 [node name="Node3D" type="Node3D" unique_id=411164511]
 
 [node name="hex_grass2" parent="." unique_id=807206696 instance=ExtResource("1_eg8vr")]
@@ -271,6 +278,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.699971, 0, -8.14035)
 [node name="site_boog" type="Marker3D" parent="." unique_id=1911085412]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.7483172, 0, 3.8960285)
 
+[node name="site_home" type="Marker3D" parent="." unique_id=1911085500]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 0, 2.3)
+
 [node name="camera_pos" type="Marker3D" parent="." unique_id=1195238363]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, 34)
 
@@ -285,6 +295,9 @@ curve = SubResource("Curve3D_goobl")
 
 [node name="route_boog" type="Path3D" parent="." unique_id=886842143]
 curve = SubResource("Curve3D_0ax3q")
+
+[node name="route_home" type="Path3D" parent="." unique_id=886842200]
+curve = SubResource("Curve3D_home")
 
 [node name="Rock_1_A_Color12" parent="." unique_id=864440111 instance=ExtResource("14_uvhbf")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.07268095, 0, 2.2348475)

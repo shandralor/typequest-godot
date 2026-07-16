@@ -16,6 +16,7 @@ const Band1Arc = preload("res://content/band1/band1_arc.gd")
 const GrindArc = preload("res://content/grind/grind_arc.gd")
 const ArcheryArc = preload("res://content/archery/archery_arc.gd")
 const IntroArc = preload("res://content/intro/intro_arc.gd")
+const HomeArc = preload("res://content/home/home_arc.gd")
 const LocaleNlBe = preload("res://axis/locale/nl_be.gd")
 
 const ALPHABET := "abcdefghijklmnopqrstuvwxyz"
@@ -67,7 +68,7 @@ func _check_same_charset() -> void:
 
 func _check_content_typeable(layouts: Dictionary) -> void:
 	var locale = LocaleNlBe.new()
-	for graph in [Band1Arc.build(), GrindArc.build(), ArcheryArc.build(), IntroArc.build()]:
+	for graph in [Band1Arc.build(), GrindArc.build(), ArcheryArc.build(), IntroArc.build(), HomeArc.build()]:
 		for id in graph.nodes:
 			var prose: String = locale.resolve(graph.nodes[id].prose_key)
 			for name in layouts:

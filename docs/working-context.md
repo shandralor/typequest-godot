@@ -269,6 +269,40 @@ the sword -> walk to the cabinet + take the key -> walk to the door -> overworld
   drive the walk (the briefing otherwise blocks input). Beats verified:
   `.shots/house_sword.png`, `.shots/house_cab4.png`, `.shots/house_exit.png`.
 
+## Revisitable house -- "thuis" overworld site (2026-07-16)
+
+The house is now a REVISITABLE overworld site, reusing the SAME editable set as the
+intro (scenes/sets/house.tscn) -- NO mirrored/rebaked variant. This is the foundation
+for later "fetch an item from home" visits (shield, cloak, ...): add the item + a
+`*_point` anchor in the editor + a leg to the walk; track collected items in
+AppProgress (the profile seed).
+
+KEY PRINCIPLE (why no orientation rebake): "orientation" is not geometry -- it is just
+which ANCHORS the walk uses + where the camera sits. The intro walks bed(path_near) ->
+door(path_far) and rises; a return visit walks door(path_far) -> center and does NOT
+rise. Same room, different anchors. NEVER re-bake house.tscn (it has owner edits;
+re-baking regenerates from the procedural builder and wipes them).
+
+- content/home/home_arc.gd (HomeArc): one node, location "house", PATH_STRAIGHT, hero
+  at "path_far" (the door), facing into the room. Prose "de ridder is weer thuis. hij
+  loopt naar binnen en kijkt rond." (hash fnv1a:70f31056). Registered in scenarios.gd
+  ("home"). site.thuis word + home.narration/win in nl_be.gd.
+- content/overworld.gd: new `thuis` site (word site.thuis, scenario home, anchor
+  site_home, route route_home, unlocked). overworld.tscn: added site_home Marker3D
+  (~-1.6,0,2.3, near the owner's home building) + route_home Path3D/Curve3D (hub->site,
+  3-point, copied from route_bos). Missing route/anchor degrades gracefully (jumps to
+  the scenario) -- see _ow_walk_tick.
+- INTRO vs VISIT split (game_controller): gated on `_in_intro`. _enter_node/_process
+  call _setup_house/_update_house (intro: rise+fetch) when _in_intro, else
+  _setup_house_visit/_update_house_visit (walk door->center via _composer.house_move_to,
+  no rise/fetch). compose() only sinks the knight when `_hero.walking` (intro is a
+  walking scene starting at path_near; the visit starts at path_far, not walking).
+  Win: house scenes play Cheering (no chest).
+- Tests: HomeArc added to test_content + test_layouts; test_menu_flow now expects 4
+  unlocked sites. All 7 green. Reference: .shots/home_enter.png, .shots/home_ow.png.
+- NEXT for real items: an inventory flag in AppProgress (has_shield, ...), an item +
+  `*_point` anchor in house.tscn, and a fetch leg in _update_house_visit.
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to
