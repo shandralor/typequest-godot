@@ -303,6 +303,29 @@ re-baking regenerates from the procedural builder and wipes them).
 - NEXT for real items: an inventory flag in AppProgress (has_shield, ...), an item +
   `*_point` anchor in house.tscn, and a fetch leg in _update_house_visit.
 
+## Conditional house items -- unlock flags (2026-07-16)
+
+Owner added two bows to house.tscn (bow_A/bow_B, back-left wall) that unlock on
+conditions. Design (owner): completing the archery RANGE unlocks a bow; a harder
+archery difficulty (not built yet) unlocks the other. Star totals are reserved for
+costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
+
+- AppProgress: added a generic persistent flag store -- `get_flag(name)` /
+  `set_flag(name, v)` (persisted under [flags] in user://settings.cfg) +
+  `set_flag_transient` (tests/--flag). Names are semantic events (the EVENT), so many
+  items can key off one flag.
+- The archery win sets `archery_done` (game_controller win branch).
+- The house ghosts a locked item: composer `set_house_item_locked(name_contains,
+  locked)` sets GeometryInstance3D.transparency (LOCKED_GHOST=0.55) on the item's
+  meshes; render stays decoupled -- the CONTROLLER drives it via `_apply_house_locks`
+  (bow_a <- archery_done; bow_b <- archery_hard_done, which is never set yet). Runs for
+  ANY house scene (intro + home visit).
+- Debug: `--flag=NAME` sets an unlock flag transiently for screenshots.
+- NEXT (the payoff, not built): a return-home FETCH -- when a bow is unlocked AND not
+  yet collected, the home visit walks the knight to a `bow_point` anchor and takes it
+  (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
+  after. That is where the ghost reads clearly (knight right next to it).
+
 ## START HERE
 
 For a full implementation guide (architecture, how to run/test/screenshot, how to

@@ -492,6 +492,22 @@ func is_house_scene() -> bool:
 	return _is_house_scene
 
 
+const LOCKED_GHOST := 0.55   # transparency for a locked (not-yet-unlocked) house item
+
+
+# Ghost a house item (by node-name substring) when it is locked, so it reads as
+# "visible but not takeable yet"; solid once unlocked. The controller drives `locked`
+# from the progression flags (render stays decoupled from game/progress).
+func set_house_item_locked(name_contains: String, locked: bool) -> void:
+	if _location == null:
+		return
+	var n := SceneKit.find_child_containing(_location, name_contains)
+	if n == null:
+		return
+	for mi in n.find_children("*", "MeshInstance3D", true, false):
+		(mi as GeometryInstance3D).transparency = LOCKED_GHOST if locked else 0.0
+
+
 const HOUSE_RISE_FRAC := 0.16   # first slice of typing: the knight rises out of the floor
 const HOUSE_STAND_Y := 0.2      # the floor's TOP surface -- where the knight's feet rest
 const HOUSE_SINK_DROP := 1.0    # how far below standing he starts (getting-up illusion)

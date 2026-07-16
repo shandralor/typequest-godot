@@ -128,6 +128,9 @@ func _ready() -> void:
 	if layout_arg != "":
 		KeyboardSettings.set_transient(layout_arg)
 	_force_intro = "--intro" in args   # replay the intro regardless of the seen flag
+	var flag_arg := _arg_value(args, "--flag")   # debug: set an unlock flag transiently
+	if flag_arg != "":
+		AppProgress.set_flag_transient(flag_arg)
 	_build_layout()
 	_demo = "--demo" in args
 	# debug: pick a scenario (--scenario=ID), jump to a node (--scene=ID), and
@@ -393,6 +396,7 @@ func _enter_node() -> void:
 		if _composer.is_archery_scene():
 			_setup_archery(_prose.target)
 		if _composer.is_house_scene():
+			_apply_house_locks()                     # ghost bows until their flag is set
 			if _in_intro:
 				_setup_house(_prose.target)         # rise + fetch quest (the intro)
 			else:
@@ -447,6 +451,7 @@ func _resolve_ending() -> void:
 				_composer.play_lead_loop("Cheering")    # raise the held sword in triumph
 			elif _composer.is_archery_scene():
 				_composer.play_lead_loop("Cheering")    # bullseye! celebrate
+				AppProgress.set_flag("archery_done")    # unlocks a bow back at the house
 			elif _composer.is_house_scene():
 				_composer.play_lead_loop("Cheering")    # a return visit: a small wave, no chest
 			else:
@@ -776,6 +781,14 @@ func _update_house_visit(delta: float) -> bool:
 	var base := _house_visit_from.lerp(_house_visit_to, prog)
 	_composer.house_move_to(Vector3(base.x, stand, base.z), delta, _house_visit_yaw())
 	return prog > 0.001
+
+
+# Ghost the house bows until their unlock condition is met (visible but not takeable):
+# bow_A unlocks when the archery range is completed; bow_B waits on a harder archery
+# difficulty (not added yet, so it stays locked for now).
+func _apply_house_locks() -> void:
+	_composer.set_house_item_locked("bow_a", not AppProgress.get_flag("archery_done"))
+	_composer.set_house_item_locked("bow_b", not AppProgress.get_flag("archery_hard_done"))
 
 
 func _house_visit_yaw() -> float:
