@@ -326,6 +326,24 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Wave 1 cont'd: prose-design decision + persistence foundation (2026-07-16)
+
+- **Design spike (#3)**: `docs/design-variant-prose.md` -- the recommended way to handle
+  per-character subject nouns (G1) and per-flag scene variants (G6) vs. the A4 hash.
+  Summary: G6 variants = just pick a different `prose_key` by flag (each key normally
+  hashed, no new mechanism); G1 subject = a `{held}` TEMPLATE token + an approved,
+  band-validated noun list, hash the TEMPLATE, enumerate (template x noun) for band +
+  typeability at build time. Marked RECOMMENDATION -- confirm before character work
+  (touches A4, owner's call).
+- **Persistence foundation (#4, C/A5 seed)**: AppProgress now persists CUMULATIVE stats
+  under [stats] -- `get_stat`/`add_stat`(/`add_stat_transient`). Hooks (game_controller):
+  "words" += word count at every prose-node completion (all scenes = effort); at a REAL
+  adventure win (not intro/home) "adventures"+=1, "xp"+= run xp, "stars"+= run stars.
+  Verified persist across processes (words=28/adventures=1/stars=3/xp=159 after an
+  archery run). These feed the encouraging progress screen (G9) + star cosmetics (G3).
+  NOTE: still single-profile per-machine; the multi-profile roster + name picker + a
+  ProfileStore contract are the rest of A5, later.
+
 ## Wave 1 DONE: objectives/discoverability + bow fetch (2026-07-16)
 
 The first roadmap wave (see docs/roadmap.md) is built + verified:

@@ -466,6 +466,12 @@ func _resolve_ending() -> void:
 			else:
 				_composer.open_chest()                  # treasure win: open the chest
 				_composer.play_lead_oneshot("PickUp")
+			# accumulate persistent effort stats for a REAL adventure (not a home chore;
+			# the intro returned earlier). Words are counted per node as they are typed.
+			if not _composer.is_house_scene():
+				AppProgress.add_stat("adventures", 1)
+				AppProgress.add_stat("xp", _run.xp)
+				AppProgress.add_stat("stars", _run_total_stars())
 			_flash()
 		_:
 			_set_message("Einde.")
@@ -523,6 +529,7 @@ func _prose_char(c: String) -> void:
 		_house_check_pickup()
 	if _prose.is_complete():
 		_run.score_current(_prose.correct_chars(), _prose.accuracy(), true)
+		AppProgress.add_stat("words", _word_count(_prose.target))   # cumulative effort (G9)
 		_update_hud()
 		if _run.current().is_ending():
 			if _composer.is_archery_scene():
@@ -1547,6 +1554,19 @@ func _win_message() -> String:
 	if node != null and node.win_key != "":
 		return _locale.resolve(node.win_key)
 	return "goed gedaan."
+
+
+# Word count of a prose string (space-separated tokens) -- cumulative effort stat.
+func _word_count(prose: String) -> int:
+	return prose.split(" ", false).size()
+
+
+# Total stars earned this run (best-per-node summed).
+func _run_total_stars() -> int:
+	var total := 0
+	for v in _run.stars_by_node.values():
+		total += int(v)
+	return total
 
 
 func _start_scenario(id: String) -> void:

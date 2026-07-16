@@ -11,6 +11,7 @@ const CONFIG_PATH := "user://settings.cfg"
 
 static var _intro_seen := false
 static var _flags: Dictionary = {}   # name -> bool, persisted under [flags]
+static var _stats: Dictionary = {}   # name -> int, cumulative, persisted under [stats]
 static var _loaded := false
 
 
@@ -45,6 +46,33 @@ static func set_flag_transient(name: String, v: bool = true) -> void:
 	_flags[name] = v
 
 
+# --- cumulative stats (the seed of the A5 progress/profile layer) --------------
+# Effort counters that grow across runs -- words typed, adventures done, stars, xp.
+# The encouraging progress screen (roadmap G9) + star cosmetics (G3) read these.
+# Semantics are CUMULATIVE (effort adds up); privacy A5: non-identifying only.
+
+static func get_stat(name: String) -> int:
+	_ensure_loaded()
+	return int(_stats.get(name, 0))
+
+
+static func add_stat(name: String, delta: int) -> void:
+	if delta == 0:
+		return
+	_ensure_loaded()
+	_stats[name] = int(_stats.get(name, 0)) + delta
+	var cf := ConfigFile.new()
+	cf.load(CONFIG_PATH)   # keep other sections intact
+	cf.set_value("stats", name, _stats[name])
+	cf.save(CONFIG_PATH)
+
+
+## Bump a stat WITHOUT persisting -- for tests.
+static func add_stat_transient(name: String, delta: int) -> void:
+	_ensure_loaded()
+	_stats[name] = int(_stats.get(name, 0)) + delta
+
+
 static func set_intro_seen(v: bool) -> void:
 	_intro_seen = v
 	_loaded = true
@@ -71,3 +99,6 @@ static func _ensure_loaded() -> void:
 		if cf.has_section("flags"):
 			for k in cf.get_section_keys("flags"):
 				_flags[k] = bool(cf.get_value("flags", k, false))
+		if cf.has_section("stats"):
+			for k in cf.get_section_keys("stats"):
+				_stats[k] = int(cf.get_value("stats", k, 0))
