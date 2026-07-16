@@ -326,6 +326,26 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Wave 1 DONE: objectives/discoverability + bow fetch (2026-07-16)
+
+The first roadmap wave (see docs/roadmap.md) is built + verified:
+- `content/objectives.gd` (pure DATA): each objective = { id, active_flag, done_flag,
+  target_site, hint_key }. "Open" = active_flag set AND done_flag not. First:
+  haal_je_boog (active archery_done, done has_bow_a, target thuis, hint objective.boog).
+- Overworld BADGE: a "!" (ChoiceBanner.set_badge, pulsing) on any site with an open
+  objective (`_site_has_open_objective`). NUDGE: a one-time read-aloud hint in the top
+  bar when returning to the island (`_maybe_nudge_objective`, persists nudged_<id>).
+- Bow FETCH payoff: a return-home visit where, if archery_done && !has_bow_a, the knight
+  walks to the new `bow_point` anchor (in house.tscn) instead of centre and takes the
+  bow at the win (composer `house_pickup_bow` hides the wall bow; sets has_bow_a; win
+  text home.win_bow). `_apply_house_locks` now HIDES bow_a once collected (was: only
+  ghost/solid). Loop verified: complete range -> badge+nudge on thuis -> go home ->
+  "je hebt je boog gehaald" -> badge clears.
+- Reused: home-visit walk (house_move_to), pickup one-shot, AppProgress flags, the
+  overworld banners. test_content validates objectives (target_site exists, hint
+  resolves). NOTE: hardcoded bow_a->has_bow_a for now; generalises to data (G8) when a
+  2nd fetch item lands. NEXT (roadmap Wave 1): persistence/A5 + the prose/hash decision.
+
 ## Roadmap captured (2026-07-16)
 
 A full brain-dump + ordered backlog now lives in **docs/roadmap.md** (10 new owner

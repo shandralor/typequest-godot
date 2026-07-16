@@ -26,6 +26,7 @@ const MenuScreenScene = preload("res://scenes/menu/menu_screen.tscn")
 const MenuBannerScene = preload("res://ui/menu_banner.tscn")
 const Scenarios = preload("res://content/scenarios.gd")
 const OverworldSites = preload("res://content/overworld.gd")
+const Objectives = preload("res://content/objectives.gd")
 const MusicPlayerScript = preload("res://audio/music_player.gd")
 
 enum Phase { PROSE, CHOICE, PAUSE, WIN, DONE }
@@ -76,6 +77,7 @@ var _house_pick := 0
 # house return visit (not the intro): a simple walk in, door -> room, over the prose
 var _house_visit_from := Vector3.ZERO
 var _house_visit_to := Vector3.ZERO
+var _house_visit_fetch := ""   # item id to pick up on arrival ("" = plain look-around)
 
 # UI
 var _type_along
@@ -440,7 +442,10 @@ func _resolve_ending() -> void:
 			_phase = Phase.PAUSE
 			_after(1.8, _enter_node)
 		"win":
-			_set_message(_win_message() + "\n(druk op enter)")
+			var win_text := _win_message()
+			if _composer.is_house_scene() and _house_visit_fetch != "":
+				win_text = _locale.resolve("home.win_bow")   # "je hebt je boog gehaald!"
+			_set_message(win_text + "\n(druk op enter)")
 			_set_top_prompt("")          # the win message takes over
 			_type_along.visible = false   # no empty panel at the win
 			_keyboard.highlight("")
@@ -453,7 +458,11 @@ func _resolve_ending() -> void:
 				_composer.play_lead_loop("Cheering")    # bullseye! celebrate
 				AppProgress.set_flag("archery_done")    # unlocks a bow back at the house
 			elif _composer.is_house_scene():
-				_composer.play_lead_loop("Cheering")    # a return visit: a small wave, no chest
+				if _house_visit_fetch != "":
+					_composer.house_pickup_bow(_house_visit_fetch)   # take the bow off the wall
+					AppProgress.set_flag("has_bow_a")               # completes the objective
+				else:
+					_composer.play_lead_loop("Cheering")   # a plain visit: a small wave
 			else:
 				_composer.open_chest()                  # treasure win: open the chest
 				_composer.play_lead_oneshot("PickUp")
@@ -770,7 +779,14 @@ func _house_check_pickup() -> void:
 # "get an item from home" visits (add an item + a `*_point` anchor + a leg).
 func _setup_house_visit(_prose_text: String) -> void:
 	_house_visit_from = _composer.anchor_pos("path_far")   # the door
-	_house_visit_to = _composer.anchor_pos("center")       # into the room
+	# if the bow is unlocked and not yet collected, this visit FETCHES it: walk to the
+	# bow instead of the room centre, and pick it up at the end
+	_house_visit_fetch = ""
+	if AppProgress.get_flag("archery_done") and not AppProgress.get_flag("has_bow_a"):
+		_house_visit_fetch = "bow_a"
+		_house_visit_to = _composer.anchor_pos("bow_point")
+	else:
+		_house_visit_to = _composer.anchor_pos("center")
 	var stand: float = _composer.house_stand_y()
 	_composer.house_move_to(Vector3(_house_visit_from.x, stand, _house_visit_from.z), 0.0, _house_visit_yaw())
 
@@ -787,7 +803,11 @@ func _update_house_visit(delta: float) -> bool:
 # bow_A unlocks when the archery range is completed; bow_B waits on a harder archery
 # difficulty (not added yet, so it stays locked for now).
 func _apply_house_locks() -> void:
-	_composer.set_house_item_locked("bow_a", not AppProgress.get_flag("archery_done"))
+	# bow_a: hidden once collected; else solid when unlocked / ghosted when locked
+	if AppProgress.get_flag("has_bow_a"):
+		_composer.set_house_item_hidden("bow_a", true)
+	else:
+		_composer.set_house_item_locked("bow_a", not AppProgress.get_flag("archery_done"))
 	_composer.set_house_item_locked("bow_b", not AppProgress.get_flag("archery_hard_done"))
 
 
@@ -1340,6 +1360,7 @@ func _show_overworld(at_anchor: String = "hub") -> void:
 	_build_ow_banners()
 	_update_ow_highlight()
 	_update_camera(0.0, true)
+	_maybe_nudge_objective()   # announce a newly-unlocked objective once
 
 
 func _build_ow_banners() -> void:
@@ -1354,10 +1375,46 @@ func _build_ow_banners() -> void:
 		banner.set_compact(30)   # small site label, floats above its site
 		if locked:
 			banner.set_active(false)
+		banner.set_badge(_site_has_open_objective(s.id))   # "!" if something to do here
 		_ow_banners.append({"banner": banner, "site": s,
 			"word": _locale.resolve(s.word_key), "locked": locked})
 		i += 1
 	_position_ow_banners()
+
+
+# --- objectives (discoverability) --------------------------------------------
+
+# Objectives whose active_flag is set and done_flag is not -- the open ones.
+func _open_objectives() -> Array:
+	var open: Array = []
+	for o in Objectives.all():
+		if AppProgress.get_flag(o.active_flag) and not AppProgress.get_flag(o.done_flag):
+			open.append(o)
+	return open
+
+
+func _site_has_open_objective(site_id: String) -> bool:
+	for o in _open_objectives():
+		if o.target_site == site_id:
+			return true
+	return false
+
+
+# Announce a newly-open objective ONCE (a short read-aloud nudge in the top bar); the
+# site badge is the ongoing reminder. Persists nudged_<id> so it does not repeat.
+func _maybe_nudge_objective() -> void:
+	for o in _open_objectives():
+		var nkey: String = "nudged_" + o.id
+		if not AppProgress.get_flag(nkey):
+			AppProgress.set_flag(nkey)
+			_set_top_prompt(_locale.resolve(o.hint_key))
+			_after(4.5, _restore_ow_prompt)
+			return
+
+
+func _restore_ow_prompt() -> void:
+	if _app_state == AppState.OVERWORLD and _ow_walk == null:
+		_set_top_prompt(_locale.resolve("overworld.narration"))
 
 
 func _clear_ow_banners() -> void:

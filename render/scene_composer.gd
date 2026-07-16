@@ -504,8 +504,24 @@ func set_house_item_locked(name_contains: String, locked: bool) -> void:
 	var n := SceneKit.find_child_containing(_location, name_contains)
 	if n == null:
 		return
+	n.visible = true
 	for mi in n.find_children("*", "MeshInstance3D", true, false):
 		(mi as GeometryInstance3D).transparency = LOCKED_GHOST if locked else 0.0
+
+
+# Hide a house item entirely (e.g. a collected bow no longer on the wall).
+func set_house_item_hidden(name_contains: String, hidden: bool) -> void:
+	if _location == null:
+		return
+	var n := SceneKit.find_child_containing(_location, name_contains)
+	if n != null:
+		n.visible = not hidden
+
+
+# The knight takes a bow off the wall: hide the wall bow + play the pickup one-shot.
+func house_pickup_bow(name_contains: String) -> void:
+	set_house_item_hidden(name_contains, true)
+	play_lead_oneshot(HeroRig.HERO_PICKUP)
 
 
 const HOUSE_RISE_FRAC := 0.16   # first slice of typing: the knight rises out of the floor

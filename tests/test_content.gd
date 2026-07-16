@@ -17,6 +17,7 @@ const HomeArc = preload("res://content/home/home_arc.gd")
 const LocaleNlBe = preload("res://axis/locale/nl_be.gd")
 const Band1Spec = preload("res://content/band1/band_spec.gd")
 const OverworldSites = preload("res://content/overworld.gd")
+const Objectives = preload("res://content/objectives.gd")
 const Scenarios = preload("res://content/scenarios.gd")
 const Layout = preload("res://axis/layout/be_azerty.gd")
 
@@ -58,6 +59,15 @@ func _check_overworld() -> int:
 		for b in words:
 			if a != b and b.begins_with(a):
 				problems.append("site word '%s' is a prefix of '%s' -- it would shadow it" % [a, b])
+	# objectives: target site exists, hint resolves
+	var site_ids: Array = []
+	for site in OverworldSites.sites():
+		site_ids.append(site.id)
+	for o in Objectives.all():
+		if o.target_site not in site_ids:
+			problems.append("objective '%s': unknown target_site '%s'" % [o.id, o.target_site])
+		if locale.resolve(o.hint_key) == "":
+			problems.append("objective '%s': hint_key '%s' does not resolve" % [o.id, o.hint_key])
 	for p in problems:
 		print("PROBLEM: ", p)
 	return problems.size()

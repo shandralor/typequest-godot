@@ -45,6 +45,9 @@ const CATALOG := {
 	"home.prose": "de ridder is weer thuis. hij loopt naar binnen en kijkt rond.",
 	"home.narration": "Typ de woorden.",
 	"home.win": "Tot de volgende keer!",
+	"home.win_bow": "Je hebt je boog gehaald!",
+	# objectives -- short read-aloud nudges (not typed, so free punctuation)
+	"objective.boog": "Er ligt een nieuwe boog voor je thuis!",
 	# choice words (typed to pick a fork)
 	"word.verder": "verder",
 	"word.grot": "grot",

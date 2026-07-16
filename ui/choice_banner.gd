@@ -103,11 +103,49 @@ func set_active(active: bool) -> void:
 	modulate = Color.WHITE if active else Color(0.7, 0.7, 0.7, 0.65)
 
 
+var _badge: Panel
+
+
+## Show a "!" notification badge (objectives: this site has something new to do).
+func set_badge(on: bool) -> void:
+	if not on:
+		if _badge != null:
+			_badge.visible = false
+		return
+	if _badge == null:
+		_badge = Panel.new()
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color("e8b23a")
+		sb.set_corner_radius_all(17)
+		sb.set_border_width_all(3)
+		sb.border_color = Color("5a3a12")
+		_badge.add_theme_stylebox_override("panel", sb)
+		_badge.custom_minimum_size = Vector2(34, 34)
+		_badge.size = Vector2(34, 34)
+		_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var lbl := Label.new()
+		lbl.text = "!"
+		lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.add_theme_font_size_override("font_size", 26)
+		lbl.add_theme_color_override("font_color", Color("3a2408"))
+		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_badge.add_child(lbl)
+		add_child(_badge)
+	_badge.visible = true
+	_badge.position = Vector2(size.x - 12.0, -16.0)
+
+
 func _process(delta: float) -> void:
 	_time += delta
 	pivot_offset = size * 0.5
 	rotation = deg_to_rad(2.4) * sin(_time * 1.6 + _phase)
 	position.y = _base_y + sin(_time * 1.9 + _phase) * 5.0
+	if _badge != null and _badge.visible:
+		var p := 1.0 + 0.14 * sin(_time * 5.0)   # gentle attention pulse
+		_badge.pivot_offset = _badge.size * 0.5
+		_badge.scale = Vector2(p, p)
 
 
 var _base_y := 0.0
