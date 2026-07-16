@@ -1202,7 +1202,7 @@ func _begin_briefing() -> void:
 	_brief_tween = create_tween()
 	for i in lines.size():
 		var seg_len: int = str(lines[i]).length()
-		var dur: float = clampf(seg_len * 0.18, 3.0, 14.0)   # ~1/3 speed, gentle for beginners
+		var dur: float = clampf(seg_len * 0.108, 1.8, 8.4)   # 5/9 speed, gentle for beginners
 		_brief_tween.tween_property(_brief_label, "visible_ratio", float(ends[i]) / total, dur)
 		_brief_tween.tween_interval(0.7)   # a beat between sentences
 	_brief_tween.tween_interval(2.0)       # final hold, everything visible
