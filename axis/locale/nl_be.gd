@@ -38,7 +38,7 @@ const CATALOG := {
 	"boog.win": "Raak! Recht in de roos.",
 	# intro -- short words teach the core move: type a sentence, the knight does the deed
 	# (4 sentences = 4 legs: rise, fetch the sword, fetch the key, leave)
-	"intro.prose": "ik sta op. ik pak mijn zwaard. ik pak de sleutel. ik ga naar buiten.",
+	"intro.prose": "de ridder staat op. hij pakt zijn zwaard. hij loopt naar de kast en pakt de sleutel. daarna opent hij de deur.",
 	"intro.narration": "Typ de woorden.",
 	"intro.win": "Goed gedaan! Kies nu waar je heen gaat.",
 	# choice words (typed to pick a fork)
