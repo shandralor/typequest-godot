@@ -134,16 +134,16 @@ transform = Transform3D(0.023414694, 0, -0.9997258, 0, 1, 0, 0.9997258, 0, 0.023
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1178517, 2.8436065, -9.001488)
 
 [node name="sword_point" type="Marker3D" parent="." unique_id=411000001]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.7, 0, 0.9)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.7, 0, 1.9)
 
 [node name="key_point" type="Marker3D" parent="." unique_id=411000002]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.1, 0, -1.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.1, 0, -1.1)
 
 [node name="cabinet" parent="." unique_id=411000003 instance=ExtResource("6_37gw0")]
 transform = Transform3D(-0.023414694, 0, 0.9997258, 0, 1, 0, -0.9997258, 0, -0.023414694, -6.35, 0.8370838, -1.5)
 
 [node name="shelf_sword" parent="." unique_id=411000004 instance=ExtResource("9_swrd")]
-transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 5.9, 1.35, 0.86)
+transform = Transform3D(-0.033219803, -0.0428293, -1.9992656, 1.9997241, -0.0007114886, -0.033212185, 0, -1.9995413, 0.04283521, 5.9, 2.4915533, 1.9812158)
 
 [node name="cabinet_key" parent="." unique_id=411000005 instance=ExtResource("10_key")]
-transform = Transform3D(1.4, 0, 0, 0, 1.4, 0, 0, 0, 1.4, -5.2, 1.5, -1.5)
+transform = Transform3D(0.089232646, 0, 0.99601084, 0, 1, 0, -0.99601084, 0, 0.089232646, -5.4453187, 2.233201, -1.1236377)
