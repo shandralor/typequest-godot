@@ -41,12 +41,14 @@ static func build(fork: bool, bridge: bool, rng: RandomNumberGenerator) -> Node3
 	elif bridge:
 		root.add_child(SceneKit.path_segment(Vector3(0, 0, 16), Vector3(0, 0, -16), 3.0))
 		_build_bridge(root, anchors["center"], 0.0, false)
-		# where the crystal will later be placed to lower the drawbridge (a socket
-		# anchor at the near foot; the crystal itself is staged by code once earned).
+		# where the crystal will later be placed to lower the drawbridge. The socket
+		# ANCHOR (a direct child of root so the composer resolves it by name) doubles as
+		# the pedestal's parent, so the whole thing moves as one node in the editor.
 		var socket := Marker3D.new()
 		socket.name = "crystal_socket"
 		socket.position = Vector3(2.2, 0.75, 3.0)
 		root.add_child(socket)
+		_build_crystal_socket(socket)
 	else:
 		root.add_child(SceneKit.path_segment(Vector3(0, 0, 16), Vector3(0, 0, -16), 3.0))
 	_scatter_forest(root, rng, fork)
@@ -138,12 +140,13 @@ static func _build_bridge(root: Node3D, center: Vector3, _river_width: float, sm
 	for i in range(int(deck_len / 0.6)):
 		var z := 0.3 + i * 0.6 - deck_len                    # slat, relative to the hinge
 		leaf.add_child(SceneKit.make_box(Vector3(span - 0.12, 0.04, 0.42), Vector3(0, 0.10, z), SceneKit.C_WOOD_DARK))  # slats
-	_build_crystal_socket(root, center + Vector3(span * 0.5 + 0.5, 0, depth * 0.5 + 0.2))
 
 
 ## A stone pedestal with an empty inset socket -- where the crystal is later dropped in
-## to lower the drawbridge. Just scenery for now (the crystal + lowering come with G5).
-static func _build_crystal_socket(root: Node3D, pos: Vector3) -> void:
-	root.add_child(SceneKit.make_box(Vector3(0.8, 0.7, 0.8), pos + Vector3(0, 0.35, 0), SceneKit.C_STONE))  # plinth
-	root.add_child(SceneKit.make_box(Vector3(0.5, 0.16, 0.5), pos + Vector3(0, 0.72, 0), SceneKit.C_ROCK_DARK))  # rim
-	root.add_child(SceneKit.make_box(Vector3(0.34, 0.2, 0.34), pos + Vector3(0, 0.7, 0), SceneKit.C_CAVE))  # empty socket recess
+## to lower the drawbridge (just scenery for now; the crystal + lowering come with G5).
+## Built as CHILDREN of `anchor` (the crystal_socket marker), whose origin is the point
+## the crystal will sit, so the pedestal + anchor move together as one node in the editor.
+static func _build_crystal_socket(anchor: Node3D) -> void:
+	anchor.add_child(SceneKit.make_box(Vector3(0.8, 0.7, 0.8), Vector3(0, -0.40, -0.05), SceneKit.C_STONE))  # plinth
+	anchor.add_child(SceneKit.make_box(Vector3(0.5, 0.16, 0.5), Vector3(0, -0.03, -0.05), SceneKit.C_ROCK_DARK))  # rim
+	anchor.add_child(SceneKit.make_box(Vector3(0.34, 0.2, 0.34), Vector3(0, -0.05, -0.05), SceneKit.C_CAVE))  # empty socket recess

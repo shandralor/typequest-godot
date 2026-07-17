@@ -307,23 +307,23 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, -0.8)
 material_override = SubResource("StandardMaterial3D_owypl")
 mesh = SubResource("BoxMesh_chx1w")
 
-[node name="@MeshInstance3D@22" type="MeshInstance3D" parent="." unique_id=766742858]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.35, 2.95)
+[node name="crystal_socket" type="Marker3D" parent="." unique_id=625304480]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.75, 3)
+
+[node name="plinth" type="MeshInstance3D" parent="crystal_socket" unique_id=766742858]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.4, -0.05)
 material_override = SubResource("StandardMaterial3D_yprns")
 mesh = SubResource("BoxMesh_pi6ci")
 
-[node name="@MeshInstance3D@23" type="MeshInstance3D" parent="." unique_id=2100073138]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.72, 2.95)
+[node name="rim" type="MeshInstance3D" parent="crystal_socket" unique_id=2100073138]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, -0.05)
 material_override = SubResource("StandardMaterial3D_jd12k")
 mesh = SubResource("BoxMesh_bbgm5")
 
-[node name="@MeshInstance3D@24" type="MeshInstance3D" parent="." unique_id=1502473970]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.7, 2.95)
+[node name="socket_recess" type="MeshInstance3D" parent="crystal_socket" unique_id=1502473970]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, -0.05)
 material_override = SubResource("StandardMaterial3D_2usv3")
 mesh = SubResource("BoxMesh_e8eqq")
-
-[node name="crystal_socket" type="Marker3D" parent="." unique_id=625304480]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.75, 3)
 
 [node name="Tree_2_B_Color12" type="Node3D" parent="." unique_id=193144872 instance=ExtResource("1_mhxkj")]
 transform = Transform3D(-0.27234367, 0, -1.3470641, 0, 1.3743191, 0, 1.3470641, 0, -0.27234367, -16.594063, 0, -22.480022)
