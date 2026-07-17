@@ -326,6 +326,17 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## KayKit full library integrated (device-local) (2026-07-17)
+
+Bought + extracted the KayKit Complete Collection v6.1 (23 packs, ~28.9k files, 1.4 GB) to
+the SHARED device-local folder `/mnt/professional/projects/game-dev/_kaykit-assets/` (mirrors
+`_music-assets`). Deliberately OUTSIDE the Godot project so the editor never imports 28k
+files. Repo still carries only ACTIVE assets under `assets/kaykit/<pack>/`. Catalog +
+promote-an-asset workflow committed at `docs/kaykit-library.md` (this IS in the repo -- a
+lightweight text index of the full library, so any device knows what exists even without the
+1.4 GB). Handy pick noted: the bridge crystal placeholder can become
+`Resource Bits/Assets/gltf/Gem_Large.gltf`. See [[kaykit-asset-library]].
+
 ## Crystal-lower mechanic: the drawbridge drops (2026-07-17)
 
 The crossing now reads fully. On entering brug, if has_crystal: a glowing crystal drops into
