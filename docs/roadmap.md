@@ -73,8 +73,10 @@ The campaign spine becomes "Wave 1.5" between the done Wave 1 and the Wave 2 sur
 
 **Intro + house items rework**
 - **H1. Intro = a MORNING WALK**; the sword + keys are LOOKED AT, not taken (a hint says
-  come back / needed later). Remove the pickup legs from intro.prose -> re-hash. Flows into
-  scenario 1 (the forest, the only unlocked site per C1).
+  come back / needed later). Remove the pickup legs from intro.prose -> re-hash + drop the
+  sword/key fetch from _setup_house; fold in F2 (rise fix). Flows into scenario 1 (the
+  forest, the only unlocked site per C1). NB: keep typed words <=7 (band-1) -> "sleutels"
+  (8) must be reworded ("sleutel", or rephrase); band limit is a G11 slider candidate.
 - **H2. Sword + keys become CONDITIONAL house items** (like the bow): visible, fetched
   later when their requirement is met, hidden once collected. 2nd/3rd consumer -> GENERALISE
   `_apply_house_locks` + house_pickup_* + has_<item> flags into a DATA list (the G8 hotspot).
@@ -224,6 +226,17 @@ beat where the crystal powers the raised bridge down. ("kristal" is band-1 typea
   (ui/choice_banner.gd + story-graph choices); a small rules table maps word(combos) ->
   outcome. Outcomes can depend on item/character (G6/G7). NON-punishing (G9): a "wrong"
   word is just a different, retry-friendly outcome, never a fail.
+- **G11. Difficulty slider (band parameters as a setting)**: today the band-1 limits
+  (maxWordLen 7, maxSentenceLen 10 in content/band1/band_spec.gd) are HARD-gated by the
+  validator (test_content). Expose them as an adjustable DIFFICULTY (per profile, A5) so
+  it scales with the child: relax word/sentence length, and later add higher-band knobs
+  (require capitals/Shift, punctuation, AltGr chars, and eventually the A6 FUTURE-BAND
+  speed term). Mechanism: band_spec becomes a set of BANDS; the slider/profile picks one;
+  the validator checks authored prose against the chosen band. CAVEAT: a slider only
+  relaxes the GATE -- real scaling also needs band-appropriate PROSE (longer words),
+  i.e. more authored content or band variants (ties the variant-prose work). Keep A6
+  sacred: speed stays band-gated, ZERO at band-1. Near-term: keep 7 and rephrase content
+  to fit (e.g. the intro "sleutels" -> reword under H1).
 
 ---
 
