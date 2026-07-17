@@ -326,6 +326,20 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Intro get-up: real Lie_StandUp animation (2026-07-17)
+
+DONE (F2/H1 finished): the intro rise is a real KayKit get-up (Lie_StandUp grafted from
+Rig_Medium_Simulation, + Lie_Idle), not the old sink trick. Key learning: that clip is
+authored for FLOOR-level lying; on a raised bed the origin must drop bed->floor to plant
+the feet, which reads as a "sink" if done in place. Solution: get up IN PLACE on the bed
+(origin held at HOUSE_LIE_Y, no drop -> no sink), then the drop happens on the first
+FORWARD step (sentence 0) so it reads as stepping off the bed; then forward_point -> sword
+-> keys -> door. Rise paced by the animation timeline (composer.house_getup_progress, made
+MONOTONIC so the finish-frame wrap can't dip). house_move_to now eases yaw
+(HOUSE_TURN_SPEED) so leg turns glide. Anchors: bed_point + forward_point in house.tscn.
+The intro is now complete (morning walk + no pickup + get-up + top-bar text). Owner
+approved. NEXT: the campaign spine (cave-first gating etc.) or owner's pick.
+
 ## H1 intro rework + UI: text in the top bar (2026-07-17)
 
 - H1 DONE: the intro is a MORNING WALK -- the sword + keys stay on the wall (looked at,
