@@ -95,6 +95,8 @@ var _banners: Array = []
 # a short walk toward the chosen path before the scene cut (fork: cave/bridge)
 var _walkoff: Dictionary = {}
 const CHOICE_WALK_DUR := 1.4
+const EXIT_WALK_DUR := 2.6      # stroll off the far path at the end of a crossing
+const EXIT_FADE_DUR := 0.8      # soft fade-to-black on either side of the island swap
 var _ui: Control
 var _menu_layer: Control
 var _menu_screen: Control
@@ -470,6 +472,9 @@ func _resolve_ending() -> void:
 			_phase = Phase.PAUSE
 			_after(1.8, _enter_node)
 		"win":
+			if completing != null and completing.exit_walk:
+				_begin_exit_walk()   # cross + stroll off the far path, soft-fade to the island
+				return
 			var celebrate: bool = completing == null or completing.celebrate
 			_set_message(_win_message() + "\n(druk op enter)")
 			_type_along.visible = false   # no empty panel at the win
@@ -657,6 +662,43 @@ func _begin_choice_walk(dest: Vector3) -> void:
 	if d.length() > 0.001:
 		_composer.set_lead_yaw(atan2(d.x, d.z))
 	_composer.set_lead_animation(true)
+
+
+# End a crossing scene "nicely": bank the effort, then walk the hero off the `cross_exit`
+# marker (owner-placed at the end of the lengthened path) and soft-fade back to the island.
+func _begin_exit_walk() -> void:
+	AppProgress.add_stat("adventures", 1)
+	AppProgress.add_stat("xp", _run.xp)
+	AppProgress.add_stat("stars", _run_total_stars())
+	_clear_banners()
+	_type_along.visible = false
+	_keyboard.highlight("")
+	_set_top_prompt(_win_message())
+	_phase = Phase.PAUSE
+	var from: Vector3 = _composer.lead_position()
+	var dest: Vector3 = _composer.anchor_pos("cross_exit")
+	var d: Vector3 = dest - from
+	if d.length() > 0.001:
+		_composer.set_lead_yaw(atan2(d.x, d.z))
+	_walkoff = {"from": from, "to": dest, "t": 0.0, "dur": EXIT_WALK_DUR, "on_done": _fade_to_overworld}
+	_composer.set_lead_animation(true)
+
+
+# Soft fade-to-black, swap to the island under cover of the black, then fade back in.
+func _fade_to_overworld() -> void:
+	if _ui == null:
+		_show_overworld(_ow_at)
+		return
+	var f := ColorRect.new()
+	f.color = Color(0, 0, 0, 0.0)
+	f.set_anchors_preset(Control.PRESET_FULL_RECT)
+	f.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ui.add_child(f)
+	var t := create_tween()
+	t.tween_property(f, "color:a", 1.0, EXIT_FADE_DUR)
+	t.tween_callback(_show_overworld.bind(_ow_at))
+	t.tween_property(f, "color:a", 0.0, EXIT_FADE_DUR)
+	t.tween_callback(f.queue_free)
 
 
 func _clear_banners() -> void:
@@ -995,8 +1037,12 @@ func _process(delta: float) -> void:
 		_composer.set_lead_animation(true)
 		_update_camera(delta, false)
 		if wf >= 1.0:
+			var on_done: Callable = _walkoff.get("on_done", Callable())
 			_walkoff = {}
-			_enter_node()
+			if on_done.is_valid():
+				on_done.call()
+			else:
+				_enter_node()
 		return
 	var p := _typing_progress()
 	var act := _activity.update(p, delta)

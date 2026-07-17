@@ -326,6 +326,32 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Crossing on the fork set + walk-off/fade terminator (2026-07-17)
+
+The brug (crossing) beat now REUSES the fork set (owner lengthened its far path past the
+bridge). New plumbing:
+- SceneDescriptor.set_name -- an explicit editable-set override; composer._set_for honors
+  it first. brug() uses set_name="forest_fork" while staying PATH_STRAIGHT + hero path_near
+  (so _is_walking_scene stays true and the prose still drives the path walk). Dropped the
+  bridge/chest props.
+- StoryNode.exit_walk -- a win that, instead of chest/cheer/enter, strolls the hero off the
+  `cross_exit` marker and soft-fades to the island. _resolve_ending win branch checks it
+  FIRST and calls _begin_exit_walk (banks adventures/xp/stars quietly, walks to cross_exit
+  via _walkoff with a new on_done callback), then _fade_to_overworld (black ColorRect fade
+  in over EXIT_FADE_DUR, swap to island under the black, fade back out). _walkoff now carries
+  an optional on_done Callable (defaults to _enter_node).
+- brug node: ending=win, exit_walk=true, choice->schat DROPPED; prose reworked to the
+  crossing ("de brug ligt naar beneden. de ridder stapt over de brug en gaat verder.", new
+  A4 hash fnv1a:a585a423). schat + forest_bridge.tscn are now ORPHANED (unreferenced; leave
+  for now, safe to delete once the fork-crossing is confirmed).
+- OWNER-PLACEABLE MARKERS in forest_fork.tscn: `cross_exit` (added at (5,0,-12) -- move it to
+  the end of the lengthened path; the hero walks here then the screen fades). Also move
+  `path_near`/`path_far` to route the crossing walk over the bridge. crystal_socket group
+  still there.
+Provisional: the bridge stays visually RAISED during the crossing until the crystal-lower
+mechanic lands (next). Tests updated (test_logic brug is exit-walk win; test_fnv1a start+brug
+vectors refreshed). All 7 suites pass; burst-captured the walk-off + fade.
+
 ## Forest reframe + raised drawbridge + crystal socket (2026-07-17)
 
 Campaign v2 continues. (1) start.prose reframed: he no longer hunts treasure, he just

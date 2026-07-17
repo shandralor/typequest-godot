@@ -18,7 +18,7 @@ const CATALOG := {
 	"kruispunt.prose": "het pad gaat twee kanten op. links gaapt een zwarte grot. rechts staat een oude brug.",
 	"grot.prose": "in de grot rammelt een wit skelet. de ridder rent snel terug naar het licht.",
 	"naGrot.prose": "de ridder kiest nu voor de veilige brug.",
-	"brug.prose": "de ridder stapt over de smalle brug. aan de andere kant wacht een grote kist.",
+	"brug.prose": "de brug ligt naar beneden. de ridder stapt over de brug en gaat verder.",
 	"schat.prose": "de ridder opent de kist vol goud. hij vindt de schat en is heel blij.",
 	# narration (read aloud; optional toggle later)
 	"start.narration": "Luister goed en typ elk woord dat je leest.",

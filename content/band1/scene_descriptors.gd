@@ -49,18 +49,17 @@ static func na_grot() -> SceneDescriptor:
 	return d
 
 
-# brug (the bridge) -- forest_path, day; hero at path_near, walk; bridge at center.
+# brug (the crossing) -- REUSES the fork set (its raised drawbridge + crystal socket +
+# the owner's lengthened far path). A walking straight-scene: hero starts at path_near
+# and walks path_near -> path_far as the prose is typed, then the exit-walk terminator
+# strolls him off the `cross_exit` marker and soft-fades back to the island.
 static func brug() -> SceneDescriptor:
 	var d := SceneDescriptor.new()
 	d.location = "forest_path"
 	d.mood = "day"
 	d.path = SceneDescriptor.PATH_STRAIGHT
+	d.set_name = "forest_fork"
 	d.actors = [SceneDescriptor.ActorPlacement.new("hero", "path_near", "walk", "camera")]
-	# the prose promises a chest on the other side -- show it at the far end as the goal
-	d.props = [
-		SceneDescriptor.PropPlacement.new("bridge", "center"),
-		SceneDescriptor.PropPlacement.new("chest", "far"),
-	]
 	return d
 
 

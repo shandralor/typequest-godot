@@ -8,11 +8,11 @@ extends SceneTree
 const Fnv1a = preload("res://logic/fnv1a.gd")
 
 const CASES := [
-	["de kleine ridder loopt door het bos. hij zoekt een grote schat en wil verder.", "fnv1a:1eef94d0", "start"],
+	["de kleine ridder wandelt door het bos. hij volgt het pad en stapt verder.", "fnv1a:dff7ec80", "start"],
 	["het pad gaat twee kanten op. links gaapt een zwarte grot. rechts staat een oude brug.", "fnv1a:fc978a65", "kruispunt"],
 	["in de grot rammelt een wit skelet. de ridder rent snel terug naar het licht.", "fnv1a:3778a255", "grot"],
 	["de ridder kiest nu voor de veilige brug.", "fnv1a:859459c1", "naGrot"],
-	["de ridder stapt over de smalle brug. aan de andere kant wacht een grote kist.", "fnv1a:a8d13156", "brug"],
+	["de brug ligt naar beneden. de ridder stapt over de brug en gaat verder.", "fnv1a:a585a423", "brug"],
 	["de ridder opent de kist vol goud. hij vindt de schat en is heel blij.", "fnv1a:1f2d5082", "schat"],
 ]
 

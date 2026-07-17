@@ -443,6 +443,8 @@ func lead_yaw() -> float:
 # the treasure glow, mood lighting) and all motion stay in code.
 
 func _set_for(descriptor) -> String:
+	if descriptor.set_name != "":
+		return descriptor.set_name   # explicit override wins (e.g. brug reuses forest_fork)
 	if descriptor.location == "forge":
 		return "forge"
 	if descriptor.location == "archery_range":

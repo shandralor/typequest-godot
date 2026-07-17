@@ -81,13 +81,16 @@ static func build() -> StoryGraph:
 	na_grot.scene = Scenes.na_grot()
 	g.add_node(na_grot)
 
-	# brug -- the bridge: type `kist` to reach the treasure.
+	# brug -- the CROSSING (campaign v2): reuses the fork set with its lowered drawbridge
+	# and the owner's lengthened far path. Type the prose to walk across; the exit-walk
+	# terminator then strolls him off `cross_exit` and soft-fades back to the island.
 	var brug := StoryGraph.StoryNode.new()
 	brug.id = "brug"
 	brug.prose_key = "brug.prose"
 	brug.narration_key = "brug.narration"
-	brug.choices = [StoryGraph.Choice.new("word.kist", "schat", "forward")]
-	brug.safety = _nl_be_safety("fnv1a:a8d13156")
+	brug.ending = "win"
+	brug.exit_walk = true
+	brug.safety = _nl_be_safety("fnv1a:a585a423")
 	brug.scene = Scenes.brug()
 	g.add_node(brug)
 

@@ -21,6 +21,7 @@ var actors: Array = []  # Array[ActorPlacement]
 var props: Array = []   # Array[PropPlacement]
 var camera: String = ""
 var path: String = PATH_STRAIGHT  # presentation hint only, never affects logic
+var set_name: String = ""  # explicit editable-set override (else the composer picks by heuristic)
 
 
 ## A placed actor. `facing` is one of camera|left|right|away.

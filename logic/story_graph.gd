@@ -62,6 +62,7 @@ class StoryNode extends RefCounted:
 	var prerevealed: bool = false   # A9
 	var sets_flag: String = ""      # progress flag set when this node completes (e.g. met_skeleton)
 	var celebrate: bool = true      # a win with no cheer/chest/flash reads as a somber beat
+	var exit_walk: bool = false     # a win that strolls the hero off `cross_exit` + fades to the island
 	var safety: Dictionary = {}     # locale -> { hash, date, criteria_version }
 	var scene = null                # SceneDescriptor
 
