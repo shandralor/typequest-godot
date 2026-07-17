@@ -25,7 +25,7 @@ static func build() -> StoryGraph:
 	node.narration_key = "intro.narration"
 	node.ending = "win"
 	node.win_key = "intro.win"
-	node.safety = {"nl-BE": {"hash": "fnv1a:a34b15cf", "date": "2026-07-16", "criteria_version": "v0-stub"}}
+	node.safety = {"nl-BE": {"hash": "fnv1a:6d8a5857", "date": "2026-07-17", "criteria_version": "v0-stub"}}
 	node.scene = scene()
 	g.add_node(node)
 	return g

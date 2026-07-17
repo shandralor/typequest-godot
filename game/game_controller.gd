@@ -740,15 +740,14 @@ func _setup_house(prose: String) -> void:
 	_house_span = _sentence_spans(prose)
 	_house_pickups = []
 	_house_pick = 0
+	# campaign v2: the intro is a MORNING WALK -- he walks past his sword + keys (LOOKS,
+	# does not take them; a hint says they are for later) and heads out to the woods.
+	# So the waypoints stay (rise -> sword wall -> keys -> door) but there are NO pickups.
 	var stops := ["path_near", "sword_point", "key_point", "path_far"]
 	_house_way = []
 	for i in _house_span.size():
 		var anchor: String = stops[i] if i < stops.size() else "path_far"
 		_house_way.append(_composer.anchor_pos(anchor))
-	if _house_span.size() >= 2:
-		_house_pickups.append([1, "sword"])
-	if _house_span.size() >= 3:
-		_house_pickups.append([2, "key"])
 
 
 func _update_house(delta: float) -> bool:

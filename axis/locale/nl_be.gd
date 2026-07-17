@@ -38,9 +38,9 @@ const CATALOG := {
 	"boog.win": "Raak! Recht in de roos.",
 	# intro -- short words teach the core move: type a sentence, the knight does the deed
 	# (4 sentences = 4 legs: rise, fetch the sword, fetch the key, leave)
-	"intro.prose": "de ridder staat op. hij pakt zijn zwaard. hij loopt naar de kast en pakt de sleutel. daarna opent hij de deur.",
+	"intro.prose": "hij loopt naar de muur. hier hangt zijn zwaard. de sleutel heeft hij later nodig. nu gaat hij naar de deur.",
 	"intro.narration": "Typ de woorden.",
-	"intro.win": "Klaar voor het avontuur!",
+	"intro.win": "Hij maakt een ommetje in het bos!",
 	# home -- a RETURN visit: walk in, then CHOOSE which gear to collect (campaign v2)
 	"home.prose": "de ridder is weer thuis. hij pakt iets van de muur.",
 	"home.sword_prose": "hij pakt zijn zwaard van de plank.",
