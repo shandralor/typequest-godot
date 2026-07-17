@@ -388,7 +388,6 @@ func _enter_node() -> void:
 	_update_camera(0.0, true)   # snap to the new scene's framing
 	_activity.reset()
 	_set_top_prompt(_locale.resolve(node.narration_key))   # instruction in the top bar
-	_set_message("")
 	if node.prerevealed:
 		_prose = TypingState.new("")
 		_type_along.set_plain(_locale.resolve(node.prose_key))
@@ -425,7 +424,6 @@ func _begin_choice() -> void:
 	if _candidates.is_empty():
 		# nothing left to take -- a short "you have everything" beat, then leave
 		_set_message(_locale.resolve("home.nothing") + "\n(druk op enter)")
-		_set_top_prompt("")
 		_type_along.visible = false
 		_keyboard.highlight("")
 		_phase = Phase.WIN
@@ -445,7 +443,6 @@ func _resolve_ending() -> void:
 		# the knight has reached the door: it swings open, a beat, then out into the world
 		_composer.house_open_door()
 		_set_message(_win_message())
-		_set_top_prompt("")
 		_type_along.visible = false
 		_keyboard.highlight("")
 		_phase = Phase.PAUSE
@@ -459,7 +456,6 @@ func _resolve_ending() -> void:
 			_after(1.8, _enter_node)
 		"win":
 			_set_message(_win_message() + "\n(druk op enter)")
-			_set_top_prompt("")          # the win message takes over
 			_type_along.visible = false   # no empty panel at the win
 			_keyboard.highlight("")
 			_phase = Phase.WIN
@@ -919,8 +915,9 @@ func _hint_nl(hint: String) -> String:
 
 
 func _set_message(text: String) -> void:
-	_message.text = text
-	_message.visible = text != ""
+	# all scene text (win / setback / prompts) lives in the top brown bar -- NEVER a
+	# translucent overlay on the 3D scene (immersion; standardised everywhere)
+	_set_top_prompt(text)
 
 
 func _update_hud() -> void:
@@ -1202,7 +1199,7 @@ func _set_playing_ui(playing: bool) -> void:
 	if _hud != null:
 		_hud.visible = playing
 	if _message != null:
-		_message.visible = playing
+		_message.visible = false   # deprecated: scene text lives in the top bar now
 	if _choice_layer != null:
 		_choice_layer.visible = playing
 	if _back_button != null:
@@ -1518,14 +1515,20 @@ func _set_top_prompt(text: String) -> void:
 		return
 	_top_bar.visible = text != ""
 	_top_prompt.text = text
-	# size the bar to the text so longer explanations do not spill over its edges
+	# size the bar to the text (width to the widest line, height to the line count) so
+	# longer explanations and 2-line win messages ("<msg>\n(druk op enter)") both fit
 	if text != "":
 		var font := _top_prompt.get_theme_font("font")
 		var fs := _top_prompt.get_theme_font_size("font_size")
-		var w: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var lines := text.split("\n")
+		var w := 0.0
+		for line in lines:
+			w = maxf(w, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
 		var half: float = clampf(w * 0.5 + 46.0, 300.0, 900.0)
 		_top_bar.offset_left = -half
 		_top_bar.offset_right = half
+		var line_h: float = float(fs) + 8.0
+		_top_bar.offset_bottom = 14.0 + maxf(66.0, lines.size() * line_h + 24.0)
 
 
 # Banners float above their site, projected from the 3D anchor each frame -- so a
