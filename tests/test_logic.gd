@@ -97,7 +97,8 @@ func _test_traversal() -> void:
 	var grot_node = run.current()
 	_check(grot_node.ending == "win", "grot is a win ending")
 	_check(not grot_node.celebrate, "grot win is not celebrated (a somber flee)")
-	_check(grot_node.sets_flag == "met_skeleton", "grot sets met_skeleton")
+	_check("met_skeleton" in grot_node.sets_flag, "grot sets met_skeleton")
+	_check("has_crystal" in grot_node.sets_flag, "grot also grants the crystal")
 	var ending = run.resolve_ending()
 	_check(ending.type == "win", "grot resolves as a win (no bounce)")
 

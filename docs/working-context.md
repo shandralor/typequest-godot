@@ -326,6 +326,26 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Crystal-lower mechanic: the drawbridge drops (2026-07-17)
+
+The crossing now reads fully. On entering brug, if has_crystal: a glowing crystal drops into
+the socket, top bar "De kristal laat de brug zakken!", and the drawbridge leaf swings from
+its authored raised angle down to flat over BRIDGE_LOWER_DUR (1.6s); THEN the crossing prose
+releases and he walks across the now-flat deck -> exit-walk -> fade.
+- Composer: grabs `bridge_leaf` + `crystal_socket` handles in compose(), remembers the leaf's
+  authored raised angle. New has_bridge(), set_bridge_lower(t) [0=raised..1=flat], and
+  stage_bridge_crystal() (an emissive teal box-gem placeholder in the socket; swap for a real
+  model later -- the purchased KayKit pack may have a crystal).
+- Controller: _setup_crossing() (called from _enter_node for exit_walk nodes) stages the
+  crystal, holds the bridge raised, faces the hero at it, and runs a PAUSE lowering beat
+  (`_bridge_lower` ticked in _process); on done _begin_crossing_prose() releases typing.
+- Crystal SOURCE (provisional, testable): the cave grants it. StoryNode.sets_flag now accepts
+  SPACE-SEPARATED flags; grot.sets_flag = "met_skeleton has_crystal" (he grabs a crystal
+  before fleeing). Dev menu gained a Kristal/has_crystal toggle. Easy to rewire the source.
+- brug.lower locale string added (read-aloud, no hash).
+Tested end-to-end via --scene=brug --flag=has_crystal (burst): crystal + lower + cross all
+render. All 7 suites pass.
+
 ## Crossing on the fork set + walk-off/fade terminator (2026-07-17)
 
 The brug (crossing) beat now REUSES the fork set (owner lengthened its far path past the

@@ -42,6 +42,9 @@ var _location: Node3D
 var _hero: HeroRig
 var _cave_pos := Vector3.ZERO
 var _bridge_pos := Vector3.ZERO
+var _bridge_leaf: Node3D          # the liftable drawbridge deck (raised until the crystal lowers it)
+var _crystal_socket: Node3D       # the pedestal anchor where the crystal is placed
+var _bridge_raised_x := 0.0       # the leaf's authored raised angle (lerp target 0 = flat)
 var _has_landmarks := false
 var _needs_bloom := false
 var _chest_lid: Node3D
@@ -77,6 +80,10 @@ func compose(descriptor, variant: String = "") -> void:
 	_location = _instance_set(_set_for(descriptor))
 	_location.name = "Location"
 	add_child(_location)
+	_bridge_leaf = _location.find_child("bridge_leaf", true, false) as Node3D
+	_crystal_socket = _location.get_node_or_null(^"crystal_socket") as Node3D
+	if _bridge_leaf != null:
+		_bridge_raised_x = _bridge_leaf.rotation.x   # remember the authored raised angle
 	_read_anchors(descriptor)
 	_apply_mood(descriptor.mood)
 	for actor in descriptor.actors:
@@ -124,6 +131,9 @@ func _clear() -> void:
 	_windmill_fan = null
 	_is_archery_scene = false
 	_is_house_scene = false
+	_bridge_leaf = null
+	_crystal_socket = null
+	_bridge_raised_x = 0.0
 	_house_door = null
 	_target = null
 	_crosshair = null
@@ -435,6 +445,37 @@ func set_lead_yaw(yaw: float) -> void:
 ## Force the lead to face a yaw even while in a walking scene (scripted walk-offs).
 func set_lead_facing(yaw: float) -> void:
 	_hero.face_yaw(yaw)
+
+
+## True when the current scene has a liftable drawbridge leaf (the crossing set).
+func has_bridge() -> bool:
+	return _bridge_leaf != null
+
+
+## Lower the drawbridge: t in [0, 1], 0 = fully raised (authored angle), 1 = flat/crossable.
+func set_bridge_lower(t: float) -> void:
+	if _bridge_leaf != null:
+		_bridge_leaf.rotation.x = lerpf(_bridge_raised_x, 0.0, clampf(t, 0.0, 1.0))
+
+
+## Drop a glowing crystal into the pedestal socket (once; the lowering key made visible).
+func stage_bridge_crystal() -> void:
+	if _crystal_socket == null or _crystal_socket.find_child("Crystal", false, false) != null:
+		return
+	var gem := MeshInstance3D.new()
+	gem.name = "Crystal"
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.26, 0.5, 0.26)
+	gem.mesh = bm
+	gem.rotation = Vector3(0.0, deg_to_rad(45.0), 0.0)   # 45 deg so the corners read as facets
+	gem.position = Vector3(0.0, 0.18, 0.0)               # nestled just above the socket recess
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.34, 0.86, 0.96)
+	m.emission_enabled = true
+	m.emission = Color(0.34, 0.86, 0.96)
+	m.emission_energy_multiplier = 2.2
+	gem.material_override = m
+	_crystal_socket.add_child(gem)
 
 
 func lead_yaw() -> float:

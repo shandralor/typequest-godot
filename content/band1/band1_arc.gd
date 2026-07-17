@@ -65,7 +65,9 @@ static func build() -> StoryGraph:
 	grot.ending = "win"
 	grot.win_key = "grot.win"
 	grot.celebrate = false
-	grot.sets_flag = "met_skeleton"   # he has seen the skeleton -> unlocks training + the bridge
+	# he sees the skeleton AND grabs a glowing crystal before fleeing: met_skeleton unlocks
+	# training + the bridge; has_crystal is the key that later lowers the drawbridge.
+	grot.sets_flag = "met_skeleton has_crystal"
 	grot.safety = _nl_be_safety("fnv1a:3778a255")
 	grot.scene = Scenes.grot()
 	g.add_node(grot)

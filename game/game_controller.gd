@@ -94,9 +94,11 @@ var _choice_layer: Control
 var _banners: Array = []
 # a short walk toward the chosen path before the scene cut (fork: cave/bridge)
 var _walkoff: Dictionary = {}
+var _bridge_lower: Dictionary = {}
 const CHOICE_WALK_DUR := 1.4
 const EXIT_WALK_DUR := 2.6      # stroll off the far path at the end of a crossing
 const EXIT_FADE_DUR := 0.8      # soft fade-to-black on either side of the island swap
+const BRIDGE_LOWER_DUR := 1.6   # the crystal-lowering drop before the crossing walk
 var _ui: Control
 var _menu_layer: Control
 var _menu_screen: Control
@@ -394,6 +396,7 @@ func _make_label(size: int, align: int) -> Label:
 func _enter_node() -> void:
 	var node = _run.current()
 	_clear_banners()
+	_bridge_lower = {}
 	_type_along.visible = true
 	_composer.compose(node.scene, node.id)
 	_update_camera(0.0, true)   # snap to the new scene's framing
@@ -416,6 +419,8 @@ func _enter_node() -> void:
 				_setup_house(_prose.target)         # rise + fetch quest (the intro)
 			else:
 				_setup_house_visit(_prose.target)   # a return visit: just walk in
+		if node.exit_walk:
+			_setup_crossing()                        # the crystal drops the drawbridge first
 	_setup_gaze(node)
 	_update_hud()
 
@@ -454,7 +459,8 @@ func _begin_choice() -> void:
 func _resolve_ending() -> void:
 	var completing = _run.current()
 	if completing != null and completing.sets_flag != "":
-		AppProgress.set_flag(completing.sets_flag)   # e.g. the cave sets met_skeleton
+		for fl in completing.sets_flag.split(" ", false):
+			AppProgress.set_flag(fl)   # e.g. the cave sets met_skeleton + has_crystal
 	var ending = _run.resolve_ending()
 	if _in_intro:
 		# the knight has reached the door: it swings open, a beat, then out into the world
@@ -699,6 +705,35 @@ func _fade_to_overworld() -> void:
 	t.tween_callback(_show_overworld.bind(_ow_at))
 	t.tween_property(f, "color:a", 0.0, EXIT_FADE_DUR)
 	t.tween_callback(f.queue_free)
+
+
+# Crossing opening beat: if he has the crystal, drop it into the socket and lower the
+# drawbridge as a short cutscene, THEN release the crossing prose. No crystal (shouldn't
+# happen in normal play, since brug is reached only after the cave) -> the prose just runs.
+func _setup_crossing() -> void:
+	if not _composer.has_bridge() or not AppProgress.get_flag("has_crystal"):
+		return
+	_composer.stage_bridge_crystal()
+	_composer.set_bridge_lower(0.0)             # hold it fully raised to start
+	_composer.set_lead_animation(false)
+	var fd: Vector3 = _composer.anchor_pos("path_far") - _composer.anchor_pos("path_near")
+	if fd.length() > 0.001:
+		_composer.set_lead_facing(atan2(fd.x, fd.z))   # face the bridge as it comes down
+	_type_along.visible = false
+	_keyboard.highlight("")
+	_set_top_prompt(_locale.resolve("brug.lower"))
+	_phase = Phase.PAUSE
+	_bridge_lower = {"t": 0.0}
+
+
+# The drawbridge has finished lowering: release the crossing prose (he walks across now).
+func _begin_crossing_prose() -> void:
+	var node = _run.current()
+	_type_along.visible = true
+	_phase = Phase.PROSE
+	_set_top_prompt(_locale.resolve(node.narration_key))
+	_type_along.set_prose(_prose.target, 0)
+	_highlight_prose()
 
 
 func _clear_banners() -> void:
@@ -1027,6 +1062,16 @@ func _process(delta: float) -> void:
 		if _composer.has_lead():
 			_composer.set_lead_animation(false)
 		_update_camera(delta, false)
+		return
+	if not _bridge_lower.is_empty():
+		# the crystal-lowering cutscene: swing the drawbridge leaf down before the walk
+		_bridge_lower.t += delta
+		var bl: float = clampf(_bridge_lower.t / BRIDGE_LOWER_DUR, 0.0, 1.0)
+		_composer.set_bridge_lower(bl)
+		_update_camera(delta, false)
+		if bl >= 1.0:
+			_bridge_lower = {}
+			_begin_crossing_prose()
 		return
 	if not _walkoff.is_empty():
 		# the hero strolls a couple of steps toward the chosen path before the scene
@@ -1485,6 +1530,7 @@ const DEV_FLAGS := [
 	{"label": "Boog", "flag": "has_bow"},
 	{"label": "Wapens", "flag": "has_gear"},
 	{"label": "Boog getr.", "flag": "archery_done"},
+	{"label": "Kristal", "flag": "has_crystal"},
 ]
 
 

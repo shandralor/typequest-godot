@@ -27,6 +27,7 @@ const CATALOG := {
 	"grot.win": "Het skelet is te eng! De ridder moet eerst sterker worden en zijn wapens halen.",
 	"naGrot.narration": "De ridder kiest de veilige weg.",
 	"brug.narration": "Stap voor stap over de brug.",
+	"brug.lower": "De kristal laat de brug zakken!",
 	"schat.narration": "Goed gedaan, kleine held!",
 	"schat.win": "Goed gedaan! Je hebt de schat.",
 	# grinding session (the slijplied -- a short song the child types)
