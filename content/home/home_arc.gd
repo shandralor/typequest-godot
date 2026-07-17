@@ -1,16 +1,16 @@
 class_name HomeArc
 extends RefCounted
 
-## A RETURN visit to the house (the overworld "thuis" site). Reuses the SAME editable
-## set as the intro (scenes/sets/house.tscn) -- no mirrored/rebaked variant: the knight
-## simply enters from the door and walks in, driven by the typed prose. This is the
-## foundation for later "fetch an item from home" visits (a shield, a cloak, ...): add
-## the item + a `*_point` anchor in the editor and a leg to the walk. One node, win
-## ending. AUTHORED -- do not regenerate casually.
+## A RETURN visit to the house (the overworld "thuis" site), reusing the SAME editable
+## set as the intro (scenes/sets/house.tscn). Campaign v2: the knight comes home to
+## COLLECT his gear before he can train -- a CHOICE of which item to take first
+## (type `zwaard` or `boog`), then he walks to it and picks it up. The controller filters
+## the choice to items not yet collected (and handles the "nothing left" case), and does
+## the per-item walk + pickup + flag. AUTHORED -- do not regenerate casually.
 
 const GRAPH_ID := "home-arc"
 const VOCABULARY_ID := "fantasy-poc"
-const START_ID := "thuisbezoek"
+const START_ID := "thuiskeuze"
 
 
 static func build() -> StoryGraph:
@@ -19,19 +19,48 @@ static func build() -> StoryGraph:
 	g.vocabulary_id = VOCABULARY_ID
 	g.start_id = START_ID
 
-	var node := StoryGraph.StoryNode.new()
-	node.id = "thuisbezoek"
-	node.prose_key = "home.prose"
-	node.narration_key = "home.narration"
-	node.ending = "win"
-	node.win_key = "home.win"
-	node.safety = {"nl-BE": {"hash": "fnv1a:70f31056", "date": "2026-07-16", "criteria_version": "v0-stub"}}
-	node.scene = scene()
-	g.add_node(node)
+	# the choice: walk in, then pick which item to take (controller filters to uncollected)
+	var keuze := StoryGraph.StoryNode.new()
+	keuze.id = "thuiskeuze"
+	keuze.prose_key = "home.prose"
+	keuze.narration_key = "home.narration"
+	keuze.choices = [
+		StoryGraph.Choice.new("word.zwaard", "neem_zwaard", "right"),
+		StoryGraph.Choice.new("word.boog", "neem_boog", "left"),
+	]
+	keuze.safety = _safety("fnv1a:9c08a087")
+	keuze.scene = _house_scene()
+	g.add_node(keuze)
+
+	# take the sword (controller walks him to sword_point + collects on the win)
+	var zwaard := StoryGraph.StoryNode.new()
+	zwaard.id = "neem_zwaard"
+	zwaard.prose_key = "home.sword_prose"
+	zwaard.narration_key = "home.narration"
+	zwaard.ending = "win"
+	zwaard.win_key = "home.win_sword"
+	zwaard.safety = _safety("fnv1a:ef4ca746")
+	zwaard.scene = _house_scene()
+	g.add_node(zwaard)
+
+	# take the bow
+	var boog := StoryGraph.StoryNode.new()
+	boog.id = "neem_boog"
+	boog.prose_key = "home.bow_prose"
+	boog.narration_key = "home.narration"
+	boog.ending = "win"
+	boog.win_key = "home.win_bow"
+	boog.safety = _safety("fnv1a:02668763")
+	boog.scene = _house_scene()
+	g.add_node(boog)
 	return g
 
 
-static func scene() -> SceneDescriptor:
+static func _safety(hash: String) -> Dictionary:
+	return {"nl-BE": {"hash": hash, "date": "2026-07-17", "criteria_version": "v0-stub"}}
+
+
+static func _house_scene() -> SceneDescriptor:
 	var d := SceneDescriptor.new()
 	d.location = "house"
 	d.mood = "day"

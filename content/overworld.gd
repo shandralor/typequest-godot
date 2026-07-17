@@ -18,9 +18,11 @@ static func sites() -> Array:
 		{"id": "bos", "word_key": "site.bos", "scenario": "band1",
 			"anchor": "site_bos", "route": "route_bos", "unlocked": true},
 		{"id": "smidse", "word_key": "site.smidse", "scenario": "grind",
-			"anchor": "site_smidse", "route": "route_smidse", "unlocked": true},
+			"anchor": "site_smidse", "route": "route_smidse", "unlocked": true,
+			"requires_flag": "has_sword", "hint_key": "hint.smidse"},
 		{"id": "boog", "word_key": "site.boog", "scenario": "archery",
-			"anchor": "site_boog", "route": "route_boog", "unlocked": true},
+			"anchor": "site_boog", "route": "route_boog", "unlocked": true,
+			"requires_flag": "has_bow", "hint_key": "hint.boog"},
 		{"id": "thuis", "word_key": "site.thuis", "scenario": "home",
 			"anchor": "site_home", "route": "route_home", "unlocked": true},
 	]

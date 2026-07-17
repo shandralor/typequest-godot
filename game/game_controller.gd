@@ -417,7 +417,20 @@ func _begin_choice() -> void:
 		return
 	_candidates = []
 	for ch in node.choices:
+		# at home, only offer gear not yet collected (choice target is a take_* node)
+		var it: Dictionary = _house_item_for_node(ch.target)
+		if not it.is_empty() and AppProgress.get_flag(it.flag):
+			continue
 		_candidates.append({"word": _locale.resolve(ch.word_key), "choice": ch})
+	if _candidates.is_empty():
+		# nothing left to take -- a short "you have everything" beat, then leave
+		_set_message(_locale.resolve("home.nothing") + "\n(druk op enter)")
+		_set_top_prompt("")
+		_type_along.visible = false
+		_keyboard.highlight("")
+		_phase = Phase.WIN
+		_composer.play_lead_loop("Cheering")
+		return
 	_picked = null
 	_buffer = ""
 	_phase = Phase.CHOICE
@@ -445,10 +458,7 @@ func _resolve_ending() -> void:
 			_phase = Phase.PAUSE
 			_after(1.8, _enter_node)
 		"win":
-			var win_text := _win_message()
-			if _composer.is_house_scene() and _house_visit_fetch != "":
-				win_text = _locale.resolve("home.win_bow")   # "je hebt je boog gehaald!"
-			_set_message(win_text + "\n(druk op enter)")
+			_set_message(_win_message() + "\n(druk op enter)")
 			_set_top_prompt("")          # the win message takes over
 			_type_along.visible = false   # no empty panel at the win
 			_keyboard.highlight("")
@@ -462,8 +472,11 @@ func _resolve_ending() -> void:
 				AppProgress.set_flag("archery_done")    # unlocks a bow back at the house
 			elif _composer.is_house_scene():
 				if _house_visit_fetch != "":
-					_composer.house_pickup_bow(_house_visit_fetch)   # take the bow off the wall
-					AppProgress.set_flag("has_bow_a")               # completes the objective
+					var item: Dictionary = _house_item_by_id(_house_visit_fetch)
+					_composer.house_pickup_item(item.node)   # take the item off the wall
+					AppProgress.set_flag(item.flag)         # prerequisite for its training site
+					if AppProgress.get_flag("has_sword") and AppProgress.get_flag("has_bow"):
+						AppProgress.set_flag("has_gear")    # completes the "get your gear" objective
 				else:
 					_composer.play_lead_loop("Cheering")   # a plain visit: a small wave
 			else:
@@ -807,13 +820,15 @@ func _house_check_pickup() -> void:
 # "get an item from home" visits (add an item + a `*_point` anchor + a leg).
 func _setup_house_visit(_prose_text: String) -> void:
 	_house_visit_from = _composer.anchor_pos("path_far")   # the door
-	# if the bow is unlocked and not yet collected, this visit FETCHES it: walk to the
-	# bow instead of the room centre, and pick it up at the end
-	_house_visit_fetch = ""
-	if AppProgress.get_flag("archery_done") and not AppProgress.get_flag("has_bow_a"):
-		_house_visit_fetch = "bow_a"
-		_house_visit_to = _composer.anchor_pos("bow_point")
+	# a take_* node (neem_zwaard/neem_boog) walks to that item and collects it at the win;
+	# the choice node just walks in to the room centre
+	var node = _run.current()
+	var item: Dictionary = _house_item_for_node(node.id) if node != null else {}
+	if not item.is_empty():
+		_house_visit_fetch = item.id
+		_house_visit_to = _composer.anchor_pos(item.anchor)
 	else:
+		_house_visit_fetch = ""
 		_house_visit_to = _composer.anchor_pos("center")
 	var stand: float = _composer.house_stand_y()
 	_composer.house_move_to(Vector3(_house_visit_from.x, stand, _house_visit_from.z), 0.0, _house_visit_yaw())
@@ -830,12 +845,37 @@ func _update_house_visit(delta: float) -> bool:
 # Ghost the house bows until their unlock condition is met (visible but not takeable):
 # bow_A unlocks when the archery range is completed; bow_B waits on a harder archery
 # difficulty (not added yet, so it stays locked for now).
+# The collectable house gear (campaign v2): visible on the wall until collected, then
+# gone. Each is a PREREQUISITE for its training site (sword->smidse, bow->boog). Data,
+# so adding an item (shield, keys, ...) is a row here + a wall node + a *_point anchor.
+const HOUSE_ITEMS := [
+	{"id": "sword", "node": "shelf_sword", "anchor": "sword_point", "flag": "has_sword", "take_node": "neem_zwaard"},
+	{"id": "bow", "node": "bow_a", "anchor": "bow_point", "flag": "has_bow", "take_node": "neem_boog"},
+]
+
+
+func _house_item_by_id(item_id: String) -> Dictionary:
+	for it in HOUSE_ITEMS:
+		if it.id == item_id:
+			return it
+	return {}
+
+
+func _house_item_for_node(node_id: String) -> Dictionary:
+	for it in HOUSE_ITEMS:
+		if it.take_node == node_id:
+			return it
+	return {}
+
+
 func _apply_house_locks() -> void:
-	# bow_a: hidden once collected; else solid when unlocked / ghosted when locked
-	if AppProgress.get_flag("has_bow_a"):
-		_composer.set_house_item_hidden("bow_a", true)
-	else:
-		_composer.set_house_item_locked("bow_a", not AppProgress.get_flag("archery_done"))
+	# each item: gone once collected, else solid on the wall (collectable)
+	for it in HOUSE_ITEMS:
+		if AppProgress.get_flag(it.flag):
+			_composer.set_house_item_hidden(it.node, true)
+		else:
+			_composer.set_house_item_locked(it.node, false)
+	# bow_b still waits on a future harder-archery flag (kept ghosted)
 	_composer.set_house_item_locked("bow_b", not AppProgress.get_flag("archery_hard_done"))
 
 
@@ -1429,7 +1469,8 @@ func _build_ow_banners() -> void:
 func _open_objectives() -> Array:
 	var open: Array = []
 	for o in Objectives.all():
-		if AppProgress.get_flag(o.active_flag) and not AppProgress.get_flag(o.done_flag):
+		var active: bool = o.active_flag == "" or AppProgress.get_flag(o.active_flag)
+		if active and not AppProgress.get_flag(o.done_flag):
 			open.append(o)
 	return open
 
@@ -1456,6 +1497,15 @@ func _maybe_nudge_objective() -> void:
 func _restore_ow_prompt() -> void:
 	if _app_state == AppState.OVERWORLD and _ow_walk == null:
 		_set_top_prompt(_locale.resolve("overworld.narration"))
+
+
+# Site needs gear first: clear the typed word, show the hint a few seconds, then revert.
+func _ow_show_hint(text: String) -> void:
+	_ow_buffer = ""
+	_type_along.set_plain("")
+	_update_ow_highlight()
+	_set_top_prompt(text)
+	_after(3.5, _restore_ow_prompt)
 
 
 func _clear_ow_banners() -> void:
@@ -1505,7 +1555,12 @@ func _ow_char(c: String) -> void:
 	_update_ow_highlight()
 	for cand in matches:
 		if cand.word == _ow_buffer:
-			_begin_ow_travel(cand.site)
+			var site = cand.site
+			# a training site needs its gear collected first -> hint instead of travelling
+			if site.get("requires_flag", "") != "" and not AppProgress.get_flag(site.requires_flag):
+				_ow_show_hint(_locale.resolve(site.hint_key))
+				return
+			_begin_ow_travel(site)
 			return
 
 

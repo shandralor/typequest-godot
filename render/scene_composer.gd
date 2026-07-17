@@ -533,8 +533,8 @@ func set_house_item_hidden(name_contains: String, hidden: bool) -> void:
 		n.visible = not hidden
 
 
-# The knight takes a bow off the wall: hide the wall bow + play the pickup one-shot.
-func house_pickup_bow(name_contains: String) -> void:
+# The knight takes an item off the wall: hide the wall node + play the pickup one-shot.
+func house_pickup_item(name_contains: String) -> void:
 	set_house_item_hidden(name_contains, true)
 	play_lead_oneshot(HeroRig.HERO_PICKUP)
 

@@ -41,18 +41,27 @@ const CATALOG := {
 	"intro.prose": "de ridder staat op. hij pakt zijn zwaard. hij loopt naar de kast en pakt de sleutel. daarna opent hij de deur.",
 	"intro.narration": "Typ de woorden.",
 	"intro.win": "Klaar voor het avontuur!",
-	# home -- a RETURN visit to the house (overworld "thuis" site): walk in, look around
-	"home.prose": "de ridder is weer thuis. hij loopt naar binnen en kijkt rond.",
+	# home -- a RETURN visit: walk in, then CHOOSE which gear to collect (campaign v2)
+	"home.prose": "de ridder is weer thuis. hij pakt iets van de muur.",
+	"home.sword_prose": "hij pakt zijn zwaard van de plank.",
+	"home.bow_prose": "hij pakt zijn boog van de muur.",
 	"home.narration": "Typ de woorden.",
 	"home.win": "Tot de volgende keer!",
+	"home.win_sword": "Je hebt je zwaard gehaald!",
 	"home.win_bow": "Je hebt je boog gehaald!",
+	"home.nothing": "Je hebt alles al gehaald!",
+	# site-prerequisite hints (read aloud): go get the gear first
+	"hint.smidse": "Haal eerst je zwaard thuis!",
+	"hint.boog": "Haal eerst je boog thuis!",
 	# objectives -- short read-aloud nudges (not typed, so free punctuation)
-	"objective.boog": "Er ligt een nieuwe boog voor je thuis!",
+	"objective.wapens": "Haal je wapens thuis op!",
 	# choice words (typed to pick a fork)
 	"word.verder": "verder",
 	"word.grot": "grot",
 	"word.brug": "brug",
 	"word.kist": "kist",
+	"word.zwaard": "zwaard",
+	"word.boog": "boog",
 	# overworld site words (typed to travel to an adventure site)
 	"site.bos": "bos",
 	"site.smidse": "smidse",

@@ -14,13 +14,15 @@ extends RefCounted
 ## so adding an objective is a DATA row (roadmap G8). The overworld badge + the future
 ## quest-log scroll (G4) both read this same list.
 
+## active_flag "" means ALWAYS active (until done_flag). done_flag "has_gear" is set once
+## both the sword and bow have been collected at home.
 static func all() -> Array:
 	return [
 		{
-			"id": "haal_je_boog",
-			"active_flag": "archery_done",
-			"done_flag": "has_bow_a",
+			"id": "haal_wapens",
+			"active_flag": "",
+			"done_flag": "has_gear",
 			"target_site": "thuis",
-			"hint_key": "objective.boog",
+			"hint_key": "objective.wapens",
 		},
 	]
