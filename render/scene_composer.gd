@@ -432,6 +432,10 @@ func set_lead_yaw(yaw: float) -> void:
 	_hero.set_yaw(yaw)
 
 
+func lead_yaw() -> float:
+	return _hero.node.rotation.y if _hero != null and _hero.node != null else 0.0
+
+
 # --- locations ----------------------------------------------------------------
 # Static staging is authored in scenes/sets/<name>.tscn (editable in the editor)
 # and instanced here; if a set is missing it falls back to the procedural builder.
@@ -541,8 +545,11 @@ func house_pickup_item(name_contains: String) -> void:
 
 const HOUSE_RISE_FRAC := 0.16   # first slice of typing: the knight rises out of the floor
 const HOUSE_STAND_Y := 0.2      # the floor's TOP surface -- where the knight's feet rest
-const HOUSE_SINK_DROP := 1.0    # how far below standing he starts (getting-up illusion)
+const HOUSE_SINK_DROP := 1.0    # (legacy) how far below standing he started
+const HOUSE_LIE_Y := 1.20       # bed surface: he lies here, then lowers to the floor as
+								# the get-up animation swings his legs off the bed
 const HOUSE_MOVE_SPEED := 5.0   # how fast he glides toward the typing target (fluidity)
+const HOUSE_TURN_SPEED := 6.0   # how fast he eases toward a new facing (no snap turns)
 
 
 # The floor top the knight stands on / how far below he starts (controller reads these
@@ -551,8 +558,8 @@ func house_stand_y() -> float:
 	return HOUSE_STAND_Y
 
 
-func house_sink_drop() -> float:
-	return HOUSE_SINK_DROP
+func house_lie_y() -> float:
+	return HOUSE_LIE_Y
 
 
 # Move the intro knight toward `target`, SMOOTHED each frame (delta > 0) so he glides
@@ -563,18 +570,35 @@ func house_move_to(target: Vector3, delta: float = 0.0, yaw: float = PI) -> void
 		return
 	if delta <= 0.0:
 		_hero.node.position = target
+		_hero.node.rotation.y = yaw
 	else:
 		_hero.node.position = _hero.node.position.lerp(target, clampf(delta * HOUSE_MOVE_SPEED, 0.0, 1.0))
-	_hero.node.rotation.y = yaw
+		# smooth the yaw too, so turns between legs (sword -> keys) ease instead of snap
+		_hero.node.rotation.y = lerp_angle(_hero.node.rotation.y, yaw, clampf(delta * HOUSE_TURN_SPEED, 0.0, 1.0))
 
 
-# Initial sunk placement for the house intro (called once from compose(), delta = 0):
-# he starts below the floor at path_near, facing the door.
+# Initial placement for the house intro (called once from compose()): the knight LIES
+# on the floor at path_near (asleep), on top of the floor -- not sunk. The get-up is a
+# real animation (Lie_StandUp), not a sink illusion.
 func set_house_start() -> void:
 	if _hero.node == null:
 		return
-	var s := _hero.travel_start
-	house_move_to(Vector3(s.x, HOUSE_STAND_Y - HOUSE_SINK_DROP, s.z), 0.0, deg_to_rad(180))
+	var bed := _anchor_position("bed_point")   # on the bed, not sunk / not beside it
+	_hero.node.position = Vector3(bed.x, HOUSE_LIE_Y, bed.z)
+	_hero.node.rotation.y = deg_to_rad(180)
+	_hero.play_loop(HeroRig.HERO_LIE)
+
+
+# The knight folds from lying to standing (one-shot get-up, played gently/slow), then
+# settles to idle.
+func house_stand_up() -> void:
+	_hero.play_oneshot(HeroRig.HERO_STANDUP, 0.5)
+
+
+# Progress [0,1] of the get-up animation, so the controller paces the rise/step-off to
+# the animation itself (not the typing).
+func house_getup_progress() -> float:
+	return _hero.oneshot_progress()
 
 
 # The knight takes his sword off the shelf: hide the displayed shelf sword, put the

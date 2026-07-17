@@ -28,6 +28,8 @@ const HERO_WORK := "Sawing"     # looped horizontal saw -- small vertical, for g
 const HERO_TOOLS := "res://assets/kaykit/characters/Rig_Medium_Tools.glb"
 const HERO_CHEER := "Cheering"  # looped victory -- raises the held sword at the win
 const HERO_SIM := "res://assets/kaykit/characters/Rig_Medium_Simulation.glb"
+const HERO_LIE := "Lie_Idle"          # looped lying pose (asleep in bed at the intro start)
+const HERO_STANDUP := "Lie_StandUp"   # one-shot get-up (fold from lying to standing)
 const HERO_AIM := "Ranged_Bow_Aiming_Idle"   # looped bow aim, for archery
 const HERO_SHOOT := "Ranged_Bow_Release"     # one-shot loose, per arrow
 const HERO_RANGED := "res://assets/kaykit/characters/Rig_Medium_CombatRanged.glb"
@@ -56,9 +58,9 @@ func build() -> Node3D:
 	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP])
 	_graft_animations(lib, HERO_MOVE, [HERO_WALK])
 	_graft_animations(lib, HERO_TOOLS, [HERO_WORK])
-	_graft_animations(lib, HERO_SIM, [HERO_CHEER])
+	_graft_animations(lib, HERO_SIM, [HERO_CHEER, HERO_LIE, HERO_STANDUP])
 	_graft_animations(lib, HERO_RANGED, [HERO_AIM, HERO_SHOOT])
-	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK, HERO_CHEER, HERO_AIM]:
+	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK, HERO_CHEER, HERO_AIM, HERO_LIE]:
 		if lib.has_animation(clip):
 			lib.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 	anim = ap
@@ -97,20 +99,32 @@ func play_loop(anim_name: String) -> void:
 
 
 ## Play a one-shot hero clip (e.g. PickUp at the win), then settle back to idle.
-func play_oneshot(anim_name: String) -> void:
+## `speed` < 1.0 plays it slower (e.g. a gentle get-up).
+func play_oneshot(anim_name: String, speed: float = 1.0) -> void:
 	if anim == null or not anim.has_animation(anim_name):
 		return
 	anim.get_animation(anim_name).loop_mode = Animation.LOOP_NONE
 	if not anim.animation_finished.is_connected(_on_oneshot_done):
 		anim.animation_finished.connect(_on_oneshot_done)
 	_oneshot = true
-	anim.play(anim_name, 0.2)
+	anim.play(anim_name, 0.2, speed)
 
 
 func _on_oneshot_done(_anim: StringName) -> void:
 	_oneshot = false
 	if anim != null and anim.has_animation(HERO_IDLE):
 		anim.play(HERO_IDLE, 0.3)
+
+
+## Progress [0,1] of the current one-shot (e.g. the get-up), so motion can follow the
+## animation's own timeline instead of the typing. Returns 1.0 when no one-shot runs.
+func oneshot_progress() -> float:
+	if anim == null or not _oneshot:
+		return 1.0
+	var len := anim.get_current_animation_length()
+	if len <= 0.0:
+		return 1.0
+	return clampf(anim.get_current_animation_position() / len, 0.0, 1.0)
 
 
 ## Place the lead along the travel path by progress in [0, 1] (walking scenes only).

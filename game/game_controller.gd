@@ -74,6 +74,11 @@ var _house_span: Array = []      # [start, end) char range per sentence
 var _house_way: Array = []       # Vector3 waypoint per sentence (leg s ends here)
 var _house_pickups: Array = []   # [sentence_index, "sword"/"key"] events, in order
 var _house_pick := 0
+var _house_stood_up := false     # the intro get-up (Lie_StandUp) fires once
+var _house_getup_started := false
+var _house_getup_gp := 0.0       # monotonic get-up progress (never dips -> no bed clip)
+var _house_bed := Vector3.ZERO   # the bed lie spot (steps off to path_near as he rises)
+var _house_bedside := Vector3.ZERO   # where he stands after the get-up; the walk starts here
 # house return visit (not the intro): a simple walk in, door -> room, over the prose
 var _house_visit_from := Vector3.ZERO
 var _house_visit_to := Vector3.ZERO
@@ -736,10 +741,21 @@ func _setup_house(prose: String) -> void:
 	_house_span = _sentence_spans(prose)
 	_house_pickups = []
 	_house_pick = 0
+	_house_stood_up = false
+	_house_getup_started = false
 	# campaign v2: the intro is a MORNING WALK -- he walks past his sword + keys (LOOKS,
 	# does not take them; a hint says they are for later) and heads out to the woods.
 	# So the waypoints stay (rise -> sword wall -> keys -> door) but there are NO pickups.
-	var stops := ["path_near", "sword_point", "key_point", "path_far"]
+	_house_bed = _composer.anchor_pos("bed_point")   # where he lies AND gets up (in place)
+	_house_bedside = _house_bed                       # no step-off; the walk starts here
+	_house_getup_gp = 0.0
+	# start the get-up NOW (during the briefing) so he is already standing before the
+	# child types -- the walk then tracks the typing with no rushed catch-up
+	_house_getup_started = true
+	_composer.house_stand_up()
+	# END position per typed sentence: walk FORWARD a few steps off the bed, THEN angle to
+	# the sword wall, then the keys, then the door
+	var stops := ["forward_point", "sword_point", "key_point", "path_far"]
 	_house_way = []
 	for i in _house_span.size():
 		var anchor: String = stops[i] if i < stops.size() else "path_far"
@@ -749,25 +765,27 @@ func _setup_house(prose: String) -> void:
 func _update_house(delta: float) -> bool:
 	if _house_way.is_empty():
 		return false
-	var s := _house_current_sentence()
-	var prog := _house_sentence_progress(s)
 	var stand: float = _composer.house_stand_y()
-	var sink: float = _composer.house_sink_drop()
-	var target: Vector3
-	var yaw: float
-	if s == 0:
-		# rise in place at the first waypoint, oriented toward the first walk
-		var w0: Vector3 = _house_way[0]
-		target = Vector3(w0.x, lerpf(stand - sink, stand, prog), w0.z)
-		yaw = _house_leg_yaw(1) if _house_way.size() > 1 else PI
-	else:
-		var from: Vector3 = _house_way[s - 1]
-		var to: Vector3 = _house_way[s]
-		var base := from.lerp(to, prog)
-		target = Vector3(base.x, stand, base.z)
-		yaw = _house_leg_yaw(s)
-	_composer.house_move_to(target, delta, yaw)
-	return s >= 1   # walking (not the initial rise)
+	var lie: float = _composer.house_lie_y()
+	# --- GET-UP: stand up IN PLACE on the bed, facing forward (PI). The origin stays at
+	#     bed height the WHOLE time -- NO drop here, so no sink. (The drop to the floor
+	#     happens on the first forward step below, reading as stepping off the bed.)
+	if not _house_stood_up:
+		_house_getup_gp = maxf(_house_getup_gp, _composer.house_getup_progress())
+		_composer.house_move_to(Vector3(_house_bed.x, lie, _house_bed.z), delta, PI)
+		if _house_getup_gp >= 0.999:
+			_house_stood_up = true
+		return false
+	# --- WALK: sentence 0 steps FORWARD off the bed, descending bed height -> floor as he
+	#     goes (stepping down, not sinking in place); later legs glide on the floor.
+	var s := _house_current_sentence()
+	var from: Vector3 = _house_way[s - 1] if s > 0 else _house_bed
+	var to: Vector3 = _house_way[s]
+	var prog := _house_sentence_progress(s)
+	var walk := from.lerp(to, prog)
+	var wy: float = lerpf(lie, stand, prog) if s == 0 else stand   # step down off the bed
+	_composer.house_move_to(Vector3(walk.x, wy, walk.z), delta, _house_walk_yaw(from, to))
+	return true
 
 
 # Yaw that faces along leg `s` (from waypoint s-1 to s); falls back to the door.
@@ -777,6 +795,14 @@ func _house_leg_yaw(s: int) -> float:
 	var dir: Vector3 = _house_way[s] - _house_way[s - 1]
 	if dir.length() < 0.001:
 		return PI
+	return atan2(dir.x, dir.z)
+
+
+# Yaw facing from -> to; a zero-length leg (a "look" beat) keeps his current facing.
+func _house_walk_yaw(from: Vector3, to: Vector3) -> float:
+	var dir: Vector3 = to - from
+	if dir.length() < 0.001:
+		return _composer.lead_yaw()
 	return atan2(dir.x, dir.z)
 
 
@@ -967,7 +993,10 @@ func _process(delta: float) -> void:
 		# sentence is typed; a return visit just walks in. Walk clip gated by the
 		# activity hysteresis (fluid).
 		var in_walk: bool = _update_house(delta) if _in_intro else _update_house_visit(delta)
-		if drive_anim:
+		# while he is still lying (before the get-up fires), hold the Lie_Idle pose --
+		# do not let idle/walk stomp it; the standup one-shot then locks it until done
+		var lying: bool = _in_intro and not _house_stood_up
+		if drive_anim and not lying:
 			_composer.set_lead_animation(_phase == Phase.PROSE and in_walk and act == SceneActivity.Activity.MOVING)
 	elif _composer.is_walking():
 		_composer.set_lead_progress(p)
