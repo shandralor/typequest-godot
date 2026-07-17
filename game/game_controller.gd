@@ -122,6 +122,8 @@ var _ow_walk = null              # { legs: [{route, reverse}], leg, dist, site }
 var _ow_at := "hub"              # anchor the hero stands at on the island
 var _walk_capture := false       # debug: hold at the route end instead of starting the scenario
 var _topcam := false             # debug: overhead overworld camera for tracing roads
+var _ow_mouse_active := false    # true once the mouse has moved (enables map panning)
+const OW_PAN_RANGE := 15.0       # how far the mouse can push the idle island view
 const OW_WALK_SPEED := 4.5
 const OW_BANNER_LIFT := Vector3(0, 7.2, 0)   # banner floats this far above a site (into the sky, off the hexes)
 
@@ -541,6 +543,8 @@ func _resolve_ending() -> void:
 # --- input -------------------------------------------------------------------
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion:
+		_ow_mouse_active = true   # enable island panning once the cursor moves
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	if event.keycode == KEY_ESCAPE:
@@ -1230,6 +1234,28 @@ func _update_camera(delta: float, snap: bool) -> void:
 # Framing adapts to the scene: a close follow while walking; a wide, raised
 # establishing shot at the fork (so the cave on the left and the bridge on the
 # right are both in view as the hero turns to look); medium otherwise.
+# Mouse-driven pan for the idle island view: the cursor's offset from screen centre
+# (past a centre dead-zone) pushes the camera focus, so a child can look around the
+# revealed map without walking. Zero until the mouse first moves (a stable default view).
+func _ow_pan_offset() -> Vector3:
+	if not _ow_mouse_active:
+		return Vector3.ZERO
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	if vp.x <= 0.0 or vp.y <= 0.0:
+		return Vector3.ZERO
+	var m: Vector2 = get_viewport().get_mouse_position()
+	var nx: float = _pan_curve(clampf((m.x / vp.x - 0.5) * 2.0, -1.0, 1.0))
+	var nz: float = _pan_curve(clampf((m.y / vp.y - 0.5) * 2.0, -1.0, 1.0))
+	return Vector3(nx * OW_PAN_RANGE, 0.0, nz * OW_PAN_RANGE)
+
+
+func _pan_curve(v: float) -> float:
+	var dead := 0.3
+	if absf(v) < dead:
+		return 0.0
+	return signf(v) * (absf(v) - dead) / (1.0 - dead)
+
+
 func _camera_rig() -> Dictionary:
 	if _app_state == AppState.MAIN and _composer.is_overworld():
 		# the main menu shows the island full-screen, zoomed out so the title floats
@@ -1252,9 +1278,11 @@ func _camera_rig() -> Dictionary:
 		if _topcam:
 			# debug: straight overhead, for tracing the road layout to fit routes
 			return {"pos": look2 + Vector3(0, 60, 0.01), "look": look2, "fov": 42.0}
-		# overworld picker: a modest zoom-out from the set framing, so the site
-		# labels have sky room above the hexes
-		return {"pos": look2 + (ow2.pos - look2) * 1.12, "look": look2, "fov": ow2.get("fov", 30.0)}
+		# idle picker: keep the set's iso angle but centre on the island, and let the
+		# mouse PAN the view so a growing/revealed map can be inspected without walking
+		var iso: Vector3 = ow2.pos - look2
+		var focus: Vector3 = look2 + _ow_pan_offset()
+		return {"pos": focus + iso, "look": focus, "fov": ow2.get("fov", 30.0)}
 	var lead: Vector3 = _composer.lead_position()
 	if _composer.is_house_scene():
 		# a fixed frame from INSIDE the room (near the front), looking down it at the

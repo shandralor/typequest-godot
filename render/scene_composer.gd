@@ -206,9 +206,9 @@ func hide_clouds() -> void:
 
 
 # --- coastal mist ring (masks unexplored regions; lifts per-sector on unlock) ------
-const MIST_RADIUS := 17.5    # ring sits just past the current island coast
-const MIST_COUNT := 28       # puffs around the ring
-const MIST_Y := 1.4          # low, hugging the sea
+const MIST_RADIUS := 21.5    # ring sits past the coast so it never swallows edge buildings
+const MIST_COUNT := 34       # puffs around the ring (denser to stay continuous at radius)
+const MIST_Y := 0.9          # low, hugging the sea
 
 
 ## Ring the island coast with a soft mist bank so anything beyond the current tiles
@@ -222,12 +222,12 @@ func _spawn_mist() -> void:
 		var puff := SceneKit.instance_path(CLOUD_MODEL)
 		if puff == null:
 			continue
-		var r := MIST_RADIUS + rng.randf_range(-1.2, 1.6)
-		var base_y := MIST_Y + rng.randf_range(-0.5, 0.9)
+		var r := MIST_RADIUS + rng.randf_range(-1.0, 1.4)
+		var base_y := MIST_Y + rng.randf_range(-0.4, 0.7)
 		puff.position = Vector3(cos(a) * r, base_y, sin(a) * r)
 		puff.rotation.y = a
-		var s := rng.randf_range(2.6, 3.8)
-		puff.scale = Vector3(s * 1.5, s * 0.8, s)
+		var s := rng.randf_range(1.7, 2.5)
+		puff.scale = Vector3(s * 1.6, s * 0.7, s)
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = Color(0.92, 0.95, 1.0, 0.85)
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA

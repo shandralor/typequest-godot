@@ -326,6 +326,20 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Mist tuning + island camera pan + maximized window (2026-07-17)
+
+Follow-up tuning after the mist landed. (1) Mist ring was swallowing edge buildings (smidse,
+windmill): pushed MIST_RADIUS 17.5->21.5 (past the water), shrank puffs (scale 1.7-2.5),
+lowered MIST_Y->0.9, denser (34) -- now a clean island->water->mist band, buildings clear.
+(2) 1920x1080 window is small on a 4K screen -> project.godot window/size/mode=2 (maximized)
++ resizable, so it fills the screen (stretch canvas_items/expand scales the 1920x1080 base up
+crisply). (3) Idle overworld camera now CENTRES on the island (dropped the 1.12 pull-back) and
+MOUSE-PANS: cursor offset from screen centre past a 0.3 dead-zone pushes the focus up to
+OW_PAN_RANGE(15) so a child can look around the revealed/growing map without walking
+(_ow_pan_offset/_pan_curve; enabled once the mouse first moves, _ow_mouse_active). Walking
+still follows the knight. All 7 suites pass. NOTE: the windmill sits right at the bottom frame
+edge in the default view -- the pan reveals it; can add a small south focus bias if wanted.
+
 ## Coastal mist ring: mask + reveal unexplored regions (2026-07-17)
 
 To avoid "magical" pop-in when the island grows, a soft MIST RING now hugs the whole coast
