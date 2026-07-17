@@ -326,6 +326,26 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Campaign v2 slice 1: item prerequisites (2026-07-17)
+
+BUILT + verified: the bow + sword are now PREREQUISITES collected at home before their
+training (inverts the Wave-1 bow-as-reward).
+- HomeArc = a CHOICE (thuiskeuze -> neem_zwaard/neem_boog): walk in, type zwaard/boog,
+  walk to that item, collect (per-item win hides the wall node + sets has_sword/has_bow).
+  Controller filters the choice to uncollected items + a "nothing left" case (home.nothing).
+- House items are DATA (game_controller HOUSE_ITEMS: node/anchor/flag/take_node) -- the G8
+  hotspot generalised (2nd/3rd consumer). house_pickup_bow -> house_pickup_item. Old
+  archery_done->bow reward flow removed (archery_done stays = training-done).
+- Overworld gating: smidse needs has_sword, boog needs has_bow -> read-aloud hint
+  (hint.smidse/hint.boog) via _ow_show_hint + buffer clear instead of travel. test_menu_flow
+  has a regression check for it.
+- Objective repurposed -> haal_wapens (always active until has_gear = both collected).
+  _open_objectives supports active_flag "" = always active.
+- Screens: .shots/home_choice.png (both), home_filtered.png (only boog + sword gone).
+- NEXT campaign slices (still design-on-hold except this): cave-scare gating (only grot
+  first -> unlocks training), the MILL bag scenario, the active skeleton fight (G10), the
+  crystal + raised-bridge -> next region (G5). Keys still unassigned.
+
 ## Fixes pass + campaign v2 design (2026-07-17)
 
 - Near-term fixes landed: F1 (snapped the eyeballed south hexes to the grid), F3 (smidse
