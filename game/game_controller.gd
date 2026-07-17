@@ -120,6 +120,7 @@ var _ow_buffer := ""
 var _ow_banners: Array = []      # [{ banner, site, word, locked }]
 var _ow_walk = null              # { legs: [{route, reverse}], leg, dist, site }
 var _ow_at := "hub"              # anchor the hero stands at on the island
+var _walk_capture := false       # debug: hold at the route end instead of starting the scenario
 const OW_WALK_SPEED := 4.5
 const OW_BANNER_LIFT := Vector3(0, 7.2, 0)   # banner floats this far above a site (into the sky, off the hexes)
 
@@ -147,6 +148,21 @@ func _ready() -> void:
 		AppProgress.set_flag_transient(flag_arg)
 	_build_layout()
 	_demo = "--demo" in args
+	# debug: walk a single overworld route hub->site and HOLD at the end (no scenario cut)
+	# so the drift at the arrival can be inspected. e.g. --walk=bos --burst
+	var walk_arg := _arg_value(args, "--walk")
+	if walk_arg != "":
+		_walk_capture = true
+		_show_overworld("hub")
+		for s in OverworldSites.sites():
+			if s.id == walk_arg:
+				_begin_ow_travel(s)
+				break
+		if "--burst" in args:
+			_capture_burst(20, 0.3)
+		elif "--shot" in args:
+			_capture_after(4.0)
+		return
 	# debug: pick a scenario (--scenario=ID), jump to a node (--scene=ID), and
 	# pre-type N chars (--type=N)
 	var jump := _arg_value(args, "--scene")
@@ -1820,6 +1836,9 @@ func _ow_arrive() -> void:
 	var site = _ow_walk.site
 	_ow_walk = null
 	_ow_at = site.anchor
+	if _walk_capture:
+		_composer.set_lead_animation(false)   # debug: rest at the route end, no scenario cut
+		return
 	_start_scenario(site.scenario)
 
 
@@ -1858,11 +1877,11 @@ func _start_scenario(id: String) -> void:
 	_enter_node()
 
 
-func _capture_burst() -> void:
+func _capture_burst(count: int = 12, interval: float = 0.25) -> void:
 	var shots_dir := ProjectSettings.globalize_path("res://.shots")
 	DirAccess.make_dir_recursive_absolute(shots_dir)
-	for i in range(12):
-		await get_tree().create_timer(0.25).timeout
+	for i in range(count):
+		await get_tree().create_timer(interval).timeout
 		get_viewport().get_texture().get_image().save_png(shots_dir.path_join("burst_%02d.png" % i))
 	print("BURST_DONE")
 	get_tree().quit()
