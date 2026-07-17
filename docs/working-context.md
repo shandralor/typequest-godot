@@ -326,6 +326,23 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Fixes pass + campaign v2 design (2026-07-17)
+
+- Near-term fixes landed: F1 (snapped the eyeballed south hexes to the grid), F3 (smidse
+  see-through cropped via a tighter work-scene win camera, FOV 46 -- forge.tscn untouched),
+  F4 (fork choice now strolls ~1.4s toward cave/bridge before the cut -- feel wants a live
+  check), O1-part (overworld windmill sails now turn). F2 (rise-from-bed) folds into H1.
+- CAMPAIGN v2 designed + committed to docs/roadmap.md, BUILD ON HOLD (owner still owns the
+  forest). Loop: intro morning-walk -> only the cave open -> skeleton FRIGHTENS (flee) ->
+  train (bow@range, sword@smithy, strength@mill/bags) after collecting bow/sword at HOME
+  via a house CHOICE, with overworld HINTS if you go to a site without its item -> beat the
+  skeleton (active, G10) -> find a CRYSTAL -> lowers the raised drawbridge -> next region
+  (island expansion). Items are PREREQUISITES now (inverts Wave-1 bow-as-reward). Pulls
+  G5/G6/G10 into the core; windmill becomes a real (mill) scenario, not the O1 placeholder.
+- Open: mill bag-choice right/wrong (decide at build); exact skeleton-fight shape; what the
+  KEYS are for (unassigned "needed later"). NEXT build slice when un-paused: the
+  item-prerequisite + house-choice + site-hint system (reworks existing pieces).
+
 ## Wave 1 cont'd: prose-design decision + persistence foundation (2026-07-16)
 
 - **Design spike (#3)**: `docs/design-variant-prose.md` -- the recommended way to handle
