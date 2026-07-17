@@ -326,6 +326,23 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Forest reframe + raised drawbridge + crystal socket (2026-07-17)
+
+Campaign v2 continues. (1) start.prose reframed: he no longer hunts treasure, he just
+walks/explores -- "de kleine ridder wandelt door het bos. hij volgt het pad en stapt
+verder." (owner-picked; band-1 OK; new A4 hash fnv1a:dff7ec80 in band1_arc.gd, computed via
+Fnv1a as the sign-off). (2) The bridge is now a RAISED drawbridge: render/locations/forest.gd
+_build_bridge rebuilt so the deck leaf (deck+rails+slats) hangs off a pivot hinged at the
+NEAR bank and swings UP ~65deg (param `raised`, default 65); water+banks+the 4 corner piers
+stay planted. Applied to BOTH the fork landmark (right path) and the brug crossing. (3) A
+crystal SOCKET pedestal (_build_crystal_socket: stone plinth + dark inset recess) sits at the
+near foot; the brug scene also gets a `crystal_socket` Marker3D anchor for future code to
+stage the crystal + lowering. Re-baked forest_bridge + forest_fork (deterministic foliage
+seed, so only the bridge diffs). All 7 suites pass; screenshotted both scenes.
+OPEN/NEXT: the brug crossing prose ("stapt over de smalle brug") + the brug->schat flow now
+need the crystal-lower mechanic (G5/C4) to make sense -- place the earned crystal in the
+socket -> lower the leaf -> cross. That is the next campaign task.
+
 ## Fix: gate the weapon-fetch loop behind met_skeleton (2026-07-17)
 
 Two bugs from owner play-test, both because the "fetch your weapons" loop was live from

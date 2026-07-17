@@ -14,7 +14,7 @@ const LABEL := "Vlaams (Belgie)"
 
 const CATALOG := {
 	# prose (typed to reveal the beat)
-	"start.prose": "de kleine ridder loopt door het bos. hij zoekt een grote schat en wil verder.",
+	"start.prose": "de kleine ridder wandelt door het bos. hij volgt het pad en stapt verder.",
 	"kruispunt.prose": "het pad gaat twee kanten op. links gaapt een zwarte grot. rechts staat een oude brug.",
 	"grot.prose": "in de grot rammelt een wit skelet. de ridder rent snel terug naar het licht.",
 	"naGrot.prose": "de ridder kiest nu voor de veilige brug.",

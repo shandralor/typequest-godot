@@ -41,6 +41,12 @@ static func build(fork: bool, bridge: bool, rng: RandomNumberGenerator) -> Node3
 	elif bridge:
 		root.add_child(SceneKit.path_segment(Vector3(0, 0, 16), Vector3(0, 0, -16), 3.0))
 		_build_bridge(root, anchors["center"], 0.0, false)
+		# where the crystal will later be placed to lower the drawbridge (a socket
+		# anchor at the near foot; the crystal itself is staged by code once earned).
+		var socket := Marker3D.new()
+		socket.name = "crystal_socket"
+		socket.position = Vector3(2.2, 0.75, 3.0)
+		root.add_child(socket)
 	else:
 		root.add_child(SceneKit.path_segment(Vector3(0, 0, 16), Vector3(0, 0, -16), 3.0))
 	_scatter_forest(root, rng, fork)
@@ -96,9 +102,13 @@ static func _build_cave_mouth(root: Node3D, pos: Vector3) -> void:
 	root.add_child(SceneKit.make_box(Vector3(2.2, 2.8, 1.6), pos + Vector3(0, 1.4, -0.6), SceneKit.C_CAVE))
 
 
-static func _build_bridge(root: Node3D, center: Vector3, _river_width: float, small: bool) -> void:
-	# a river crossing the path with a plank deck over it, rails and posts. The
-	# water sits just ABOVE the grass so it is visible (a stylized river, not a
+## The RAISED drawbridge (campaign v2): a river crossing whose plank deck is swung UP
+## into the air, hinged at the near bank, so the crossing is blocked until a crystal is
+## placed in the socket at its foot to lower it. Water + banks + the four corner piers
+## stay planted; only the deck leaf (deck + rails + slats) lifts. `raised` = the cant
+## angle in degrees (>= 60 by design); 0 keeps it flat (walkable).
+static func _build_bridge(root: Node3D, center: Vector3, _river_width: float, small: bool, raised: float = 65.0) -> void:
+	# the water sits just ABOVE the grass so it is visible (a stylized river, not a
 	# carved channel), banked by darker strips.
 	var span := 2.2 if small else 3.4
 	var depth := 4.0 if small else 5.5
@@ -109,12 +119,31 @@ static func _build_bridge(root: Node3D, center: Vector3, _river_width: float, sm
 	root.add_child(water)
 	for sz in [-1.0, 1.0]:
 		root.add_child(SceneKit.make_box(Vector3(width, 0.12, 0.5), center + Vector3(0, 0.06, sz * depth * 0.5), SceneKit.C_WOOD_DARK))  # bank
-	var deck_len := depth + 1.0
-	root.add_child(SceneKit.make_box(Vector3(span, 0.18, deck_len), center + Vector3(0, 0.16, 0), SceneKit.C_WOOD))  # deck
+	# the four corner piers stay planted (the towers the leaf hangs from)
 	for sx in [-1.0, 1.0]:
-		root.add_child(SceneKit.make_box(Vector3(0.16, 0.7, deck_len), center + Vector3(sx * span * 0.5, 0.55, 0), SceneKit.C_WOOD_DARK))  # rail
 		for sz in [-1.0, 1.0]:
 			root.add_child(SceneKit.make_box(Vector3(0.24, 1.0, 0.24), center + Vector3(sx * span * 0.5, 0.4, sz * depth * 0.5), SceneKit.C_WOOD_DARK))  # post
+	# the liftable leaf lives under a pivot hinged at the NEAR bank (+z); raising the
+	# pivot swings the far end up into the air. Child positions are relative to the hinge.
+	var deck_len := depth + 1.0
+	var leaf := Node3D.new()
+	leaf.name = "bridge_leaf"
+	leaf.position = center + Vector3(0, 0.16, depth * 0.5)   # hinge at the near bank
+	leaf.rotation.x = deg_to_rad(raised)
+	root.add_child(leaf)
+	var mid_z := -deck_len * 0.5                              # leaf centre, relative to the hinge
+	leaf.add_child(SceneKit.make_box(Vector3(span, 0.18, deck_len), Vector3(0, 0, mid_z), SceneKit.C_WOOD))  # deck
+	for sx in [-1.0, 1.0]:
+		leaf.add_child(SceneKit.make_box(Vector3(0.16, 0.7, deck_len), Vector3(sx * span * 0.5, 0.39, mid_z), SceneKit.C_WOOD_DARK))  # rail
 	for i in range(int(deck_len / 0.6)):
-		var z := -deck_len * 0.5 + 0.3 + i * 0.6
-		root.add_child(SceneKit.make_box(Vector3(span - 0.12, 0.04, 0.42), center + Vector3(0, 0.26, z), SceneKit.C_WOOD_DARK))  # slats
+		var z := 0.3 + i * 0.6 - deck_len                    # slat, relative to the hinge
+		leaf.add_child(SceneKit.make_box(Vector3(span - 0.12, 0.04, 0.42), Vector3(0, 0.10, z), SceneKit.C_WOOD_DARK))  # slats
+	_build_crystal_socket(root, center + Vector3(span * 0.5 + 0.5, 0, depth * 0.5 + 0.2))
+
+
+## A stone pedestal with an empty inset socket -- where the crystal is later dropped in
+## to lower the drawbridge. Just scenery for now (the crystal + lowering come with G5).
+static func _build_crystal_socket(root: Node3D, pos: Vector3) -> void:
+	root.add_child(SceneKit.make_box(Vector3(0.8, 0.7, 0.8), pos + Vector3(0, 0.35, 0), SceneKit.C_STONE))  # plinth
+	root.add_child(SceneKit.make_box(Vector3(0.5, 0.16, 0.5), pos + Vector3(0, 0.72, 0), SceneKit.C_ROCK_DARK))  # rim
+	root.add_child(SceneKit.make_box(Vector3(0.34, 0.2, 0.34), pos + Vector3(0, 0.7, 0), SceneKit.C_CAVE))  # empty socket recess
