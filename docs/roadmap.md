@@ -140,10 +140,10 @@ REAL scenario, not the O1 "come back later" placeholder. Update O1 accordingly.
 
 Resolved (owner): ALL THREE training activities must be done before the skeleton fight;
 the skeleton beat is ACTIVE (type to fight -- G10); the mill bag-placement right/wrong-vs-
-flavour is decided during build ("depends, see as built"). Cave "bridge key" item: TBD --
-leaning to a bridge-winch WHEEL ("het rad", typeable) he slots in + turns to lower the
-bridge (an interactive typing beat), or a mechanism part; magical crystal is the alt for
-a magic-themed region.
+flavour is decided during build ("depends, see as built"). Cave item = a KRISTAL
+(crystal) he finds in the grot; the bridge is RAISED (a drawbridge, up), and the crystal
+ACTIVATES the mechanism to LOWER it -> next region. Magical + physical: a type-to-activate
+beat where the crystal powers the raised bridge down. ("kristal" is band-1 typeable.)
 
 **Item prerequisites + house choice + overworld hints (new, owner):**
 - The BOW and SWORD start in the house and must be COLLECTED before their training: the
