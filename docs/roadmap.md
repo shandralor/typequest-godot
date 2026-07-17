@@ -138,9 +138,24 @@ Pulls backlog ideas into the CORE spine:
 NEW scenario needed: the MILL (bag-carrying + placement choice) -> makes the windmill a
 REAL scenario, not the O1 "come back later" placeholder. Update O1 accordingly.
 
-Open questions (resolve at build): mill bag-choice right/wrong or flavour? must all three
-training be done before the skeleton, or any order? is the skeleton beat the G10 fight or
-an auto-resolve once trained+armed? what is the grot "bridge key" item?
+Resolved (owner): ALL THREE training activities must be done before the skeleton fight;
+the skeleton beat is ACTIVE (type to fight -- G10); the mill bag-placement right/wrong-vs-
+flavour is decided during build ("depends, see as built"). Cave "bridge key" item: TBD --
+leaning to a bridge-winch WHEEL ("het rad", typeable) he slots in + turns to lower the
+bridge (an interactive typing beat), or a mechanism part; magical crystal is the alt for
+a magic-themed region.
+
+**Item prerequisites + house choice + overworld hints (new, owner):**
+- The BOW and SWORD start in the house and must be COLLECTED before their training: the
+  BOW before the archery range, the SWORD before the smithy -- even once those sites are
+  open. This INVERTS the Wave-1 bow-as-reward: bow/sword are now PREREQUISITES collected
+  at home, not rewards for finishing the range. Rework the has_bow flow (the bow-fetch
+  objective becomes "get your bow so you can train", gating the range).
+- A CHOICE SYSTEM inside the house to pick which item to take first (type e.g. zwaard /
+  boog -- reuses the choice banners, U2/G10). One house visit = choose + collect an item.
+- OVERWORLD HINTS: typing "smidse" without the sword, or "boog"/boogschieten without the
+  bow, shows a hint ("haal eerst je zwaard/boog thuis") instead of / before travelling.
+  Gates the training sites on the item-collected flags (has_sword / has_bow).
 
 ---
 
