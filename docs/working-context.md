@@ -326,6 +326,26 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Coastal mist ring: mask + reveal unexplored regions (2026-07-17)
+
+To avoid "magical" pop-in when the island grows, a soft MIST RING now hugs the whole coast
+so anything beyond the current tiles reads as unexplored (the land is hidden IN the mist,
+not spawned). Unlocking a region LIFTS the mist over that angular sector (fade + drift
+seaward, ~2s) instead of popping tiles in. All in CODE (compose-time, like the clouds), so
+overworld.tscn (owner-authored) is untouched.
+- composer: _spawn_mist() rings MIST_COUNT(28) cloud_big puffs at MIST_RADIUS(17.5), each
+  with its OWN transparent material (so sectors fade independently) + a gentle bob;
+  reveal_mist(center_angle, half_width, animate) lifts a sector. _mist reset in _clear;
+  hide_clouds() also hides mist (topcam).
+- controller: MIST_REGIONS data list {flag, angle, half} (angle: 0=E, PI/2=S, PI=W, -PI/2=N);
+  _reveal_unlocked_regions() (called in _show_overworld) lifts each unlocked sector, ANIMATING
+  the first time seen (persisted saw_<flag>), instant after. First region: crossed_bridge ->
+  angle PI (west, past the bos forest/bridge).
+- triggers (BOTH, for testing): brug.sets_flag="crossed_bridge" (crossing the bridge lifts it)
+  AND a dev toggle "Brug over". _dev_toggle clears saw_<flag> so the reveal re-animates each
+  toggle. Growth in any direction = another MIST_REGIONS row. All 7 suites pass; verified the
+  ring masks all directions + the west sector parts on crossed_bridge.
+
 ## KayKit full library integrated (device-local) (2026-07-17)
 
 Bought + extracted the KayKit Complete Collection v6.1 (23 packs, ~28.9k files, 1.4 GB) to

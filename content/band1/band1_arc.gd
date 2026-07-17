@@ -92,6 +92,7 @@ static func build() -> StoryGraph:
 	brug.narration_key = "brug.narration"
 	brug.ending = "win"
 	brug.exit_walk = true
+	brug.sets_flag = "crossed_bridge"   # lifts the coastal mist over the region past the bridge
 	brug.safety = _nl_be_safety("fnv1a:a585a423")
 	brug.scene = Scenes.brug()
 	g.add_node(brug)

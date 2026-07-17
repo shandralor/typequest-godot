@@ -55,6 +55,8 @@ var _sword: Node3D
 var _grindstone: Node3D
 var _is_overworld := false
 var _clouds: Array = []   # [{ node: Node3D, speed: float }] drifting sky clouds
+var _mist: Array = []      # [{ node, angle, base_y, mat }] coastal mist ring (masks unexplored)
+var _mist_t := 0.0         # accumulator for the mist's gentle bob
 var _windmill_fan: Node3D   # the overworld windmill sail, spun in _process
 var _is_archery_scene := false
 var _is_house_scene := false   # the intro interior (wake up, walk out the door)
@@ -128,6 +130,7 @@ func _clear() -> void:
 	_grindstone = null
 	_is_overworld = false
 	_clouds = []
+	_mist = []
 	_windmill_fan = null
 	_is_archery_scene = false
 	_is_house_scene = false
@@ -155,6 +158,7 @@ func compose_overworld(start_anchor: String = "hub") -> void:
 	add_child(_location)
 	_apply_mood("light", false)   # no distance fog: the island must read crisply
 	_spawn_clouds()
+	_spawn_mist()
 	_windmill_fan = _location.find_child("building_windmill_top_fan_red", true, false) as Node3D
 	var hero := _hero.build()
 	hero.name = "Actor_hero"
@@ -197,6 +201,62 @@ func _spawn_clouds() -> void:
 func hide_clouds() -> void:
 	for c in _clouds:
 		(c.node as Node3D).visible = false
+	for m in _mist:
+		(m.node as Node3D).visible = false
+
+
+# --- coastal mist ring (masks unexplored regions; lifts per-sector on unlock) ------
+const MIST_RADIUS := 17.5    # ring sits just past the current island coast
+const MIST_COUNT := 28       # puffs around the ring
+const MIST_Y := 1.4          # low, hugging the sea
+
+
+## Ring the island coast with a soft mist bank so anything beyond the current tiles
+## reads as unexplored -- new regions are hidden IN the mist, not spawned from nothing.
+## Each puff gets its own material so a sector can fade independently on unlock.
+func _spawn_mist() -> void:
+	_mist = []
+	var rng := _rng()
+	for i in range(MIST_COUNT):
+		var a := TAU * float(i) / float(MIST_COUNT)
+		var puff := SceneKit.instance_path(CLOUD_MODEL)
+		if puff == null:
+			continue
+		var r := MIST_RADIUS + rng.randf_range(-1.2, 1.6)
+		var base_y := MIST_Y + rng.randf_range(-0.5, 0.9)
+		puff.position = Vector3(cos(a) * r, base_y, sin(a) * r)
+		puff.rotation.y = a
+		var s := rng.randf_range(2.6, 3.8)
+		puff.scale = Vector3(s * 1.5, s * 0.8, s)
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.92, 0.95, 1.0, 0.85)
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+		for mi in puff.find_children("*", "MeshInstance3D", true, false):
+			(mi as MeshInstance3D).material_override = mat
+		_location.add_child(puff)
+		_mist.append({"node": puff, "angle": a, "base_y": base_y, "mat": mat})
+
+
+## Lift the mist over an angular sector (centre + half-width, radians) to reveal what is
+## behind it. `animate` fades + drifts it seaward over ~2s (a reveal); else hides instantly
+## (a region already opened on an earlier visit).
+func reveal_mist(center_angle: float, half_width: float, animate: bool) -> void:
+	for e in _mist:
+		var da: float = absf(wrapf(e.angle - center_angle, -PI, PI))
+		if da > half_width:
+			continue
+		var node: Node3D = e.node
+		if not animate:
+			node.visible = false
+			continue
+		var mat: StandardMaterial3D = e.mat
+		var out: Vector3 = node.position + node.position.normalized() * 6.0 + Vector3(0, 2.5, 0)
+		var t := node.create_tween()
+		t.set_parallel(true)
+		t.tween_property(node, "position", out, 2.2)
+		t.tween_property(mat, "albedo_color:a", 0.0, 2.0)
+		t.chain().tween_callback(node.hide)
 
 
 func _process(delta: float) -> void:
@@ -205,6 +265,12 @@ func _process(delta: float) -> void:
 		n.position.x += c.speed * delta
 		if n.position.x > CLOUD_WRAP_MAX:
 			n.position.x = CLOUD_WRAP_MIN
+	if not _mist.is_empty():
+		_mist_t += delta
+		for m in _mist:
+			var mn: Node3D = m.node
+			if mn.visible:
+				mn.position.y = m.base_y + sin(_mist_t * 0.6 + m.angle * 3.0) * 0.25  # gentle bob
 	if _windmill_fan != null:
 		_windmill_fan.rotate_object_local(Vector3(0, 0, 1), 0.9 * delta)   # sails turn
 

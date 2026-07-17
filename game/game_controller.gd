@@ -1552,6 +1552,7 @@ const DEV_FLAGS := [
 	{"label": "Wapens", "flag": "has_gear"},
 	{"label": "Boog getr.", "flag": "archery_done"},
 	{"label": "Kristal", "flag": "has_crystal"},
+	{"label": "Brug over", "flag": "crossed_bridge"},
 ]
 
 
@@ -1570,6 +1571,7 @@ func _show_dev() -> void:
 
 func _dev_toggle(flag: String) -> void:
 	AppProgress.set_flag(flag, not AppProgress.get_flag(flag))
+	AppProgress.set_flag("saw_" + flag, false)   # re-arm any mist reveal so it animates again
 	_show_dev()   # rebuild so the aan/uit labels update
 
 
@@ -1632,7 +1634,29 @@ func _show_overworld(at_anchor: String = "hub") -> void:
 	_build_ow_banners()
 	_update_ow_highlight()
 	_update_camera(0.0, true)
+	_reveal_unlocked_regions()  # lift the coastal mist over any region already opened
 	_maybe_nudge_objective()   # announce a newly-unlocked objective once
+
+
+# Coastal-mist regions: setting `flag` lifts the ring over that angular sector so the
+# tiles behind it read as revealed (angle in radians; 0 = +x/east, PI/2 = +z/south,
+# PI = -x/west, -PI/2 = -z/north). Growth in any direction is just another data row.
+const MIST_REGIONS := [
+	{"flag": "crossed_bridge", "angle": PI, "half": 0.8},   # the west opens past the forest bridge
+]
+
+
+# Lift the coastal mist over every region whose flag is set; animate the parting the FIRST
+# time it is seen (returning from the unlock), then just stay clear on later visits.
+func _reveal_unlocked_regions() -> void:
+	for reg in MIST_REGIONS:
+		if not AppProgress.get_flag(reg.flag):
+			continue
+		var seen_key: String = "saw_" + reg.flag
+		var animate: bool = not AppProgress.get_flag(seen_key)
+		_composer.reveal_mist(reg.angle, reg.half, animate)
+		if animate:
+			AppProgress.set_flag(seen_key)
 
 
 func _build_ow_banners() -> void:
