@@ -237,6 +237,26 @@ beat where the crystal powers the raised bridge down. ("kristal" is band-1 typea
   i.e. more authored content or band variants (ties the variant-prose work). Keep A6
   sacred: speed stays band-gated, ZERO at band-1. Near-term: keep 7 and rephrase content
   to fit (e.g. the intro "sleutels" -> reword under H1).
+- **G12. Chess (learn / win a match in progress)**: we own KayKit Board Game Bits (chess
+  set + board + full deck + dice). A later scenario where the hero LEARNS chess, or must
+  WIN a match already in progress (a set-up position -> type the winning line). Fits the
+  typing core: the MOVE is the typed word -- piece names are band-1 in nl (pion=4, toren=5,
+  paard=5, loper=5, dame=4, koning=6; "koningin" 8 is over -> use "dame"), and a move =
+  type the piece (+ target). Mechanically an extension of G10 (word-choice -> outcome) with
+  a tiny chess rules/position table; NON-punishing (G9): a wrong move just gives a different,
+  retry-friendly reply. Ties to G6/G7 (a chess-master NPC gate) and the quest/objective
+  layer. Asset: Board Game Bits `chess_*` + `board_*` (promote to assets/kaykit/ when built).
+  Owner idea (2026-07-17), for later.
+- **G13. Overworld road HEX tiles (replace the straight dirt roads)**: the island now uses
+  straight dirt-path segments + Path3D routes; the Medieval Hexagon pack has proper
+  road-bearing hex tiles (`hex_road_A..M` = straights/curves/T/crossroads, + `_sloped_*`,
+  `hex_river_*`, `hex_river_crossing_*`, `building_bridge_*`) that tile on the SAME hex grid
+  and connect road stubs at the tile edges -- they fit the island far better than the loose
+  straight roads. Plan: promote the `hex_road_*` (+ river/bridge) tiles to
+  assets/kaykit/hexagon/; DROP the procedural straight dirt roads; the owner lays road-hexes
+  from hub->each site in the editor (overworld.tscn is owner-authored). The knight can keep
+  following the existing Path3D routes (bend them to sit on the road tiles) so travel logic
+  is unchanged -- purely a visual re-skin. Owner idea (2026-07-17).
 
 ---
 
