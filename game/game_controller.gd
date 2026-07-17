@@ -175,6 +175,10 @@ func _ready() -> void:
 			_compose_backdrop()
 			_show_main_menu()
 			_show_options()   # debug: jump straight to the options screen
+		elif _arg_value(args, "--menu") == "dev":
+			_compose_backdrop()
+			_show_main_menu()
+			_show_dev()   # debug: jump straight to the dev screen
 		else:
 			_compose_backdrop()
 			_show_main_menu()
@@ -1304,6 +1308,8 @@ func _show_menu(title: String, items: Array) -> void:
 		var banner := MenuBannerScene.instantiate()
 		vbox.add_child(banner)
 		banner.configure(it.text, it.get("secondary", false))
+		if it.get("compact", false):
+			banner.set_compact()   # dev/util rows: small so many fit
 		banner.pressed.connect(it.on_press)
 
 
@@ -1414,8 +1420,42 @@ func _show_options() -> void:
 	_show_menu("Opties", [
 		{"text": _kbd_item_text(), "on_press": _toggle_keyboard_layout},
 		{"text": _intro_item_text(), "on_press": _reset_intro},
+		{"text": "Dev", "on_press": _show_dev},
 		{"text": "Terug", "on_press": _show_main_menu, "secondary": true},
 	])
+
+
+# --- dev screen: reset/jump progress for testing different scenario states -----------
+const DEV_FLAGS := [
+	{"label": "Cave", "flag": "met_skeleton"},
+	{"label": "Zwaard", "flag": "has_sword"},
+	{"label": "Boog", "flag": "has_bow"},
+	{"label": "Wapens", "flag": "has_gear"},
+	{"label": "Boog getr.", "flag": "archery_done"},
+]
+
+
+func _show_dev() -> void:
+	_app_state = AppState.MAIN
+	_set_playing_ui(false)
+	_set_menu_fullscreen(true)
+	var items: Array = [{"text": "Reset", "on_press": _dev_reset_all, "compact": true}]
+	for d in DEV_FLAGS:
+		var on: bool = AppProgress.get_flag(d.flag)
+		items.append({"text": "%s: %s" % [d.label, "aan" if on else "uit"],
+			"on_press": _dev_toggle.bind(d.flag), "compact": true})
+	items.append({"text": "Terug", "on_press": _show_options, "secondary": true, "compact": true})
+	_show_menu("Dev", items)
+
+
+func _dev_toggle(flag: String) -> void:
+	AppProgress.set_flag(flag, not AppProgress.get_flag(flag))
+	_show_dev()   # rebuild so the aan/uit labels update
+
+
+func _dev_reset_all() -> void:
+	AppProgress.reset_all()
+	_show_dev()
 
 
 func _kbd_item_text() -> String:

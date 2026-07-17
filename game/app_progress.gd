@@ -29,6 +29,23 @@ static func get_flag(name: String) -> bool:
 	return bool(_flags.get(name, false))
 
 
+## DEV: wipe all progress (flags + stats + intro) to a fresh state; keeps other sections
+## (e.g. the keyboard layout).
+static func reset_all() -> void:
+	_flags.clear()
+	_stats.clear()
+	_intro_seen = false
+	_loaded = true
+	var cf := ConfigFile.new()
+	cf.load(CONFIG_PATH)
+	if cf.has_section("flags"):
+		cf.erase_section("flags")
+	if cf.has_section("stats"):
+		cf.erase_section("stats")
+	cf.set_value("progress", "intro_seen", false)
+	cf.save(CONFIG_PATH)
+
+
 static func set_flag(name: String, v: bool = true) -> void:
 	_ensure_loaded()
 	if bool(_flags.get(name, false)) == v:

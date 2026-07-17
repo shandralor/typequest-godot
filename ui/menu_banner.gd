@@ -50,6 +50,14 @@ func _ready() -> void:
 	mouse_exited.connect(func(): _hover = false)
 
 
+## Shrink the banner (dev/util rows) so many fit in one line. No effect on the look.
+func set_compact() -> void:
+	custom_minimum_size = Vector2(240, 62)
+	if _label != null:
+		_label.add_theme_font_size_override("normal_font_size", 20)
+		_label.offset_top = 4
+
+
 func configure(text: String, secondary: bool = false) -> void:
 	if _label == null:
 		await ready
