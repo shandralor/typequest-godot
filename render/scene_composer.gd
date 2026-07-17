@@ -432,6 +432,11 @@ func set_lead_yaw(yaw: float) -> void:
 	_hero.set_yaw(yaw)
 
 
+## Force the lead to face a yaw even while in a walking scene (scripted walk-offs).
+func set_lead_facing(yaw: float) -> void:
+	_hero.face_yaw(yaw)
+
+
 func lead_yaw() -> float:
 	return _hero.node.rotation.y if _hero != null and _hero.node != null else 0.0
 

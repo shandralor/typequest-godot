@@ -150,6 +150,14 @@ func set_yaw(yaw: float) -> void:
 		node.rotation.y = yaw
 
 
+## Force the lead's yaw regardless of walking state -- for scripted walk-offs (the
+## fork stroll, the crossing exit-walk) where the controller drives motion by hand and
+## the hero must face the direction it is being moved, not the fixed travel path.
+func face_yaw(yaw: float) -> void:
+	if node != null:
+		node.rotation.y = yaw
+
+
 ## Directly place the lead (overworld travel along a route).
 func set_position(pos: Vector3) -> void:
 	if node != null:

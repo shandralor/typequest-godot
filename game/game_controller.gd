@@ -660,7 +660,7 @@ func _begin_choice_walk(dest: Vector3) -> void:
 	_walkoff = {"from": from, "to": from.lerp(dest, 0.5), "t": 0.0, "dur": CHOICE_WALK_DUR}
 	var d: Vector3 = dest - from
 	if d.length() > 0.001:
-		_composer.set_lead_yaw(atan2(d.x, d.z))
+		_composer.set_lead_facing(atan2(d.x, d.z))
 	_composer.set_lead_animation(true)
 
 
@@ -679,7 +679,7 @@ func _begin_exit_walk() -> void:
 	var dest: Vector3 = _composer.anchor_pos("cross_exit")
 	var d: Vector3 = dest - from
 	if d.length() > 0.001:
-		_composer.set_lead_yaw(atan2(d.x, d.z))
+		_composer.set_lead_facing(atan2(d.x, d.z))
 	_walkoff = {"from": from, "to": dest, "t": 0.0, "dur": EXIT_WALK_DUR, "on_done": _fade_to_overworld}
 	_composer.set_lead_animation(true)
 
@@ -1034,6 +1034,9 @@ func _process(delta: float) -> void:
 		_walkoff.t += delta
 		var wf: float = clampf(_walkoff.t / _walkoff.dur, 0.0, 1.0)
 		_composer.set_lead_position(_walkoff.from.lerp(_walkoff.to, wf))
+		var wdir: Vector3 = _walkoff.to - _walkoff.from
+		if wdir.length() > 0.001:
+			_composer.set_lead_facing(atan2(wdir.x, wdir.z))   # face where he is being walked
 		_composer.set_lead_animation(true)
 		_update_camera(delta, false)
 		if wf >= 1.0:
