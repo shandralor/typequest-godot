@@ -90,18 +90,21 @@ func _test_traversal() -> void:
 	_check(run.choose("verder").ok, "type 'verder' -> kruispunt")
 	_check(run.current_id == "kruispunt", "now at kruispunt")
 	_check(run.choose("grot").ok, "type 'grot' -> grot")
-	_check(run.current_id == "grot", "now at grot (the setback)")
+	_check(run.current_id == "grot", "now at grot (the cave-scare beat)")
 
-	# the cave is a neutral ending that bounces to naGrot, progress intact (A9)
+	# campaign v2: the cave is a terminal WIN that is NOT celebrated (he flees to
+	# train). It sets met_skeleton, which later unlocks the smidse/boog + the bridge.
+	var grot_node = run.current()
+	_check(grot_node.ending == "win", "grot is a win ending")
+	_check(not grot_node.celebrate, "grot win is not celebrated (a somber flee)")
+	_check(grot_node.sets_flag == "met_skeleton", "grot sets met_skeleton")
 	var ending = run.resolve_ending()
-	_check(ending.type == "setback" and ending.to == "naGrot", "grot is a setback returning to naGrot")
-	_check(run.current_id == "naGrot", "bounced to naGrot")
+	_check(ending.type == "win", "grot resolves as a win (no bounce)")
 
-	# naGrot is pre-revealed -> scoring path must NOT score it (A6/A9)
-	var prerevealed = run.score_current(40, 1.0, true)
-	_check(prerevealed.status == "prerevealed", "naGrot is pre-revealed: not scored")
-
-	# safe bridge only, then the win
-	_check(run.choose("brug").ok, "type 'brug' -> brug")
-	_check(run.choose("kist").ok, "type 'kist' -> schat")
-	_check(run.resolve_ending().type == "win", "schat is the win")
+	# the safe bridge -> treasure path (a later, armed visit; the flag gate lives in
+	# the controller, so the pure-logic traversal reaches it directly).
+	var run2 := RunState.new(Band1Arc.build(), LocaleNlBe.new())
+	_check(run2.choose("verder").ok, "run2: type 'verder' -> kruispunt")
+	_check(run2.choose("brug").ok, "type 'brug' -> brug")
+	_check(run2.choose("kist").ok, "type 'kist' -> schat")
+	_check(run2.resolve_ending().type == "win", "schat is the win")

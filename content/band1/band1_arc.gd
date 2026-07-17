@@ -60,8 +60,11 @@ static func build() -> StoryGraph:
 	grot.id = "grot"
 	grot.prose_key = "grot.prose"
 	grot.narration_key = "grot.narration"
-	grot.ending = "neutral"
-	grot.return_to = "naGrot"
+	# campaign v2: the cave FRIGHTENS him -- he flees, back to the island to train (a
+	# terminal, non-celebratory beat). The bridge stays gated for a later, armed visit.
+	grot.ending = "win"
+	grot.win_key = "grot.win"
+	grot.celebrate = false
 	grot.sets_flag = "met_skeleton"   # he has seen the skeleton -> unlocks training + the bridge
 	grot.safety = _nl_be_safety("fnv1a:3778a255")
 	grot.scene = Scenes.grot()

@@ -61,6 +61,7 @@ class StoryNode extends RefCounted:
 	var return_to: String = ""      # A9 setback target
 	var prerevealed: bool = false   # A9
 	var sets_flag: String = ""      # progress flag set when this node completes (e.g. met_skeleton)
+	var celebrate: bool = true      # a win with no cheer/chest/flash reads as a somber beat
 	var safety: Dictionary = {}     # locale -> { hash, date, criteria_version }
 	var scene = null                # SceneDescriptor
 

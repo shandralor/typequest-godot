@@ -24,6 +24,7 @@ const CATALOG := {
 	"start.narration": "Luister goed en typ elk woord dat je leest.",
 	"kruispunt.narration": "Kies je weg en typ het woord.",
 	"grot.narration": "Wees moedig en lees rustig verder.",
+	"grot.win": "Het skelet is te eng! De ridder moet eerst sterker worden en zijn wapens halen.",
 	"naGrot.narration": "De ridder kiest de veilige weg.",
 	"brug.narration": "Stap voor stap over de brug.",
 	"schat.narration": "Goed gedaan, kleine held!",

@@ -326,6 +326,24 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Campaign v2: C3 cave-scare beat (2026-07-17)
+
+DONE (C3). The cave (grot) is no longer a setback that bounces to naGrot -- it is a
+TERMINAL, non-celebratory WIN: he sees the skeleton, flees, and the read-aloud beat says
+he must first get stronger + fetch his weapons (motivating the smidse/boog that met_skeleton
+just unlocked). Mechanism: new StoryNode.celebrate (default true); grot now ending="win",
+win_key="grot.win", celebrate=false, keeps sets_flag=met_skeleton, dropped return_to.
+game_controller win branch gates cheer/chest/flash + the persisted adventure/xp/stars stats
+on `completing.celebrate` -- a non-celebrated win is just the top-bar message + enter (the
+knight stands, no fanfare). New string grot.win in nl_be.gd (read-aloud, no hash). naGrot is
+now orphaned but left in place (harmless; its prose hash still verifies). test_logic updated:
+grot asserts win + not celebrate + sets met_skeleton; the bridge->treasure path tested via a
+second RunState (the flag gate lives in the controller, not the pure traversal). All 7 suites
+pass; screenshotted the beat. NEXT campaign pieces: the MILL scenario (bag-carry + placement
+choice), the active skeleton FIGHT (G10), the crystal + raised-bridge -> next region (G5), C4
+treasure-becomes-collectible. The C2 fence PROP + jump-the-fence animation + naGrot/brug text
+are still polish TODO.
+
 ## Campaign spine: cave-first gating (2026-07-17)
 
 DONE (C1/C2). Generic progress-flag mechanism: story_graph Choice.requires_flag (choice

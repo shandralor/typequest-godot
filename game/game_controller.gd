@@ -470,11 +470,14 @@ func _resolve_ending() -> void:
 			_phase = Phase.PAUSE
 			_after(1.8, _enter_node)
 		"win":
+			var celebrate: bool = completing == null or completing.celebrate
 			_set_message(_win_message() + "\n(druk op enter)")
 			_type_along.visible = false   # no empty panel at the win
 			_keyboard.highlight("")
 			_phase = Phase.WIN
-			if _composer.is_work_scene():
+			if not celebrate:
+				pass   # a somber beat (the cave-scare) -- just the message + enter, no fanfare
+			elif _composer.is_work_scene():
 				_composer.stop_sparks()
 				_composer.vanish_grindstone()            # poof the wheel, reveal the knight
 				_composer.play_lead_loop("Cheering")    # raise the held sword in triumph
@@ -493,13 +496,14 @@ func _resolve_ending() -> void:
 			else:
 				_composer.open_chest()                  # treasure win: open the chest
 				_composer.play_lead_oneshot("PickUp")
-			# accumulate persistent effort stats for a REAL adventure (not a home chore;
-			# the intro returned earlier). Words are counted per node as they are typed.
-			if not _composer.is_house_scene():
+			# accumulate persistent effort stats for a real, CELEBRATED adventure (not a
+			# home chore, not the cave-flee). Words are counted per node as they are typed.
+			if celebrate and not _composer.is_house_scene():
 				AppProgress.add_stat("adventures", 1)
 				AppProgress.add_stat("xp", _run.xp)
 				AppProgress.add_stat("stars", _run_total_stars())
-			_flash()
+			if celebrate:
+				_flash()
 		_:
 			_set_message("Einde.")
 			_phase = Phase.DONE
