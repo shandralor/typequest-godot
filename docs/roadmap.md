@@ -79,7 +79,8 @@ The campaign spine becomes "Wave 1.5" between the done Wave 1 and the Wave 2 sur
   later when their requirement is met, hidden once collected. 2nd/3rd consumer -> GENERALISE
   `_apply_house_locks` + house_pickup_* + has_<item> flags into a DATA list (the G8 hotspot).
 
-**Campaign progression spine (Wave 1.5)**
+**Campaign progression spine (Wave 1.5)** -- C1-C4 below are SUPERSEDED by "Campaign
+spine v2" (see the next section); kept for reference. Forest/campaign build is ON HOLD.
 - **C1. Sites are EARNED**: only bos open at start; smidse + boog locked until
   `met_skeleton` (overworld.gd `unlocked` -> flag check; locked shows overworld.locked).
 - **C2. Cave obligatory before the bridge -- FENCE gate**: keep the kruispunt fork, but a
@@ -100,8 +101,46 @@ The campaign spine becomes "Wave 1.5" between the done Wave 1 and the Wave 2 sur
   visible + encouraging (win / progress screen), never judgmental. Folds into G9.
 - **U2. Reuse the choice banners** (ui/choice_banner.gd) in more scenes (cutscene, G10).
 
-Re-sequence: F1-F4 + O1 (cleanup) -> Wave 1.5 campaign (C1 -> C2 -> H1/H2 -> C3 -> C4) ->
-U1 with the progress screen -> then Wave 2 (quest log, progress screen, characters).
+Re-sequence: F1-F4 + O1 (cleanup) -> Wave 1.5 campaign (see v2 below) -> U1 with the
+progress screen -> then Wave 2 (quest log, progress screen, characters).
+
+---
+
+## Campaign spine v2 (2026-07-17, revised) -- SUPERSEDES C1-C4. BUILD ON HOLD.
+
+Owner revised the opening into a hub-and-spoke: FAIL at the cave -> TRAIN in three
+places -> BEAT the skeleton -> find the BRIDGE KEY -> next region. Forest changes (the
+C2 fork-lock etc.) are on hold pending this design; F4's fork walk-beat stays (harmless,
+reusable). New shape:
+
+1. **Only the grot (cave) is open first.** The knight enters; the skeleton FRIGHTENS him
+   -- he flees, unprepared. No fight yet. (This is why he "jumps the fence out of fear"
+   framing from C2 evolved into fleeing to train.)
+2. The scare motivates TRAINING -- three activities become available:
+   - **Bow** -- train at the archery range (boog).
+   - **Sword** -- sharpen it at the smithy (smidse, the grinding scenario).
+   - **Strength** -- get strong at the MILL (windmill): a NEW scenario where he CARRIES
+     BAGS, with a CHOICE of where to put each bag (word-choice per bag -> reuses the
+     choice banners [U2], G10-adjacent; non-punishing per G9).
+3. After all three training activities AND beating the skeleton (re-enter the grot, now
+   prepared -> a WINNABLE skeleton beat -- likely the typing-fight G10 / an armed variant
+   G6), he FINDS SOMETHING in the grot.
+4. That grot item ACTIVATES / REPAIRS THE BRIDGE, opening the NEXT REGION (island
+   expansion G5). The bridge is no longer "cross to gold" -- it is the gated gateway.
+
+Pulls backlog ideas into the CORE spine:
+- G5 island expansion = the next region across the repaired bridge.
+- G6 skeleton variant = frighten-when-unprepared vs. beatable-when-trained.
+- G10 typing fight = the skeleton beat; word-choice also drives the mill bag-placement.
+- The grot collectible (was C4) = the bridge-repair item, NOT gold.
+- Sites-earned (C1) sequence: grot -> {bow, sword, mill} -> skeleton beat -> bridge/region 2.
+
+NEW scenario needed: the MILL (bag-carrying + placement choice) -> makes the windmill a
+REAL scenario, not the O1 "come back later" placeholder. Update O1 accordingly.
+
+Open questions (resolve at build): mill bag-choice right/wrong or flavour? must all three
+training be done before the skeleton, or any order? is the skeleton beat the G10 fight or
+an auto-resolve once trained+armed? what is the grot "bridge key" item?
 
 ---
 
