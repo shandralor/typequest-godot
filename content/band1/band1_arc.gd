@@ -43,9 +43,13 @@ static func build() -> StoryGraph:
 	kruispunt.id = "kruispunt"
 	kruispunt.prose_key = "kruispunt.prose"
 	kruispunt.narration_key = "kruispunt.narration"
+	# the bridge is fence-locked until the cave is done -- so the FIRST time only `grot`
+	# is offered; after the skeleton (met_skeleton) the bridge opens.
+	var brug_choice := StoryGraph.Choice.new("word.brug", "brug", "right")
+	brug_choice.requires_flag = "met_skeleton"
 	kruispunt.choices = [
 		StoryGraph.Choice.new("word.grot", "grot", "left"),
-		StoryGraph.Choice.new("word.brug", "brug", "right"),
+		brug_choice,
 	]
 	kruispunt.safety = _nl_be_safety("fnv1a:fc978a65")
 	kruispunt.scene = Scenes.kruispunt()
@@ -58,6 +62,7 @@ static func build() -> StoryGraph:
 	grot.narration_key = "grot.narration"
 	grot.ending = "neutral"
 	grot.return_to = "naGrot"
+	grot.sets_flag = "met_skeleton"   # he has seen the skeleton -> unlocks training + the bridge
 	grot.safety = _nl_be_safety("fnv1a:3778a255")
 	grot.scene = Scenes.grot()
 	g.add_node(grot)

@@ -34,6 +34,7 @@ class Choice extends RefCounted:
 	var word_key: String
 	var target: String
 	var hint: String   # forward|left|right (presentation/guidance hint)
+	var requires_flag: String = ""   # hidden until this progress flag is set (e.g. a gate)
 
 	func _init(p_word_key: String, p_target: String, p_hint: String) -> void:
 		word_key = p_word_key
@@ -59,6 +60,7 @@ class StoryNode extends RefCounted:
 	var win_key: String = ""        # locale key for the win message (optional)
 	var return_to: String = ""      # A9 setback target
 	var prerevealed: bool = false   # A9
+	var sets_flag: String = ""      # progress flag set when this node completes (e.g. met_skeleton)
 	var safety: Dictionary = {}     # locale -> { hash, date, criteria_version }
 	var scene = null                # SceneDescriptor
 

@@ -421,6 +421,9 @@ func _begin_choice() -> void:
 		return
 	_candidates = []
 	for ch in node.choices:
+		# a gated choice (e.g. the bridge before the cave) is hidden until its flag is set
+		if ch.requires_flag != "" and not AppProgress.get_flag(ch.requires_flag):
+			continue
 		# at home, only offer gear not yet collected (choice target is a take_* node)
 		var it: Dictionary = _house_item_for_node(ch.target)
 		if not it.is_empty() and AppProgress.get_flag(it.flag):
@@ -443,6 +446,9 @@ func _begin_choice() -> void:
 
 
 func _resolve_ending() -> void:
+	var completing = _run.current()
+	if completing != null and completing.sets_flag != "":
+		AppProgress.set_flag(completing.sets_flag)   # e.g. the cave sets met_skeleton
 	var ending = _run.resolve_ending()
 	if _in_intro:
 		# the knight has reached the door: it swings open, a beat, then out into the world
@@ -1461,7 +1467,7 @@ func _show_overworld(at_anchor: String = "hub") -> void:
 	_ow_walk = null
 	_ow_candidates = []
 	for s in OverworldSites.sites():
-		if s.unlocked and s.scenario != "":
+		if s.scenario != "":   # locked sites stay typeable so they can HINT ("nog niet open")
 			_ow_candidates.append({"word": _locale.resolve(s.word_key), "site": s})
 	_build_ow_banners()
 	_update_ow_highlight()
@@ -1473,7 +1479,7 @@ func _build_ow_banners() -> void:
 	_clear_ow_banners()
 	var i := 0
 	for s in OverworldSites.sites():
-		var locked: bool = not s.unlocked or s.scenario == ""
+		var locked: bool = _site_locked(s)
 		var banner = ChoiceBannerScript.new()
 		_choice_layer.add_child(banner)
 		banner.size = Vector2(190, 64)
@@ -1587,7 +1593,11 @@ func _ow_char(c: String) -> void:
 	for cand in matches:
 		if cand.word == _ow_buffer:
 			var site = cand.site
-			# a training site needs its gear collected first -> hint instead of travelling
+			# still locked (e.g. before the cave) -> "nog niet open"
+			if _site_locked(site):
+				_ow_show_hint(_locale.resolve("overworld.locked"))
+				return
+			# unlocked but the gear is not collected yet -> "haal eerst je zwaard/boog thuis"
 			if site.get("requires_flag", "") != "" and not AppProgress.get_flag(site.requires_flag):
 				_ow_show_hint(_locale.resolve(site.hint_key))
 				return
@@ -1620,6 +1630,15 @@ func _update_ow_highlight() -> void:
 
 ## Travel legs: routes are authored hub -> site, so from the hub it is one leg;
 ## from another site it is that site's route reversed back to the hub first.
+# A site is locked if it has no scenario yet, or its unlock_flag is not set (earned
+# progression -- e.g. the smithy + range stay locked until the cave: met_skeleton).
+func _site_locked(s) -> bool:
+	if s.scenario == "":
+		return true
+	var uf: String = s.get("unlock_flag", "")
+	return uf != "" and not AppProgress.get_flag(uf)
+
+
 func _begin_ow_travel(site) -> void:
 	var legs: Array = []
 	if _ow_at != "hub":
