@@ -193,6 +193,12 @@ func _spawn_clouds() -> void:
 		_clouds.append({"node": cl, "speed": rng.randf_range(0.4, 0.9)})
 
 
+## Debug: hide the drifting clouds (used by the overhead road-tracing camera).
+func hide_clouds() -> void:
+	for c in _clouds:
+		(c.node as Node3D).visible = false
+
+
 func _process(delta: float) -> void:
 	for c in _clouds:
 		var n: Node3D = c.node
