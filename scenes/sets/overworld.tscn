@@ -17,46 +17,14 @@
 [ext_resource type="PackedScene" uid="uid://c5tjv0d4scmrb" path="res://assets/kaykit/forest_nature/Bush_4_A_Color1.gltf" id="15_q8fyu"]
 [ext_resource type="PackedScene" uid="uid://dkvw61dh6i5qx" path="res://assets/kaykit/forest_nature/Bush_3_B_Color1.gltf" id="16_la4ft"]
 [ext_resource type="PackedScene" uid="uid://c6w2rixidg0g1" path="res://assets/kaykit/forest_nature/Bush_2_C_Color1.gltf" id="17_lx5m5"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ib1cv"]
-albedo_color = Color(0.52, 0.4, 0.26, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_ntsay"]
-size = Vector3(1.7, 0.05, 6)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jf5ok"]
-albedo_color = Color(0.52, 0.4, 0.26, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_ploth"]
-size = Vector3(1.7, 0.05, 3.3999996)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_littu"]
-albedo_color = Color(0.52, 0.4, 0.26, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_4rv1w"]
-size = Vector3(1.7, 0.05, 5.999868)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cndvk"]
-albedo_color = Color(0.52, 0.4, 0.26, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_xirtq"]
-size = Vector3(1.7, 0.05, 3.3998678)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nkotu"]
-albedo_color = Color(0.52, 0.4, 0.26, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_qxdhq"]
-size = Vector3(1.7, 0.05, 5.999868)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_k1dux"]
-albedo_color = Color(0.52, 0.4, 0.26, 1)
-
-[sub_resource type="BoxMesh" id="BoxMesh_0g71q"]
-size = Vector3(1.7, 0.05, 3.9673426)
+[ext_resource type="PackedScene" uid="uid://me31kvyyrf3" path="res://assets/kaykit/hexagon/hex_road_B.gltf" id="18_v1rnf"]
+[ext_resource type="PackedScene" uid="uid://bgqtx45iavoxl" path="res://assets/kaykit/hexagon/hex_road_D.gltf" id="19_xg86a"]
+[ext_resource type="PackedScene" uid="uid://ckrffxj37s37t" path="res://assets/kaykit/hexagon/hex_road_E.gltf" id="20_vrl4c"]
+[ext_resource type="PackedScene" uid="uid://bilol8ru7fisi" path="res://assets/kaykit/hexagon/hex_road_A.gltf" id="21_p627j"]
 
 [sub_resource type="Curve3D" id="Curve3D_eyldr"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -6, 0, 0, 0, 0, 0, 0, 0, 0, -9.4, 0, 0),
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -6, 0, 0, 0, 0, 0, 0, 0, 0, -8.555567, 0, 1.514148),
 "tilts": PackedFloat32Array(0, 0, 0)
 }
 point_count = 3
@@ -96,9 +64,6 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6, 0, 10.392)
 [node name="@Node3D@4" parent="." unique_id=1329321345 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9, 0, -5.196)
 
-[node name="@Node3D@5" parent="." unique_id=141384361 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6, 0, 0)
-
 [node name="@Node3D@6" parent="." unique_id=235334676 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, 5.196)
 
@@ -111,15 +76,6 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6, 0, -10.392)
 [node name="@Node3D@9" parent="." unique_id=350911063 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, -5.196)
 
-[node name="@Node3D@10" parent="." unique_id=857345490 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0)
-
-[node name="@Node3D@11" parent="." unique_id=1715165469 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3, 0, 5.196)
-
-[node name="@Node3D@12" parent="." unique_id=1371944173 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6, 0, 10.392)
-
 [node name="_Node3D_12" parent="." unique_id=1133874570 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3, 0, 15.588)
 
@@ -128,9 +84,6 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9, 0, 15.588)
 
 [node name="@Node3D@13" parent="." unique_id=1941422528 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, -10.392)
-
-[node name="@Node3D@14" parent="." unique_id=38216355 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3, 0, -5.196)
 
 [node name="@Node3D@15" parent="." unique_id=1972844868 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6, 0, 0)
@@ -238,7 +191,7 @@ transform = Transform3D(-1.8156071, 0, 2.388215, 0, 3, 0, -2.388215, 0, -1.81560
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12, 0, 0)
 
 [node name="flag_red2" parent="." unique_id=1010977447 instance=ExtResource("12_p627j")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -11.1, 0, 2.2)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -8.555567, 0, 1.514148)
 
 [node name="@Node3D@37" parent="." unique_id=1770732814 instance=ExtResource("12_p627j")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3.6, 0, -8.792)
@@ -252,45 +205,10 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9, 10, -10.392)
 [node name="@Node3D@39" parent="." unique_id=1005836727 instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 10.8, 13, 6.2352)
 
-[node name="Path" type="MeshInstance3D" parent="." unique_id=1578843334]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -3, 0.02, 0)
-material_override = SubResource("StandardMaterial3D_ib1cv")
-mesh = SubResource("BoxMesh_ntsay")
-
-[node name="@MeshInstance3D@40" type="MeshInstance3D" parent="." unique_id=638335761]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -7.7, 0.02, 0)
-material_override = SubResource("StandardMaterial3D_jf5ok")
-mesh = SubResource("BoxMesh_ploth")
-
-[node name="@MeshInstance3D@41" type="MeshInstance3D" parent="." unique_id=1918464902]
-transform = Transform3D(-0.86601907, 0, 0.50001097, 0, 1, 0, -0.50001097, 0, -0.86601907, 1.5, 0.02, -2.598)
-material_override = SubResource("StandardMaterial3D_littu")
-mesh = SubResource("BoxMesh_4rv1w")
-
-[node name="@MeshInstance3D@42" type="MeshInstance3D" parent="." unique_id=506692357]
-transform = Transform3D(-0.86601907, 0, 0.50001097, 0, 1, 0, -0.50001097, 0, -0.86601907, 3.8499856, 0.02, -6.668175)
-material_override = SubResource("StandardMaterial3D_cndvk")
-mesh = SubResource("BoxMesh_xirtq")
-
-[node name="@MeshInstance3D@43" type="MeshInstance3D" parent="." unique_id=627745256]
-transform = Transform3D(0.86601907, 0, 0.500011, 0, 1, 0, -0.500011, 0, 0.86601907, 1.5, 0.02, 2.598)
-material_override = SubResource("StandardMaterial3D_nkotu")
-mesh = SubResource("BoxMesh_qxdhq")
-
-[node name="@MeshInstance3D@44" type="MeshInstance3D" parent="." unique_id=1556899978]
-transform = Transform3D(0.101762936, 0, 1.299858, 0, 1, 0, -0.9596529, 0, 0.13783878, 4.9164248, 0.02, 5.058547)
-material_override = SubResource("StandardMaterial3D_k1dux")
-mesh = SubResource("BoxMesh_0g71q")
-
-[node name="_MeshInstance3D_44" type="MeshInstance3D" parent="." unique_id=228956328]
-transform = Transform3D(0.9753463, 0, -0.037705977, 0, 1, 0, 0.01755653, 0, 2.09474, 2.9407167, 0.02, 8.402907)
-material_override = SubResource("StandardMaterial3D_k1dux")
-mesh = SubResource("BoxMesh_0g71q")
-
 [node name="hub" type="Marker3D" parent="." unique_id=1422982812]
 
 [node name="site_bos" type="Marker3D" parent="." unique_id=961661749]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.4, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.555567, 0, 1.514148)
 
 [node name="site_smidse" type="Marker3D" parent="." unique_id=1206889094]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.699971, 0, -8.14035)
@@ -333,3 +251,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5566535, 0, 3.2550087)
 
 [node name="building_home_A_red3" parent="." unique_id=460301446 instance=ExtResource("10_xg86a")]
 transform = Transform3D(-2.7670908, 0, 1.6072363, 0, 3.2, 0, -1.6072363, 0, -2.7670908, -2.2032032, 0.021362305, 3.7673645)
+
+[node name="hex_road_B2" parent="." unique_id=1991468268 instance=ExtResource("18_v1rnf")]
+transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 6.0407715, 0, 10.205688)
+
+[node name="hex_road_D2" parent="." unique_id=1588038003 instance=ExtResource("19_xg86a")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0.025756836, 0, 0.009643555)
+
+[node name="hex_road_E2" parent="." unique_id=710099444 instance=ExtResource("20_vrl4c")]
+transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.4999999, 3.1054688, 0, 5.159668)
+
+[node name="hex_road_A2" parent="." unique_id=1762784610 instance=ExtResource("21_p627j")]
+transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 2.9901123, 0, -5.20105)
+
+[node name="hex_road_B3" parent="." unique_id=463364569 instance=ExtResource("18_v1rnf")]
+transform = Transform3D(-3, 0, -2.6226832e-07, 0, 3, 0, 2.6226832e-07, 0, -3, -5.9935303, 0, 0.0025634766)
