@@ -326,6 +326,19 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## H1 intro rework + UI: text in the top bar (2026-07-17)
+
+- H1 DONE: the intro is a MORNING WALK -- the sword + keys stay on the wall (looked at,
+  not taken); prose reworded + re-hashed ("hij loopt naar de muur. hier hangt zijn zwaard.
+  de sleutel heeft hij later nodig. nu gaat hij naar de deur."), win = "Hij maakt een
+  ommetje in het bos!". _setup_house keeps the waypoints, drops the pickups. (Removes the
+  contradiction with the item-prereq system.) F2 (rise-from-bed) STILL PENDING -- deferred.
+- UI STANDARDISED: all scene text (win/setback/nothing/prompts) now renders in the TOP
+  BROWN BAR, never a translucent overlay on the 3D scene (immersion). _set_message ->
+  _set_top_prompt (auto-sizes height for 2-line "(druk op enter)"); central _message
+  deprecated (hidden). Verified intro + smidse wins. STILL OVER-SCENE: the intro BRIEFING
+  (_brief_label, the pre-typing rolling instructions) -- owner may want that moved too.
+
 ## Campaign v2 slice 1: item prerequisites (2026-07-17)
 
 BUILT + verified: the bow + sword are now PREREQUISITES collected at home before their
