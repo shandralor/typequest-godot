@@ -326,6 +326,19 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Campaign spine: cave-first gating (2026-07-17)
+
+DONE (C1/C2). Generic progress-flag mechanism: story_graph Choice.requires_flag (choice
+hidden until flag) + StoryNode.sets_flag (set on node completion); game_controller honours
+both (_begin_choice filter; _resolve_ending sets it). C2: band1 kruispunt bridge choice
+requires_flag=met_skeleton; grot sets_flag=met_skeleton -> first visit offers ONLY the cave,
+then the bridge opens. C1: overworld smidse/boog get unlock_flag=met_skeleton (bos+thuis
+always open); _site_locked() -> locked sites dim + hint "nog niet open" when typed; the
+has_sword/has_bow item hint layers on after unlock. Verified end-to-end.
+NEXT campaign pieces: C3 post-cave cutscene ("must train"), the MILL scenario (bag-carry +
+choice), the active skeleton fight (G10), the crystal + raised-bridge -> next region (G5).
+The C2 fence PROP + jump-the-fence animation + naGrot/brug text are still polish TODO.
+
 ## Intro get-up: real Lie_StandUp animation (2026-07-17)
 
 DONE (F2/H1 finished): the intro rise is a real KayKit get-up (Lie_StandUp grafted from
