@@ -326,6 +326,17 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Fix: gate the weapon-fetch loop behind met_skeleton (2026-07-17)
+
+Two bugs from owner play-test, both because the "fetch your weapons" loop was live from
+the first house exit (before the cave): (1) the knight could take the sword/bow off the
+wall before doing the forest; (2) an "!" objective badge showed on `thuis` right after the
+intro. Root: `thuis` had no unlock_flag (always open) and objective `haal_wapens` had
+active_flag="" (always active). Both DATA fixes: overworld.gd thuis gets
+unlock_flag="met_skeleton"; objectives.gd haal_wapens active_flag ""->"met_skeleton". Now
+the house-fetch site is dimmed + no badge until the cave-scare, then unlocks with the
+smidse/boog. Verified: fresh overworld shows only bos bright, no "!". All 7 suites pass.
+
 ## Campaign v2: C3 cave-scare beat (2026-07-17)
 
 DONE (C3). The cave (grot) is no longer a setback that bounces to naGrot -- it is a

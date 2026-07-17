@@ -19,8 +19,10 @@ extends RefCounted
 static func all() -> Array:
 	return [
 		{
+			# only after the cave-scare (met_skeleton) does he need his weapons -- so the
+			# badge/nudge stays dark until then, NOT from the very first house exit.
 			"id": "haal_wapens",
-			"active_flag": "",
+			"active_flag": "met_skeleton",
 			"done_flag": "has_gear",
 			"target_site": "thuis",
 			"hint_key": "objective.wapens",

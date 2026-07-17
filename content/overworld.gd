@@ -24,5 +24,6 @@ static func sites() -> Array:
 			"anchor": "site_boog", "route": "route_boog", "unlocked": true,
 			"unlock_flag": "met_skeleton", "requires_flag": "has_bow", "hint_key": "hint.boog"},
 		{"id": "thuis", "word_key": "site.thuis", "scenario": "home",
-			"anchor": "site_home", "route": "route_home", "unlocked": true},
+			"anchor": "site_home", "route": "route_home", "unlocked": true,
+			"unlock_flag": "met_skeleton"},
 	]
