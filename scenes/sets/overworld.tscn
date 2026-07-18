@@ -62,8 +62,14 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -11.944031, 0.25073242, 10.51
 [node name="hex_grass4" parent="." unique_id=885952721 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -17.883362, 0.25073242, 10.510254)
 
+[node name="hex_grass6" parent="." unique_id=1213219270 instance=ExtResource("1_eg8vr")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -23.911129, 0.25073242, 10.510254)
+
 [node name="hex_grass5" parent="." unique_id=1503397947 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -20.961792, 0.25073242, 5.3707275)
+
+[node name="hex_grass7" parent="." unique_id=446853203 instance=ExtResource("1_eg8vr")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15.445435, 0.42626953, -5.464386)
 
 [node name="@Node3D@3" parent="." unique_id=1638744239 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6, 0, 10.392)
@@ -107,9 +113,6 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9, 0, -5.196)
 [node name="@Node3D@19" parent="." unique_id=1981942579 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12, 0, 0)
 
-[node name="hex_water2" parent="." unique_id=1343160376 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -18, 0, 0)
-
 [node name="@Node3D@20" parent="." unique_id=1790934768 instance=ExtResource("2_gum3g")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15, 0, 5.196)
 
@@ -125,11 +128,8 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15.002869, 0, 15.588)
 [node name="_Node3D_23" parent="." unique_id=1495770078 instance=ExtResource("2_gum3g")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -20.991638, 0, 15.588)
 
-[node name="_Node3D_28" parent="." unique_id=290142269 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -23.987976, 0, 10.412219)
-
-[node name="@Node3D@23" parent="." unique_id=352712317 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15, 0, -5.196)
+[node name="_Node3D_28" parent="." unique_id=133037450 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -26.95331, 0, 15.588)
 
 [node name="@Node3D@24" parent="." unique_id=118978124 instance=ExtResource("2_gum3g")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, 15.588)
@@ -290,82 +290,88 @@ transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.49999
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -8.983398, 0, 5.1470947)
 
 [node name="hex_road_B5" parent="." unique_id=1422964321 instance=ExtResource("18_v1rnf")]
-transform = Transform3D(-1.5000002, 0, 2.598076, 0, 3, 0, -2.598076, 0, -1.5000002, -17.839355, 0, 0.022216797)
+transform = Transform3D(-1.5000002, 0, 2.598076, 0, 3, 0, -2.598076, 0, -1.5000002, -17.839355, 0, 0.115356445)
 
 [node name="hills_C_trees2" parent="." unique_id=1279146520 instance=ExtResource("22_xg86a")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.41156, 0, -0.047729492)
 
-[node name="mist_0" parent="." unique_id=1123333033 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="Mist" type="Node3D" parent="." unique_id=101897476]
+visible = false
+
+[node name="mist_0" parent="Mist" unique_id=1123333033 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.2, 0, 0, 0, 1.4, 0, 0, 0, 2, 23.8, 0.6, 0)
 
-[node name="mist_1" parent="." unique_id=1183091698 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_1" parent="Mist" unique_id=1183091698 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.63469, 0, -0.57568, 0, 1.61, 0, 0.3598, 0, 2.27168, 25.0873, 1.2, 3.9734)
 
-[node name="mist_2" parent="." unique_id=2004046916 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_2" parent="Mist" unique_id=2004046916 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.9564, 0, -1.28551, 0, 1.82, 0, 0.80344, 0, 2.47275, 23.0156, 1.05, 7.4782)
 
-[node name="mist_3" parent="." unique_id=1831807346 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_3" parent="Mist" unique_id=1831807346 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.06506, 0, -1.56173, 0, 1.505, 0, 0.97608, 0, 1.91566, 22.988, 0.9, 11.713)
 
-[node name="mist_4" parent="." unique_id=1219266467 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_4" parent="Mist" unique_id=1219266467 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.17135, 0, -2.30412, 0, 1.715, 0, 1.44007, 0, 1.98209, 19.9018, 0.75, 14.4595)
 
-[node name="mist_5" parent="." unique_id=361286901 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_5" parent="Mist" unique_id=361286901 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.0393503, 0, 0, 0, 1.715, 0, 0, 0, 3.4829962, -11.353348, 0.75, 15.571617)
 
-[node name="mist_6" parent="." unique_id=1233220076 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
+[node name="mist_6" parent="Mist" unique_id=1233220076 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(2.6683295, 0, 0, 0, 1.4, 0, 0, 0, 2.6683295, -13.937236, 0.6, 9.902517)
 
-[node name="mist_7" parent="." unique_id=129976601 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
+[node name="mist_7" parent="Mist" unique_id=129976601 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.2697494, 0, 0, 0, 1.61, 0, 0, 0, 2.853268, -17.581882, 1.2, 5.766758)
 
-[node name="mist_8" parent="." unique_id=142424379 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
+[node name="mist_8" parent="Mist" unique_id=142424379 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.8900008, 0, 0, 0, 1.82, 0, 0, 0, 2.9889026, -21.217308, 1.05, 1.670886)
 
-[node name="mist_9" parent="." unique_id=1050785258 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
+[node name="mist_9" parent="Mist" unique_id=1050785258 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.3384092, 0, 0, 0, 1.505, 0, 0, 0, 2.3045814, -20.63756, 0.9, -1.729743)
 
-[node name="mist_10" parent="." unique_id=370148045 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
+[node name="mist_10" parent="Mist" unique_id=370148045 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.8906631, 0, 0, 0, 1.715, 0, 0, 0, 2.4963303, -24.007267, 0.75, 8.466032)
 
-[node name="mist_11" parent="." unique_id=1252001875 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
+[node name="mist_11" parent="Mist" unique_id=1252001875 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(-3.2, 0, 0, 0, 1.4, 0, 0, 0, -2, -20.393272, 0.6, 12.728027)
 
-[node name="mist_18" parent="." unique_id=569962652 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_17" parent="Mist" unique_id=1383731140 groups=["mist"] instance=ExtResource("13_tpa2k")]
+transform = Transform3D(-2.16305, 0, 2.97718, 0, 1.61, 0, -1.86074, 0, -1.35191, -15.4, 1.2, -21.1962)
+
+[node name="mist_18" parent="Mist" unique_id=569962652 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(-1.8886, 0, 3.70659, 0, 1.82, 0, -2.31662, 0, -1.18038, -11.3498, 1.05, -22.2752)
 
-[node name="mist_19" parent="." unique_id=1084629796 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_19" parent="Mist" unique_id=1084629796 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(-1.06302, 0, 3.27163, 0, 1.505, 0, -2.04477, 0, -0.66439, -7.3546, 0.9, -22.6351)
 
-[node name="mist_20" parent="." unique_id=2038935292 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_20" parent="Mist" unique_id=2038935292 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(-0.61322, 0, 3.87174, 0, 1.715, 0, -2.41984, 0, -0.38326, -3.9734, 0.75, -25.0873)
 
-[node name="mist_21" parent="." unique_id=1009683258 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_21" parent="Mist" unique_id=1009683258 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(0, 0, 3.2, 0, 1.4, 0, -2, 0, 0, 0, 0.6, -24.2)
 
-[node name="mist_22" parent="." unique_id=299050731 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_22" parent="Mist" unique_id=299050731 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(0.57568, 0, 3.63469, 0, 1.61, 0, -2.27168, 0, 0.3598, 4.036, 1.2, -25.4824)
 
-[node name="mist_23" parent="." unique_id=1196587549 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_23" parent="Mist" unique_id=1196587549 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(1.28551, 0, 3.9564, 0, 1.82, 0, -2.47275, 0, 0.80344, 7.6018, 1.05, -23.396)
 
-[node name="mist_24" parent="." unique_id=1595746759 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_24" parent="Mist" unique_id=1595746759 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(1.56173, 0, 3.06506, 0, 1.505, 0, -1.91566, 0, 0.97608, 11.8946, 0.9, -23.3444)
 
-[node name="mist_25" parent="." unique_id=268225898 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_25" parent="Mist" unique_id=268225898 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(2.30412, 0, 3.17135, 0, 1.715, 0, -1.98209, 0, 1.44007, 14.6946, 0.75, -20.2254)
 
-[node name="mist_26" parent="." unique_id=146077595 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_26" parent="Mist" unique_id=146077595 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(2.26274, 0, 2.26274, 0, 1.4, 0, -1.41421, 0, 1.41421, 16.8291, 0.6, -16.8291)
 
-[node name="mist_27" parent="." unique_id=942213028 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_27" parent="Mist" unique_id=942213028 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(2.97718, 0, 2.16305, 0, 1.61, 0, -1.35191, 0, 1.86074, 20.549, 1.2, -14.9297)
 
-[node name="mist_28" parent="." unique_id=1381131585 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_28" parent="Mist" unique_id=1381131585 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.70659, 0, 1.8886, 0, 1.82, 0, -1.18038, 0, 2.31662, 21.5624, 1.05, -10.9866)
 
-[node name="mist_29" parent="." unique_id=703157139 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_29" parent="Mist" unique_id=703157139 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.27163, 0, 1.06302, 0, 1.505, 0, -0.66439, 0, 2.04477, 24.5373, 0.9, -7.9726)
 
-[node name="mist_30" parent="." unique_id=2008561784 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_30" parent="Mist" unique_id=2008561784 groups=["mist"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.87174, 0, 0.61322, 0, 1.715, 0, -0.38326, 0, 2.41984, 24.2971, 0.75, -3.8483)
