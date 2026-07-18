@@ -130,8 +130,9 @@ const OW_IDLE_ZOOM_DEFAULT := 1.5   # default island pull-back (bigger = more zo
 const OW_ZOOM_MIN := 0.8
 const OW_ZOOM_MAX := 3.0
 const OW_ZOOM_STEP := 0.12
-const OW_LABEL_HIDE_ZOOM := 1.9   # zoomed out past this, world labels hide for a clean map
-var _ow_zoom := OW_IDLE_ZOOM_DEFAULT   # mouse-wheel adjustable + persisted (settings.cfg)
+const OW_LABEL_HIDE_DEFAULT := 1.5   # zoomed out past this, world labels hide for a clean map
+var _ow_zoom := OW_IDLE_ZOOM_DEFAULT       # mouse-wheel adjustable + persisted (settings.cfg)
+var _ow_label_hide := OW_LABEL_HIDE_DEFAULT # configurable label-hide zoom (settings.cfg key "ow_label_hide")
 const OW_WALK_SPEED := 4.5
 const OW_BANNER_LIFT := Vector3(0, 7.2, 0)   # banner floats this far above a site (into the sky, off the hexes)
 
@@ -159,6 +160,7 @@ func _ready() -> void:
 		AppProgress.set_flag_transient(flag_arg)
 	_build_layout()
 	_ow_zoom = AppProgress.get_setting("ow_zoom", OW_IDLE_ZOOM_DEFAULT)   # restore saved island zoom
+	_ow_label_hide = AppProgress.get_setting("ow_label_hide", OW_LABEL_HIDE_DEFAULT)   # configurable
 	_topcam = "--topcam" in args
 	_hidebanners = "--nobanner" in args
 	_demo = "--demo" in args
@@ -1809,7 +1811,7 @@ func _position_ow_banners() -> void:
 # proportional, and HIDE it once zoomed out past OW_LABEL_HIDE_ZOOM (so the map reads clean).
 # Returns false when the label should be hidden (zoomed out). Typing still selects a site.
 func _place_world_label(label: ChoiceBanner, world: Vector3) -> bool:
-	if _camera == null or _ow_zoom >= OW_LABEL_HIDE_ZOOM:
+	if _camera == null or _ow_zoom > _ow_label_hide:
 		return false
 	var s: float = clampf(OW_IDLE_ZOOM_DEFAULT / _ow_zoom, 0.55, 1.25)
 	label.visible = true
