@@ -326,6 +326,26 @@ costumes/upgrades, NOT these. Locked look: "visible but not takeable" (ghosted).
   (reuse house_pickup_*/_attach_to_hand), setting a `has_bow_x` flag so it is gone
   after. That is where the ghost reads clearly (knight right next to it).
 
+## Mist is now AUTHORED in the set (editor-controlled) (2026-07-18)
+
+The coastal mist moved from a procedural code ring to AUTHORED clouds in overworld.tscn, so
+the owner places/orients/scales cloud cover in the editor like tiles, while the game still
+removes parts on unlock. Mechanism = node GROUPS:
+  - group "mist"           -> permanent cloud (never lifts)
+  - group "reveal_<flag>"  -> cloud that fades + drifts away when AppProgress <flag> is set
+    (e.g. "reveal_crossed_bridge"; set via the dev "Brug over" toggle or crossing the bridge).
+composer: _register_authored_mist() scans _location children for _is_mist_node (in "mist" or
+any "reveal_*" group), applies the translucent fadeable material + gentle bob, records the
+flag. _spawn_clouds skips mist nodes (so they don't drift). reveal_mist(flag, animate) fades
+the matching clouds; mist_reveal_flags() lists the flags PRESENT so the controller reveals
+only what exists (adding a region = pure editor work, no code). Removed the procedural
+_spawn_mist + MIST_RADIUS/COUNT/GAPS. Seeded a starter ring (31 cloud_big nodes, windmill
+sea-gap, west sector tagged reveal_crossed_bridge) into overworld.tscn via a one-off script
+-- the owner refines positions to hug the (now irregular/grown) coast. Verified: ring masks,
+west lifts on crossed_bridge. All 7 suites pass.
+EDITOR WORKFLOW: duplicate a cloud_big, position it, add it to group "mist" (permanent) or
+"reveal_<flag>" (liftable) in the Node dock -> Groups. That's it.
+
 ## Mist tuning + island camera pan + maximized window (2026-07-17)
 
 Follow-up tuning after the mist landed. (1) Mist ring was swallowing edge buildings (smidse,

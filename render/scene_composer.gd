@@ -158,7 +158,7 @@ func compose_overworld(start_anchor: String = "hub") -> void:
 	add_child(_location)
 	_apply_mood("light", false)   # no distance fog: the island must read crisply
 	_spawn_clouds()
-	_spawn_mist()
+	_register_authored_mist()
 	_windmill_fan = _location.find_child("building_windmill_top_fan_red", true, false) as Node3D
 	var hero := _hero.build()
 	hero.name = "Actor_hero"
@@ -184,6 +184,8 @@ func _spawn_clouds() -> void:
 	# auto-named like "@Node3D@39", which the name check alone would miss)
 	for c in _location.get_children():
 		if c is Node3D and (c.name.to_lower().contains("cloud") or c.scene_file_path.to_lower().contains("cloud")):
+			if _is_mist_node(c):
+				continue   # tagged mist -> static coastal cover, not a drifting sky cloud
 			_clouds.append({"node": c, "speed": rng.randf_range(0.5, 0.9)})
 	var spots := [Vector3(16, 11, -4), Vector3(-24, 13, 6), Vector3(4, 14, -18), Vector3(28, 12, -12)]
 	for spot in spots:
@@ -205,63 +207,68 @@ func hide_clouds() -> void:
 		(m.node as Node3D).visible = false
 
 
-# --- coastal mist ring (masks unexplored regions; lifts per-sector on unlock) ------
-const MIST_RADIUS := 21.5    # ring sits past the coast so it never swallows edge buildings
-const MIST_COUNT := 34       # puffs around the ring (denser to stay continuous at radius)
-const MIST_Y := 0.9          # low, hugging the sea
-# open-sea gaps in the ring (angle centre, half-width, radians) -- e.g. the windmill sits
-# on a south cliff over open sea, so no mist there. angle 0 = +x/E, PI/2 = +z/S, PI = W.
-const MIST_GAPS := [{"center": 1.40, "half": 0.6}]
+# --- authored mist cover (masks unexplored areas; lifts per-region on unlock) -------
+# The mist is AUTHORED in the overworld set: place cloud_big instances wherever you want
+# cover, then tag them via node GROUPS (editor: Node dock -> Groups):
+#   group "mist"           -> permanent mist (never lifts)
+#   group "reveal_<flag>"  -> mist that fades away when the AppProgress <flag> is set,
+#                             e.g. "reveal_crossed_bridge"
+# The code applies a soft translucent material + a gentle bob and drives the reveal; the
+# owner keeps full editor control over placement / orientation / scale.
+
+func _is_mist_node(node: Node) -> bool:
+	if node.is_in_group("mist"):
+		return true
+	for g in node.get_groups():
+		if String(g).begins_with("reveal_"):
+			return true
+	return false
 
 
-## Ring the island coast with a soft mist bank so anything beyond the current tiles
-## reads as unexplored -- new regions are hidden IN the mist, not spawned from nothing.
-## Each puff gets its own material so a sector can fade independently on unlock.
-func _spawn_mist() -> void:
+func _register_authored_mist() -> void:
 	_mist = []
-	var rng := _rng()
-	for i in range(MIST_COUNT):
-		var a := TAU * float(i) / float(MIST_COUNT)
-		var in_gap := false
-		for g in MIST_GAPS:
-			if absf(wrapf(a - g.center, -PI, PI)) <= g.half:
-				in_gap = true
-				break
-		if in_gap:
-			continue   # open sea here (e.g. the windmill cliff) -- no mist
-		var puff := SceneKit.instance_path(CLOUD_MODEL)
-		if puff == null:
+	for c in _location.get_children():
+		if not (c is Node3D) or not _is_mist_node(c):
 			continue
-		var r := MIST_RADIUS + rng.randf_range(-1.0, 1.4)
-		var base_y := MIST_Y + rng.randf_range(-0.4, 0.7)
-		puff.position = Vector3(cos(a) * r, base_y, sin(a) * r)
-		puff.rotation.y = a
-		var s := rng.randf_range(1.7, 2.5)
-		puff.scale = Vector3(s * 1.6, s * 0.7, s)
+		var node := c as Node3D
+		var flag := ""
+		for g in node.get_groups():
+			if String(g).begins_with("reveal_"):
+				flag = String(g).substr(len("reveal_"))
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = Color(0.92, 0.95, 1.0, 0.85)
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
-		for mi in puff.find_children("*", "MeshInstance3D", true, false):
+		for mi in node.find_children("*", "MeshInstance3D", true, false):
 			(mi as MeshInstance3D).material_override = mat
-		_location.add_child(puff)
-		_mist.append({"node": puff, "angle": a, "base_y": base_y, "mat": mat})
+		var phase: float = node.position.x * 0.35 + node.position.z * 0.2
+		_mist.append({"node": node, "flag": flag, "mat": mat, "base_y": node.position.y, "phase": phase})
 
 
-## Lift the mist over an angular sector (centre + half-width, radians) to reveal what is
-## behind it. `animate` fades + drifts it seaward over ~2s (a reveal); else hides instantly
-## (a region already opened on an earlier visit).
-func reveal_mist(center_angle: float, half_width: float, animate: bool) -> void:
+## The distinct reveal flags present on authored mist (so the game reveals only what exists).
+func mist_reveal_flags() -> Array:
+	var seen := {}
 	for e in _mist:
-		var da: float = absf(wrapf(e.angle - center_angle, -PI, PI))
-		if da > half_width:
+		if e.flag != "":
+			seen[e.flag] = true
+	return seen.keys()
+
+
+## Lift the mist tagged for `flag` (group "reveal_<flag>"). `animate` fades + drifts it away
+## over ~2s (the reveal); else hides instantly (a region opened on an earlier visit).
+func reveal_mist(flag: String, animate: bool) -> void:
+	for e in _mist:
+		if e.flag != flag:
 			continue
 		var node: Node3D = e.node
 		if not animate:
 			node.visible = false
 			continue
 		var mat: StandardMaterial3D = e.mat
-		var out: Vector3 = node.position + node.position.normalized() * 6.0 + Vector3(0, 2.5, 0)
+		var dir := Vector3(node.position.x, 0.0, node.position.z)
+		var out: Vector3 = node.position + Vector3(0, 4.0, 0)
+		if dir.length() > 0.1:
+			out = node.position + dir.normalized() * 6.0 + Vector3(0, 2.5, 0)
 		var t := node.create_tween()
 		t.set_parallel(true)
 		t.tween_property(node, "position", out, 2.2)
@@ -280,7 +287,7 @@ func _process(delta: float) -> void:
 		for m in _mist:
 			var mn: Node3D = m.node
 			if mn.visible:
-				mn.position.y = m.base_y + sin(_mist_t * 0.6 + m.angle * 3.0) * 0.25  # gentle bob
+				mn.position.y = m.base_y + sin(_mist_t * 0.6 + m.phase) * 0.2  # gentle bob
 	if _windmill_fan != null:
 		_windmill_fan.rotate_object_local(Vector3(0, 0, 1), 0.9 * delta)   # sails turn
 

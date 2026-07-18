@@ -1671,23 +1671,17 @@ func _show_overworld(at_anchor: String = "hub") -> void:
 	_maybe_nudge_objective()   # announce a newly-unlocked objective once
 
 
-# Coastal-mist regions: setting `flag` lifts the ring over that angular sector so the
-# tiles behind it read as revealed (angle in radians; 0 = +x/east, PI/2 = +z/south,
-# PI = -x/west, -PI/2 = -z/north). Growth in any direction is just another data row.
-const MIST_REGIONS := [
-	{"flag": "crossed_bridge", "angle": PI, "half": 0.8},   # the west opens past the forest bridge
-]
-
-
-# Lift the coastal mist over every region whose flag is set; animate the parting the FIRST
-# time it is seen (returning from the unlock), then just stay clear on later visits.
+# Lift the authored mist for every region flag that is set. Which clouds belong to which
+# region is authored in the set via groups ("reveal_<flag>"), so growth in any direction is
+# purely editor work -- no code change. Animate the parting the FIRST time it is seen
+# (returning from the unlock), then just stay clear on later visits.
 func _reveal_unlocked_regions() -> void:
-	for reg in MIST_REGIONS:
-		if not AppProgress.get_flag(reg.flag):
+	for flag in _composer.mist_reveal_flags():
+		if not AppProgress.get_flag(flag):
 			continue
-		var seen_key: String = "saw_" + reg.flag
+		var seen_key: String = "saw_" + flag
 		var animate: bool = not AppProgress.get_flag(seen_key)
-		_composer.reveal_mist(reg.angle, reg.half, animate)
+		_composer.reveal_mist(flag, animate)
 		if animate:
 			AppProgress.set_flag(seen_key)
 
