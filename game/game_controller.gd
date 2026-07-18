@@ -1801,9 +1801,13 @@ func _position_ow_banners() -> void:
 		if _topcam:
 			_composer.hide_clouds()
 		return
+	# shrink the labels as the island shrinks (zoom out), so they stay proportional to the
+	# sites instead of ballooning and overlapping. Scale is around the banner centre (pivot).
+	var bscale: float = clampf(OW_IDLE_ZOOM_DEFAULT / _ow_zoom, 0.45, 1.25)
 	for e in _ow_banners:
 		var world: Vector3 = _composer.anchor_pos(e.site.anchor) + OW_BANNER_LIFT
 		var screen: Vector2 = _camera.unproject_position(world)
+		e.banner.scale = Vector2(bscale, bscale)
 		e.banner.set_base_position(screen - Vector2(e.banner.size.x * 0.5, 0))
 
 
