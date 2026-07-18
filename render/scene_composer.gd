@@ -227,10 +227,20 @@ func _is_mist_node(node: Node) -> bool:
 
 func _register_authored_mist() -> void:
 	_mist = []
-	for c in _location.get_children():
-		if not (c is Node3D) or not _is_mist_node(c):
+	# recursive so the owner can nest all mist clouds under one parent node (to hide the
+	# whole cover at once while editing the island); groups still identify them wherever.
+	for c in _location.find_children("*", "Node3D", true, false):
+		if not _is_mist_node(c):
 			continue
 		var node := c as Node3D
+		# force the cloud + its parent chain visible, so hiding the mist group in the editor
+		# (to work on the island) never leaves it hidden at runtime; the reveal re-hides
+		# any already-lifted region afterward.
+		var a: Node = node
+		while a != null and a != _location:
+			if a is Node3D:
+				(a as Node3D).visible = true
+			a = a.get_parent()
 		var flag := ""
 		for g in node.get_groups():
 			if String(g).begins_with("reveal_"):
@@ -264,6 +274,7 @@ func reveal_mist(flag: String, animate: bool) -> void:
 		if not animate:
 			node.visible = false
 			continue
+		e["revealing"] = true   # stop the bob fighting the drift/rise during the fade
 		var mat: StandardMaterial3D = e.mat
 		var dir := Vector3(node.position.x, 0.0, node.position.z)
 		var out: Vector3 = node.position + Vector3(0, 4.0, 0)
@@ -286,7 +297,7 @@ func _process(delta: float) -> void:
 		_mist_t += delta
 		for m in _mist:
 			var mn: Node3D = m.node
-			if mn.visible:
+			if mn.visible and not m.get("revealing", false):
 				mn.position.y = m.base_y + sin(_mist_t * 0.6 + m.phase) * 0.2  # gentle bob
 	if _windmill_fan != null:
 		_windmill_fan.rotate_object_local(Vector3(0, 0, 1), 0.9 * delta)   # sails turn
