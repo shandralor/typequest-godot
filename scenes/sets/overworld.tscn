@@ -54,19 +54,22 @@ point_count = 3
 [node name="Node3D" type="Node3D" unique_id=411164511]
 
 [node name="hex_grass3" parent="." unique_id=1133874570 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0, 0.0, 10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12, 0, 10.392)
 
 [node name="hex_grass4" parent="." unique_id=885952721 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -18.0, 0.0, 10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -18, 0, 10.392)
 
 [node name="hex_grass6" parent="." unique_id=1213219270 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -24.0, 0.0, 10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -24, 0, 10.392)
 
 [node name="hex_grass5" parent="." unique_id=1503397947 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -21.0, 0.0, 5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -21, 0, 5.196)
 
 [node name="hex_grass7" parent="." unique_id=446853203 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15.0, 0.0, -5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15, 0, -5.196)
+
+[node name="hex_grass8" parent="." unique_id=149054923 instance=ExtResource("1_eg8vr")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.037659, 0, -0.03242588)
 
 [node name="@Node3D@3" parent="." unique_id=1638744239 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6, 0, 10.392)
@@ -263,13 +266,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5566535, 0, 3.2550087)
 transform = Transform3D(-2.7670908, 0, 1.6072363, 0, 3.2, 0, -1.6072363, 0, -2.7670908, -2.2032032, 0.021362305, 3.7673645)
 
 [node name="hex_road_B2" parent="." unique_id=1991468268 instance=ExtResource("18_v1rnf")]
-transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 6.0, 0.0, 10.392)
+transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 6, 0, 10.392)
 
 [node name="hex_road_D2" parent="." unique_id=1588038003 instance=ExtResource("19_xg86a")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0.025756836, 0, 0.009643555)
 
 [node name="hex_road_E2" parent="." unique_id=710099444 instance=ExtResource("20_vrl4c")]
-transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.4999999, 3.0, 0.0, 5.196)
+transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.4999999, 3, 0, 5.196)
 
 [node name="hex_road_A2" parent="." unique_id=1762784610 instance=ExtResource("21_p627j")]
 transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 2.9901123, 0, -5.20105)
@@ -284,10 +287,10 @@ transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.49999
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -8.983398, 0, 5.1470947)
 
 [node name="hex_road_B5" parent="." unique_id=1422964321 instance=ExtResource("18_v1rnf")]
-transform = Transform3D(-1.5000002, 0, 2.598076, 0, 3, 0, -2.598076, 0, -1.5000002, -18.0, 0.0, 0.0)
+transform = Transform3D(-1.5000002, 0, 2.598076, 0, 3, 0, -2.598076, 0, -1.5000002, -18, 0, 0)
 
 [node name="hills_C_trees2" parent="." unique_id=1279146520 instance=ExtResource("22_xg86a")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0, 0.0, 0.0)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12, 0, 0)
 
 [node name="Mist" type="Node3D" parent="." unique_id=101897476]
 visible = false
