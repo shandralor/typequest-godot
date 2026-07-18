@@ -52,7 +52,7 @@ _data = {
 }
 point_count = 3
 
-[node name="Node3D" type="Node3D" unique_id=411164511]
+[node name="Node3D2" type="Node3D" unique_id=411164511]
 
 [node name="hex_grass3" parent="." unique_id=1133874570 instance=ExtResource("1_eg8vr")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0000, 0, 10.3920)
@@ -287,16 +287,16 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0000, 0, 0.0000)
 [node name="Mist" type="Node3D" parent="." unique_id=101897476]
 visible = false
 
-[node name="mist_2" parent="Mist" unique_id=2004046916 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_2" parent="Mist" unique_id=2004046916 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(4.0371547, 0, 0, 0, 1.82, 0, 0, 0, 2.786939, -31.695505, 1.05, 10.11321)
 
-[node name="mist_3" parent="Mist" unique_id=1831807346 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_3" parent="Mist" unique_id=1831807346 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.2167258, 0, 0, 0, 1.505, 0, 0, 0, 2.4715893, -26.065557, 0.9, 5.8138304)
 
-[node name="mist_4" parent="Mist" unique_id=1219266467 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_4" parent="Mist" unique_id=1219266467 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.4829962, 0, 0, 0, 1.715, 0, 0, 0, 3.0393503, -28.012049, 0.75, 14.4595)
 
-[node name="mist_5" parent="Mist" unique_id=361286901 groups=["mist"] instance=ExtResource("13_tpa2k")]
+[node name="mist_5" parent="Mist" unique_id=361286901 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
 transform = Transform3D(3.0393503, 0, 0, 0, 1.715, 0, 0, 0, 3.4829962, -11.353348, 0.75, 15.571617)
 
 [node name="mist_6" parent="Mist" unique_id=1233220076 groups=["reveal_crossed_bridge"] instance=ExtResource("13_tpa2k")]
@@ -411,4 +411,199 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -27.0000, 0, 25.9800)
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -21.0000, 0, 25.9800)
 
 [node name="water_s18" parent="." unique_id=156147225 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15.0000, 0, 36.3720)
+
+[node name="water_s24" parent="." unique_id=753053347 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -18.0000, 0, 31.1760)
+
+[node name="water_s25" parent="." unique_id=1632999661 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0000, 0, 31.1760)
+
+[node name="water_s29" parent="." unique_id=623442880 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6.0000, 0, 31.1760)
+
+[node name="water_s30" parent="." unique_id=1778984258 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0.0000, 0, 31.1760)
+
+[node name="water_s31" parent="." unique_id=1599535128 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6.0000, 0, 31.1760)
+
+[node name="water_s32" parent="." unique_id=701969678 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12.0000, 0, 31.1760)
+
+[node name="water_s33" parent="." unique_id=329854867 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18.0000, 0, 31.1760)
+
+[node name="water_s34" parent="." unique_id=648162781 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15.0000, 0, 36.3720)
+
+[node name="water_s44" parent="." unique_id=1124994599 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -33.0000, 0, 36.3720)
+
+[node name="water_s45" parent="." unique_id=1967415717 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -27.0000, 0, 36.3720)
+
+[node name="water_s46" parent="." unique_id=862224326 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -21.0000, 0, 36.3720)
+
+[node name="water_s47" parent="." unique_id=689121611 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -39.0000, 0, 36.3720)
+
+[node name="water_s35" parent="." unique_id=1868738392 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9.0000, 0, 36.3720)
+
+[node name="water_s36" parent="." unique_id=1169019727 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3.0000, 0, 36.3720)
+
+[node name="water_s37" parent="." unique_id=602319318 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3.0000, 0, 36.3720)
+
+[node name="water_s40" parent="." unique_id=2095374611 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -42.0000, 0, 31.1760)
+
+[node name="water_s41" parent="." unique_id=1647289836 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -36.0000, 0, 31.1760)
+
+[node name="water_s42" parent="." unique_id=633007319 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -30.0000, 0, 31.1760)
+
+[node name="water_s43" parent="." unique_id=312764193 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -24.0000, 0, 31.1760)
+
+[node name="water_s38" parent="." unique_id=1302487379 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9.0000, 0, 36.3720)
+
+[node name="water_s48" parent="." unique_id=946103811 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 27.0000, 0, 36.3720)
+
+[node name="water_s49" parent="." unique_id=378495362 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 39.0000, 0, 36.3720)
+
+[node name="water_s50" parent="." unique_id=2143351068 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 21.0000, 0, 36.3720)
+
+[node name="water_s51" parent="." unique_id=353875929 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 33.0000, 0, 36.3720)
+
+[node name="water_s52" parent="." unique_id=1083833937 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 30.0000, 0, 31.1760)
+
+[node name="water_s53" parent="." unique_id=1531650357 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 42.0000, 0, 31.1760)
+
+[node name="water_s54" parent="." unique_id=1424364604 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 24.0000, 0, 31.1760)
+
+[node name="water_s55" parent="." unique_id=145884059 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 36.0000, 0, 31.1760)
+
+[node name="water_s56" parent="." unique_id=778024232 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 27.0000, 0, 25.9800)
+
+[node name="water_s57" parent="." unique_id=1138562601 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 39.0000, 0, 25.9800)
+
+[node name="water_s58" parent="." unique_id=582678376 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 21.0000, 0, 25.9800)
+
+[node name="water_s59" parent="." unique_id=950301168 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 33.0000, 0, 25.9800)
+
+[node name="water_s60" parent="." unique_id=1915991555 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 24.0000, 0, 20.7840)
+
+[node name="water_s61" parent="." unique_id=1293403933 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 36.0000, 0, 20.7840)
+
+[node name="water_s62" parent="." unique_id=255564034 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18.0000, 0, 20.7840)
+
+[node name="water_s63" parent="." unique_id=193784809 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 30.0000, 0, 20.7840)
+
+[node name="water_s64" parent="." unique_id=2027972359 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 27.0000, 0, 15.5880)
+
+[node name="water_s65" parent="." unique_id=511910971 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 39.0000, 0, 15.5880)
+
+[node name="water_s66" parent="." unique_id=1869353047 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 21.0000, 0, 15.5880)
+
+[node name="water_s67" parent="." unique_id=129626817 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 33.0000, 0, 15.5880)
+
+[node name="water_s68" parent="." unique_id=638971156 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 30.0000, 0, 10.3920)
+
+[node name="water_s69" parent="." unique_id=1339821750 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 42.0000, 0, 10.3920)
+
+[node name="water_s70" parent="." unique_id=713128402 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 24.0000, 0, 10.3920)
+
+[node name="water_s71" parent="." unique_id=346473616 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 36.0000, 0, 10.3920)
+
+[node name="water_s72" parent="." unique_id=1801037760 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 33.0000, 0, 5.1960)
+
+[node name="water_s73" parent="." unique_id=1289580025 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 45.0000, 0, 5.1960)
+
+[node name="water_s74" parent="." unique_id=403896377 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 27.0000, 0, 5.1960)
+
+[node name="water_s75" parent="." unique_id=869692096 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 39.0000, 0, 5.1960)
+
+[node name="water_s76" parent="." unique_id=781135056 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 30.0000, 0, 0.0000)
+
+[node name="water_s77" parent="." unique_id=721989079 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 42.0000, 0, 0.0000)
+
+[node name="water_s78" parent="." unique_id=193352661 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 24.0000, 0, 0.0000)
+
+[node name="water_s79" parent="." unique_id=599714123 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 36.0000, 0, 0.0000)
+
+[node name="water_s80" parent="." unique_id=935101249 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 27.0000, 0, -5.1960)
+
+[node name="water_s81" parent="." unique_id=52824620 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 39.0000, 0, -5.1960)
+
+[node name="water_s82" parent="." unique_id=407467586 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 21.0000, 0, -5.1960)
+
+[node name="water_s83" parent="." unique_id=181742513 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 33.0000, 0, -5.1960)
+
+[node name="water_s84" parent="." unique_id=913473582 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 24.0000, 0, -10.3920)
+
+[node name="water_s85" parent="." unique_id=139636630 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 36.0000, 0, -10.3920)
+
+[node name="water_s86" parent="." unique_id=2106522796 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18.0000, 0, -10.3920)
+
+[node name="water_s87" parent="." unique_id=1526932064 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 30.0000, 0, -10.3920)
+
+[node name="water_s88" parent="." unique_id=485692176 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 21.0000, 0, -15.5880)
+
+[node name="water_s89" parent="." unique_id=1441019468 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 33.0000, 0, -15.5880)
+
+[node name="water_s90" parent="." unique_id=1993465227 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15.0000, 0, -15.5880)
+
+[node name="water_s91" parent="." unique_id=1381818997 instance=ExtResource("2_gum3g")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 27.0000, 0, -15.5880)
+
+[node name="water_s39" parent="." unique_id=1065144860 instance=ExtResource("2_gum3g")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15.0000, 0, 36.3720)
