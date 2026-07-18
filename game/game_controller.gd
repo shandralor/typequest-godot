@@ -130,6 +130,7 @@ const OW_IDLE_ZOOM_DEFAULT := 1.5   # default island pull-back (bigger = more zo
 const OW_ZOOM_MIN := 0.8
 const OW_ZOOM_MAX := 3.0
 const OW_ZOOM_STEP := 0.12
+const OW_LABEL_HIDE_ZOOM := 1.9   # zoomed out past this, world labels hide for a clean map
 var _ow_zoom := OW_IDLE_ZOOM_DEFAULT   # mouse-wheel adjustable + persisted (settings.cfg)
 const OW_WALK_SPEED := 4.5
 const OW_BANNER_LIFT := Vector3(0, 7.2, 0)   # banner floats this far above a site (into the sky, off the hexes)
@@ -1795,20 +1796,27 @@ func _set_top_prompt(text: String) -> void:
 func _position_ow_banners() -> void:
 	if _camera == null:
 		return
-	if _topcam or _hidebanners:
-		for e in _ow_banners:
-			e.banner.visible = false   # debug: keep the map/clouds clear for inspection
-		if _topcam:
-			_composer.hide_clouds()
-		return
-	# shrink the labels as the island shrinks (zoom out), so they stay proportional to the
-	# sites instead of ballooning and overlapping. Scale is around the banner centre (pivot).
-	var bscale: float = clampf(OW_IDLE_ZOOM_DEFAULT / _ow_zoom, 0.45, 1.25)
+	var force_hide: bool = _topcam or _hidebanners   # debug camera / --nobanner
+	if _topcam:
+		_composer.hide_clouds()
 	for e in _ow_banners:
-		var world: Vector3 = _composer.anchor_pos(e.site.anchor) + OW_BANNER_LIFT
-		var screen: Vector2 = _camera.unproject_position(world)
-		e.banner.scale = Vector2(bscale, bscale)
-		e.banner.set_base_position(screen - Vector2(e.banner.size.x * 0.5, 0))
+		if force_hide or not _place_world_label(e.banner, _composer.anchor_pos(e.site.anchor) + OW_BANNER_LIFT):
+			e.banner.visible = false
+
+
+# Shared rule for every world-anchored label (the site banners now, any future labels too):
+# position it at the world point's screen spot, scale it with the island zoom so it stays
+# proportional, and HIDE it once zoomed out past OW_LABEL_HIDE_ZOOM (so the map reads clean).
+# Returns false when the label should be hidden (zoomed out). Typing still selects a site.
+func _place_world_label(label: ChoiceBanner, world: Vector3) -> bool:
+	if _camera == null or _ow_zoom >= OW_LABEL_HIDE_ZOOM:
+		return false
+	var s: float = clampf(OW_IDLE_ZOOM_DEFAULT / _ow_zoom, 0.55, 1.25)
+	label.visible = true
+	label.scale = Vector2(s, s)
+	var screen: Vector2 = _camera.unproject_position(world)
+	label.set_base_position(screen - Vector2(label.size.x * 0.5, 0))
+	return true
 
 
 ## Typed site selection: the buffer must stay a prefix of at least one unlocked
