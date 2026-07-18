@@ -25,6 +25,7 @@
 [ext_resource type="PackedScene" uid="uid://ds0y656lq0n1r" path="res://assets/kaykit/hexagon/hex_road_M.gltf" id="23_vrl4c"]
 [ext_resource type="PackedScene" uid="uid://c4vt41b2rx3tv" path="res://assets/kaykit/hexagon/hex_coast_D.gltf" id="24_tpa2k"]
 [ext_resource type="PackedScene" uid="uid://dvr83vgirpye7" path="res://assets/kaykit/hexagon/hex_coast_C.gltf" id="25_ib1cv"]
+[ext_resource type="PackedScene" uid="uid://cjlna6k81om5b" path="res://assets/kaykit/hexagon/hex_coast_A.gltf" id="26_ib1cv"]
 
 [sub_resource type="Curve3D" id="Curve3D_eyldr"]
 _data = {
@@ -611,10 +612,13 @@ transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 27.0000, 0, -15.5880)
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15.0000, 0, 36.3720)
 
 [node name="hex_coast_D2" parent="." unique_id=1085283244 instance=ExtResource("24_tpa2k")]
-transform = Transform3D(-3, 0, 2.6226832e-07, 0, 3, 0, -2.6226832e-07, 0, -3, -3.0000, 0, 15.5880)
+transform = Transform3D(-1.5000002, 0, -2.598076, 0, 3, 0, 2.598076, 0, -1.5000002, -9.0000, 0, 15.5880)
 
 [node name="hex_coast_D3" parent="." unique_id=629765348 instance=ExtResource("24_tpa2k")]
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6.0000, 0, 20.7840)
 
 [node name="hex_coast_C2" parent="." unique_id=1365324372 instance=ExtResource("25_ib1cv")]
 transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.4999999, 0.0000, 0, 20.7840)
+
+[node name="hex_coast_A2" parent="." unique_id=561707793 instance=ExtResource("26_ib1cv")]
+transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.4999999, -3.0000, 0, 15.5880)
