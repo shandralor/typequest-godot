@@ -55,121 +55,121 @@ point_count = 3
 [node name="Node3D" type="Node3D" unique_id=411164511]
 
 [node name="hex_grass3" parent="." unique_id=1133874570 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12, 0, 10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0000, 0, 10.3920)
 
 [node name="hex_grass4" parent="." unique_id=885952721 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -18, 0, 10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -18.0000, 0, 10.3920)
 
 [node name="hex_grass6" parent="." unique_id=1213219270 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -24, 0, 10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -24.0000, 0, 10.3920)
 
 [node name="hex_grass5" parent="." unique_id=1503397947 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -21, 0, 5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -21.0000, 0, 5.1960)
 
 [node name="hex_grass7" parent="." unique_id=446853203 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15, 0, -5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15.0000, 0, -5.1960)
 
 [node name="hex_grass8" parent="." unique_id=149054923 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12, 0, 0)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0000, 0, 0.0000)
 
 [node name="@Node3D@3" parent="." unique_id=1638744239 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6, 0, 10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6.0000, 0, 10.3920)
 
 [node name="@Node3D@4" parent="." unique_id=1329321345 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9, 0, -5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9.0000, 0, -5.1960)
 
 [node name="@Node3D@6" parent="." unique_id=235334676 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, 5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3.0000, 0, 5.1960)
 
 [node name="@Node3D@7" parent="." unique_id=747771255 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0.0000, 0, 10.3920)
 
 [node name="@Node3D@9" parent="." unique_id=350911063 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, -5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3.0000, 0, -5.1960)
 
 [node name="_Node3D_13" parent="." unique_id=1677884160 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9, 0, 15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9.0000, 0, 15.5880)
 
 [node name="@Node3D@13" parent="." unique_id=1941422528 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, -10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0.0000, 0, -10.3920)
 
 [node name="_Node3D_14" parent="." unique_id=1535314658 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6, 0, -10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6.0000, 0, -10.3920)
 
 [node name="@Node3D@15" parent="." unique_id=1972844868 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6, 0, 0)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6.0000, 0, 0.0000)
 
 [node name="@Node3D@18" parent="." unique_id=476734277 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9, 0, -5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9.0000, 0, -5.1960)
 
 [node name="@Node3D@19" parent="." unique_id=1981942579 instance=ExtResource("1_eg8vr")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12, 0, 0)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12.0000, 0, 0.0000)
 
 [node name="@Node3D@22" parent="." unique_id=439028522 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9, 0, 15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9.0000, 0, 15.5880)
 
 [node name="_Node3D_22" parent="." unique_id=1442345887 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15, 0, 15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15.0000, 0, 15.5880)
 
 [node name="_Node3D_23" parent="." unique_id=1495770078 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -21, 0, 15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -21.0000, 0, 15.5880)
 
 [node name="_Node3D_28" parent="." unique_id=133037450 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -27, 0, 15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -27.0000, 0, 15.5880)
 
 [node name="@Node3D@24" parent="." unique_id=118978124 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, 15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3.0000, 0, 15.5880)
 
 [node name="_Node3D_24" parent="." unique_id=1030408114 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 20.784)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0.0000, 0, 20.7840)
 
 [node name="_Node3D_29" parent="." unique_id=973927572 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6, 0, 20.784)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6.0000, 0, 20.7840)
 
 [node name="_Node3D_25" parent="." unique_id=339010094 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6, 0, 20.784)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6.0000, 0, 20.7840)
 
 [node name="_Node3D_26" parent="." unique_id=1220525133 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12, 0, 20.784)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12.0000, 0, 20.7840)
 
 [node name="_Node3D_27" parent="." unique_id=2063796255 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15, 0, 15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15.0000, 0, 15.5880)
 
 [node name="@Node3D@25" parent="." unique_id=1469422080 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12, 0, -10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0000, 0, -10.3920)
 
 [node name="@Node3D@27" parent="." unique_id=4576551 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9, 0, -15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9.0000, 0, -15.5880)
 
 [node name="@Node3D@29" parent="." unique_id=502629712 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, -15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3.0000, 0, -15.5880)
 
 [node name="@Node3D@30" parent="." unique_id=1321230563 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12, 0, 10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12.0000, 0, 10.3920)
 
 [node name="_Node3D_30" parent="." unique_id=1057962900 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18, 0, 10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18.0000, 0, 10.3920)
 
 [node name="@Node3D@31" parent="." unique_id=1507308577 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3, 0, -15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3.0000, 0, -15.5880)
 
 [node name="@Node3D@32" parent="." unique_id=743519379 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15, 0, 5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15.0000, 0, 5.1960)
 
 [node name="_Node3D_32" parent="." unique_id=241930232 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 21, 0, 5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 21.0000, 0, 5.1960)
 
 [node name="@Node3D@33" parent="." unique_id=1158494239 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9, 0, -15.588)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9.0000, 0, -15.5880)
 
 [node name="@Node3D@34" parent="." unique_id=657914539 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12, 0, -10.392)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12.0000, 0, -10.3920)
 
 [node name="@Node3D@35" parent="." unique_id=1099060279 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15, 0, -5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15.0000, 0, -5.1960)
 
 [node name="@Node3D@36" parent="." unique_id=1462600302 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18, 0, 0)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18.0000, 0, 0.0000)
 
 [node name="building_blacksmith_red2" parent="." unique_id=1758352937 instance=ExtResource("3_3m20f")]
 transform = Transform3D(2.5980573, 0, -1.5000331, 0, 3, 0, 1.5000331, 0, 2.5980573, 6, 0, -10.392)
@@ -187,7 +187,7 @@ transform = Transform3D(1.4999671, 0, 2.5980954, 0, 3, 0, -2.5980954, 0, 1.49996
 transform = Transform3D(-2.5980573, 0, 1.5000329, 0, 3, 0, -1.5000329, 0, -2.5980573, -6, 0, 10.392)
 
 [node name="mountain_A_grass_trees2" parent="." unique_id=2001324129 instance=ExtResource("8_lx5m5")]
-transform = Transform3D(2.5980573, 0, 1.5000331, 0, 3, 0, -1.5000331, 0, 2.5980573, -6, 0, -10.392)
+transform = Transform3D(2.5980573, 0, 1.5000331, 0, 3, 0, -1.5000331, 0, 2.5980573, -6.0000, 0, -10.3920)
 
 [node name="building_windmill_red2" parent="." unique_id=166045370 instance=ExtResource("9_v1rnf")]
 transform = Transform3D(-1.8156071, 0, 2.388215, 0, 3, 0, -2.388215, 0, -1.8156071, 2.701477, 0, 15.568693)
@@ -258,31 +258,31 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5566535, 0, 3.2550087)
 transform = Transform3D(-2.7670908, 0, 1.6072363, 0, 3.2, 0, -1.6072363, 0, -2.7670908, -2.2032032, 0.021362305, 3.7673645)
 
 [node name="hex_road_B2" parent="." unique_id=1991468268 instance=ExtResource("18_v1rnf")]
-transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 6, 0, 10.392)
+transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 6.0000, 0, 10.3920)
 
 [node name="hex_road_D2" parent="." unique_id=1588038003 instance=ExtResource("19_xg86a")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 0)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0.0000, 0, 0.0000)
 
 [node name="hex_road_E2" parent="." unique_id=710099444 instance=ExtResource("20_vrl4c")]
-transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.4999999, 3, 0, 5.196)
+transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.4999999, 3.0000, 0, 5.1960)
 
 [node name="hex_road_A2" parent="." unique_id=1762784610 instance=ExtResource("21_p627j")]
-transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 3, 0, -5.196)
+transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 3.0000, 0, -5.1960)
 
 [node name="hex_road_B3" parent="." unique_id=463364569 instance=ExtResource("18_v1rnf")]
-transform = Transform3D(-3, 0, -2.6226832e-07, 0, 3, 0, 2.6226832e-07, 0, -3, -6, 0, 0)
+transform = Transform3D(-3, 0, -2.6226832e-07, 0, 3, 0, 2.6226832e-07, 0, -3, -6.0000, 0, 0.0000)
 
 [node name="hex_road_B4" parent="." unique_id=1809600776 instance=ExtResource("18_v1rnf")]
-transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.4999999, -15, 0, 5.196)
+transform = Transform3D(1.4999999, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, 1.4999999, -15.0000, 0, 5.1960)
 
 [node name="hex_road_B6" parent="." unique_id=1071910827 instance=ExtResource("18_v1rnf")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9, 0, 5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9.0000, 0, 5.1960)
 
 [node name="hex_road_B5" parent="." unique_id=1422964321 instance=ExtResource("18_v1rnf")]
-transform = Transform3D(-1.5000002, 0, 2.598076, 0, 3, 0, -2.598076, 0, -1.5000002, -18, 0, 0)
+transform = Transform3D(-1.5000002, 0, 2.598076, 0, 3, 0, -2.598076, 0, -1.5000002, -18.0000, 0, 0.0000)
 
 [node name="hills_C_trees2" parent="." unique_id=1279146520 instance=ExtResource("22_xg86a")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12, 0, 0)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0000, 0, 0.0000)
 
 [node name="Mist" type="Node3D" parent="." unique_id=101897476]
 visible = false
@@ -324,91 +324,91 @@ transform = Transform3D(2.853268, 0, 0, 0, 1.61, 0, 0, 0, 3.2697494, -15.4, 1.2,
 transform = Transform3D(2.9889026, 0, 0, 0, 1.82, 0, 0, 0, 3.8900008, -12.931366, 1.05, -10.77581)
 
 [node name="hex_road_M2" parent="." unique_id=753307278 instance=ExtResource("23_vrl4c")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9, 0, 5.196)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9.0000, 0, 5.1960)
 
 [node name="hex_road_M3" parent="." unique_id=170453567 instance=ExtResource("23_vrl4c")]
-transform = Transform3D(-1.4999998, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, -1.4999998, 3, 0, 15.588)
+transform = Transform3D(-1.4999998, 0, -2.5980763, 0, 3, 0, 2.5980763, 0, -1.4999998, 3.0000, 0, 15.5880)
 
 [node name="hex_road_M4" parent="." unique_id=649412771 instance=ExtResource("23_vrl4c")]
-transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 6, 0, -10.392)
+transform = Transform3D(1.4999999, 0, 2.5980763, 0, 3, 0, -2.5980763, 0, 1.4999999, 6.0000, 0, -10.3920)
 
 [node name="water_s0" parent="." unique_id=115706644 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15, 0, 25.98)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15.0000, 0, 25.9800)
 
 [node name="water_s1" parent="." unique_id=1172744468 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9, 0, 25.98)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9.0000, 0, 25.9800)
 
 [node name="water_s2" parent="." unique_id=626561358 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, 25.98)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3.0000, 0, 25.9800)
 
 [node name="water_s3" parent="." unique_id=409373781 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3, 0, 25.98)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3.0000, 0, 25.9800)
 
 [node name="water_s4" parent="." unique_id=1083508415 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9, 0, 25.98)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9.0000, 0, 25.9800)
 
 [node name="water_s5" parent="." unique_id=1367137532 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15, 0, 25.98)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15.0000, 0, 25.9800)
 
 [node name="water_s6" parent="." unique_id=1197492883 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -18, 0, 31.176)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -18.0000, 0, 31.1760)
 
 [node name="water_s7" parent="." unique_id=759435173 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12, 0, 31.176)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0000, 0, 31.1760)
 
 [node name="water_s8" parent="." unique_id=469751796 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6, 0, 31.176)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -6.0000, 0, 31.1760)
 
 [node name="water_s9" parent="." unique_id=1375252298 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, 0, 31.176)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0.0000, 0, 31.1760)
 
 [node name="water_s10" parent="." unique_id=19355550 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6, 0, 31.176)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6.0000, 0, 31.1760)
 
 [node name="water_s11" parent="." unique_id=1841233742 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12, 0, 31.176)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 12.0000, 0, 31.1760)
 
 [node name="water_s12" parent="." unique_id=942505776 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18, 0, 31.176)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18.0000, 0, 31.1760)
 
 [node name="water_s13" parent="." unique_id=1235712179 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15, 0, 36.372)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -15.0000, 0, 36.3720)
 
 [node name="water_s14" parent="." unique_id=1201439529 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9, 0, 36.372)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -9.0000, 0, 36.3720)
 
 [node name="water_s15" parent="." unique_id=2071498135 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, 36.372)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3.0000, 0, 36.3720)
 
 [node name="water_s16" parent="." unique_id=1168629404 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3, 0, 36.372)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 3.0000, 0, 36.3720)
 
 [node name="water_s17" parent="." unique_id=1923194142 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9, 0, 36.372)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 9.0000, 0, 36.3720)
 
 [node name="water_s19" parent="." unique_id=1489957894 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -35.964966, 0, 20.796684)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -36.0000, 0, 20.7840)
 
 [node name="water_s20" parent="." unique_id=141167976 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -29.964966, 0, 20.796684)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -30.0000, 0, 20.7840)
 
 [node name="water_s21" parent="." unique_id=1458935432 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -23.964966, 0, 20.796684)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -24.0000, 0, 20.7840)
 
 [node name="water_s22" parent="." unique_id=1477491106 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -17.964966, 0, 20.796684)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -18.0000, 0, 20.7840)
 
 [node name="water_s23" parent="." unique_id=784097665 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -11.964966, 0, 20.796684)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -12.0000, 0, 20.7840)
 
 [node name="water_s26" parent="." unique_id=377497040 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -32.899353, 0, 25.93377)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -33.0000, 0, 25.9800)
 
 [node name="water_s27" parent="." unique_id=1510370526 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -26.899353, 0, 25.93377)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -27.0000, 0, 25.9800)
 
 [node name="water_s28" parent="." unique_id=1716509919 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -20.899353, 0, 25.93377)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -21.0000, 0, 25.9800)
 
 [node name="water_s18" parent="." unique_id=156147225 instance=ExtResource("2_gum3g")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15, 0, 36.372)
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 15.0000, 0, 36.3720)
