@@ -122,8 +122,11 @@ var _ow_walk = null              # { legs: [{route, reverse}], leg, dist, site }
 var _ow_at := "hub"              # anchor the hero stands at on the island
 var _walk_capture := false       # debug: hold at the route end instead of starting the scenario
 var _topcam := false             # debug: overhead overworld camera for tracing roads
+var _hidebanners := false        # debug: hide site banners (judge clouds/tiles cleanly)
 var _ow_mouse_active := false    # true once the mouse has moved (enables map panning)
 const OW_PAN_RANGE := 15.0       # how far the mouse can push the idle island view
+const OW_IDLE_BIAS := 5.0        # shift the idle focus south so the far windmill is in frame
+const OW_IDLE_ZOOM := 1.2        # zoom out a touch so the whole island fits
 const OW_WALK_SPEED := 4.5
 const OW_BANNER_LIFT := Vector3(0, 7.2, 0)   # banner floats this far above a site (into the sky, off the hexes)
 
@@ -151,6 +154,7 @@ func _ready() -> void:
 		AppProgress.set_flag_transient(flag_arg)
 	_build_layout()
 	_topcam = "--topcam" in args
+	_hidebanners = "--nobanner" in args
 	_demo = "--demo" in args
 	# debug: walk a single overworld route hub->site and HOLD at the end (no scenario cut)
 	# so the drift at the arrival can be inspected. e.g. --walk=bos --burst
@@ -1278,10 +1282,11 @@ func _camera_rig() -> Dictionary:
 		if _topcam:
 			# debug: straight overhead, for tracing the road layout to fit routes
 			return {"pos": look2 + Vector3(0, 60, 0.01), "look": look2, "fov": 42.0}
-		# idle picker: keep the set's iso angle but centre on the island, and let the
-		# mouse PAN the view so a growing/revealed map can be inspected without walking
-		var iso: Vector3 = ow2.pos - look2
-		var focus: Vector3 = look2 + _ow_pan_offset()
+		# idle picker: keep the set's iso angle, centre on the island (biased south so the
+		# far windmill is in frame), zoom out a touch to fit, and let the MOUSE PAN the view
+		# so a growing/revealed map can be inspected without walking
+		var iso: Vector3 = (ow2.pos - look2) * OW_IDLE_ZOOM
+		var focus: Vector3 = look2 + Vector3(0, 0, OW_IDLE_BIAS) + _ow_pan_offset()
 		return {"pos": focus + iso, "look": focus, "fov": ow2.get("fov", 30.0)}
 	var lead: Vector3 = _composer.lead_position()
 	if _composer.is_house_scene():
@@ -1783,10 +1788,11 @@ func _set_top_prompt(text: String) -> void:
 func _position_ow_banners() -> void:
 	if _camera == null:
 		return
-	if _topcam:
+	if _topcam or _hidebanners:
 		for e in _ow_banners:
-			e.banner.visible = false   # debug trace: keep the road map clear
-		_composer.hide_clouds()
+			e.banner.visible = false   # debug: keep the map/clouds clear for inspection
+		if _topcam:
+			_composer.hide_clouds()
 		return
 	for e in _ow_banners:
 		var world: Vector3 = _composer.anchor_pos(e.site.anchor) + OW_BANNER_LIFT

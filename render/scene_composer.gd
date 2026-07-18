@@ -209,6 +209,9 @@ func hide_clouds() -> void:
 const MIST_RADIUS := 21.5    # ring sits past the coast so it never swallows edge buildings
 const MIST_COUNT := 34       # puffs around the ring (denser to stay continuous at radius)
 const MIST_Y := 0.9          # low, hugging the sea
+# open-sea gaps in the ring (angle centre, half-width, radians) -- e.g. the windmill sits
+# on a south cliff over open sea, so no mist there. angle 0 = +x/E, PI/2 = +z/S, PI = W.
+const MIST_GAPS := [{"center": 1.40, "half": 0.6}]
 
 
 ## Ring the island coast with a soft mist bank so anything beyond the current tiles
@@ -219,6 +222,13 @@ func _spawn_mist() -> void:
 	var rng := _rng()
 	for i in range(MIST_COUNT):
 		var a := TAU * float(i) / float(MIST_COUNT)
+		var in_gap := false
+		for g in MIST_GAPS:
+			if absf(wrapf(a - g.center, -PI, PI)) <= g.half:
+				in_gap = true
+				break
+		if in_gap:
+			continue   # open sea here (e.g. the windmill cliff) -- no mist
 		var puff := SceneKit.instance_path(CLOUD_MODEL)
 		if puff == null:
 			continue
