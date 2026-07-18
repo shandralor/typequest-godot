@@ -12,6 +12,7 @@ const CONFIG_PATH := "user://settings.cfg"
 static var _intro_seen := false
 static var _flags: Dictionary = {}   # name -> bool, persisted under [flags]
 static var _stats: Dictionary = {}   # name -> int, cumulative, persisted under [stats]
+static var _settings: Dictionary = {}   # name -> float, per-machine prefs under [settings]
 static var _loaded := false
 
 
@@ -90,6 +91,26 @@ static func add_stat_transient(name: String, delta: int) -> void:
 	_stats[name] = int(_stats.get(name, 0)) + delta
 
 
+# --- per-machine preferences (floats) -----------------------------------------
+# Non-progress knobs the player/owner tunes (e.g. the overworld camera zoom). Kept in
+# [settings], NOT wiped by reset_all (like the keyboard layout -- it is a preference).
+
+static func get_setting(name: String, default_value: float) -> float:
+	_ensure_loaded()
+	return float(_settings.get(name, default_value))
+
+
+static func set_setting(name: String, v: float) -> void:
+	_ensure_loaded()
+	if _settings.has(name) and is_equal_approx(_settings[name], v):
+		return   # no change -> no write
+	_settings[name] = v
+	var cf := ConfigFile.new()
+	cf.load(CONFIG_PATH)   # keep other sections intact
+	cf.set_value("settings", name, v)
+	cf.save(CONFIG_PATH)
+
+
 static func set_intro_seen(v: bool) -> void:
 	_intro_seen = v
 	_loaded = true
@@ -119,3 +140,6 @@ static func _ensure_loaded() -> void:
 		if cf.has_section("stats"):
 			for k in cf.get_section_keys("stats"):
 				_stats[k] = int(cf.get_value("stats", k, 0))
+		if cf.has_section("settings"):
+			for k in cf.get_section_keys("settings"):
+				_settings[k] = float(cf.get_value("settings", k, 0.0))

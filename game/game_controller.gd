@@ -126,7 +126,11 @@ var _hidebanners := false        # debug: hide site banners (judge clouds/tiles 
 var _ow_mouse_active := false    # true once the mouse has moved (enables map panning)
 const OW_PAN_RANGE := 15.0       # how far the mouse can push the idle island view
 const OW_IDLE_BIAS := 5.0        # shift the idle focus south so the far windmill is in frame
-const OW_IDLE_ZOOM := 1.2        # zoom out a touch so the whole island fits
+const OW_IDLE_ZOOM_DEFAULT := 1.5   # default island pull-back (bigger = more zoomed out)
+const OW_ZOOM_MIN := 0.8
+const OW_ZOOM_MAX := 3.0
+const OW_ZOOM_STEP := 0.12
+var _ow_zoom := OW_IDLE_ZOOM_DEFAULT   # mouse-wheel adjustable + persisted (settings.cfg)
 const OW_WALK_SPEED := 4.5
 const OW_BANNER_LIFT := Vector3(0, 7.2, 0)   # banner floats this far above a site (into the sky, off the hexes)
 
@@ -153,6 +157,7 @@ func _ready() -> void:
 	if flag_arg != "":
 		AppProgress.set_flag_transient(flag_arg)
 	_build_layout()
+	_ow_zoom = AppProgress.get_setting("ow_zoom", OW_IDLE_ZOOM_DEFAULT)   # restore saved island zoom
 	_topcam = "--topcam" in args
 	_hidebanners = "--nobanner" in args
 	_demo = "--demo" in args
@@ -549,6 +554,14 @@ func _resolve_ending() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		_ow_mouse_active = true   # enable island panning once the cursor moves
+	# mouse wheel zooms the island (idle overworld only); persisted so it sticks
+	if event is InputEventMouseButton and event.pressed and _app_state == AppState.OVERWORLD:
+		var b: int = (event as InputEventMouseButton).button_index
+		if b == MOUSE_BUTTON_WHEEL_UP or b == MOUSE_BUTTON_WHEEL_DOWN:
+			var d: float = -OW_ZOOM_STEP if b == MOUSE_BUTTON_WHEEL_UP else OW_ZOOM_STEP
+			_ow_zoom = clampf(_ow_zoom + d, OW_ZOOM_MIN, OW_ZOOM_MAX)
+			AppProgress.set_setting("ow_zoom", _ow_zoom)
+			return
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	if event.keycode == KEY_ESCAPE:
@@ -1285,7 +1298,7 @@ func _camera_rig() -> Dictionary:
 		# idle picker: keep the set's iso angle, centre on the island (biased south so the
 		# far windmill is in frame), zoom out a touch to fit, and let the MOUSE PAN the view
 		# so a growing/revealed map can be inspected without walking
-		var iso: Vector3 = (ow2.pos - look2) * OW_IDLE_ZOOM
+		var iso: Vector3 = (ow2.pos - look2) * _ow_zoom
 		var focus: Vector3 = look2 + Vector3(0, 0, OW_IDLE_BIAS) + _ow_pan_offset()
 		return {"pos": focus + iso, "look": focus, "fov": ow2.get("fov", 30.0)}
 	var lead: Vector3 = _composer.lead_position()
