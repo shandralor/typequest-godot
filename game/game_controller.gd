@@ -965,11 +965,11 @@ func _update_house(delta: float) -> bool:
 	var from: Vector3 = _house_way[s - 1] if s > 0 else _house_bed
 	var to: Vector3 = _house_way[s]
 	# LOOK beat (a repeated waypoint -> zero-length leg): he has arrived; HOLD him exactly at
-	# the rack/key and only keep facing. Without this the smoothed move keeps catching up from
-	# the previous leg, so he visibly drifts while typing "hier hangt je .." / "komt later ..".
+	# the rack/key and only keep facing. Return FALSE so the caller plays IDLE, not the walk
+	# clip -- otherwise he walks in place while typing "hier hangt je .." / "komt later ..".
 	if s > 0 and from.distance_to(to) < 0.01:
 		_composer.house_move_to(to, 0.0, _composer.lead_yaw())
-		return true
+		return false
 	var prog := _house_sentence_progress(s)
 	var walk := from.lerp(to, prog)
 	var wy: float = lerpf(lie, stand, prog) if s == 0 else stand   # step down off the bed
