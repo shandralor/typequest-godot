@@ -13,6 +13,7 @@ static var _intro_seen := false
 static var _flags: Dictionary = {}   # name -> bool, persisted under [flags]
 static var _stats: Dictionary = {}   # name -> int, cumulative, persisted under [stats]
 static var _settings: Dictionary = {}   # name -> float, per-machine prefs under [settings]
+static var _profile: Dictionary = {}    # name -> String, profile choices under [profile] (A5 seed)
 static var _loaded := false
 
 
@@ -111,6 +112,26 @@ static func set_setting(name: String, v: float) -> void:
 	cf.save(CONFIG_PATH)
 
 
+# --- profile choices (strings; A5 profile seed) -------------------------------
+# Non-identifying selections that define the profile (e.g. the chosen hero character).
+# Kept in [profile], NOT wiped by reset_all (a preference, like the keyboard layout).
+
+static func get_choice(name: String, default_value: String) -> String:
+	_ensure_loaded()
+	return String(_profile.get(name, default_value))
+
+
+static func set_choice(name: String, v: String) -> void:
+	_ensure_loaded()
+	if String(_profile.get(name, "")) == v:
+		return   # no change -> no write
+	_profile[name] = v
+	var cf := ConfigFile.new()
+	cf.load(CONFIG_PATH)   # keep other sections intact
+	cf.set_value("profile", name, v)
+	cf.save(CONFIG_PATH)
+
+
 static func set_intro_seen(v: bool) -> void:
 	_intro_seen = v
 	_loaded = true
@@ -143,3 +164,6 @@ static func _ensure_loaded() -> void:
 		if cf.has_section("settings"):
 			for k in cf.get_section_keys("settings"):
 				_settings[k] = float(cf.get_value("settings", k, 0.0))
+		if cf.has_section("profile"):
+			for k in cf.get_section_keys("profile"):
+				_profile[k] = String(cf.get_value("profile", k, ""))

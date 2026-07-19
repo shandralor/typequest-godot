@@ -46,7 +46,10 @@ var _oneshot := false   # a one-shot (e.g. PickUp) is playing -- do not let walk
 # cycle grafted in from the Movement rig (same Rig_Medium skeleton, so the tracks
 # resolve). `anim` is then driven by the SceneActivity state.
 func build() -> Node3D:
-	var hero := SceneKit.instance_path(HERO_MODEL)
+	# the character MESH is the chosen hero (all share Rig_Medium, so the grafted clips
+	# below resolve for any of them); the animation glbs stay fixed.
+	var model: String = Characters.model_for(AppProgress.get_choice("hero", Characters.DEFAULT_ID))
+	var hero := SceneKit.instance_path(model)
 	if hero == null:
 		node = SceneKit.red_placeholder("hero")
 		return node
