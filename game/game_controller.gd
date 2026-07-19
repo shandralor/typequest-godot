@@ -30,7 +30,7 @@ const Objectives = preload("res://content/objectives.gd")
 const MusicPlayerScript = preload("res://audio/music_player.gd")
 
 enum Phase { PROSE, CHOICE, PAUSE, WIN, DONE }
-enum AppState { MAIN, OVERWORLD, PLAYING }
+enum AppState { MAIN, OVERWORLD, PLAYING, PICKER }
 
 const VIEW_HEIGHT := 680   # top: the 3D scene gets its OWN area (a SubViewport)
 const BAND_HEIGHT := 400   # bottom: the UI band (680 + 400 = 1080 window)
@@ -105,6 +105,8 @@ var _menu_screen: Control
 var _band: Control
 var _viewport_container: SubViewportContainer
 var _app_state := AppState.MAIN
+var _picker_index := 0
+var _picker_after := Callable()   # what to do once a hero is confirmed
 var _music
 var _top_bar: NinePatchRect   # small brown bar at the top (the overworld prompt)
 var _top_prompt: Label
@@ -158,6 +160,9 @@ func _ready() -> void:
 	var flag_arg := _arg_value(args, "--flag")   # debug: set an unlock flag transiently
 	if flag_arg != "":
 		AppProgress.set_flag_transient(flag_arg)
+	var hero_arg := _arg_value(args, "--hero")   # debug: preview a chosen hero (e.g. --hero=witch)
+	if hero_arg != "":
+		AppProgress.set_choice("hero", hero_arg)
 	_build_layout()
 	_ow_zoom = AppProgress.get_setting("ow_zoom", OW_IDLE_ZOOM_DEFAULT)   # restore saved island zoom
 	_ow_label_hide = AppProgress.get_setting("ow_label_hide", OW_LABEL_HIDE_DEFAULT)   # configurable
@@ -215,6 +220,8 @@ func _ready() -> void:
 			_compose_backdrop()
 			_show_main_menu()
 			_show_dev()   # debug: jump straight to the dev screen
+		elif _arg_value(args, "--menu") == "picker":
+			_show_character_picker(_show_main_menu)   # debug: jump to the hero picker
 		else:
 			_compose_backdrop()
 			_show_main_menu()
@@ -425,6 +432,16 @@ func _make_label(size: int, align: int) -> Label:
 
 # --- beat lifecycle ----------------------------------------------------------
 
+## Resolve a typed-prose key with the {held} subject token filled by the CHOSEN hero's noun
+## ("de {held} stapt..." -> "de heks stapt..."). Every typing target routes through here so
+## the child types the character they picked; prose without the token is unaffected.
+func _held_prose(key: String) -> String:
+	var noun: String = _locale.resolve("hero." + AppProgress.get_choice("hero", Characters.DEFAULT_ID))
+	if noun == "":   # unknown/stale id -> fall back to the default hero, never leak "{held}"
+		noun = _locale.resolve("hero." + Characters.DEFAULT_ID)
+	return _locale.resolve_held(key, noun)
+
+
 func _enter_node() -> void:
 	var node = _run.current()
 	_clear_banners()
@@ -436,10 +453,10 @@ func _enter_node() -> void:
 	_set_top_prompt(_locale.resolve(node.narration_key))   # instruction in the top bar
 	if node.prerevealed:
 		_prose = TypingState.new("")
-		_type_along.set_plain(_locale.resolve(node.prose_key))
+		_type_along.set_plain(_held_prose(node.prose_key))
 		_begin_choice()
 	else:
-		_prose = TypingState.new(_locale.resolve(node.prose_key))
+		_prose = TypingState.new(_held_prose(node.prose_key))
 		_phase = Phase.PROSE
 		_type_along.set_prose(_prose.target, 0)
 		_highlight_prose()
@@ -557,6 +574,23 @@ func _resolve_ending() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		_ow_mouse_active = true   # enable island panning once the cursor moves
+	# character picker: cycle with arrows / scroll, Enter to choose
+	if _app_state == AppState.PICKER:
+		if event is InputEventMouseButton and event.pressed:
+			var mb: int = (event as InputEventMouseButton).button_index
+			if mb == MOUSE_BUTTON_WHEEL_UP:
+				_picker_step(-1)
+			elif mb == MOUSE_BUTTON_WHEEL_DOWN:
+				_picker_step(1)
+		elif event is InputEventKey and event.pressed and not event.echo:
+			match (event as InputEventKey).keycode:
+				KEY_LEFT, KEY_UP:
+					_picker_step(-1)
+				KEY_RIGHT, KEY_DOWN:
+					_picker_step(1)
+				KEY_ENTER, KEY_KP_ENTER:
+					_picker_confirm()
+		return
 	# mouse wheel zooms the island (idle overworld only); persisted so it sticks
 	if event is InputEventMouseButton and event.pressed and _app_state == AppState.OVERWORLD:
 		var b: int = (event as InputEventMouseButton).button_index
@@ -663,7 +697,7 @@ func _show_banners() -> void:
 	var prerevealed: bool = node != null and node.prerevealed
 	_type_along.visible = prerevealed
 	if prerevealed:
-		_type_along.set_plain(_locale.resolve(node.prose_key))
+		_type_along.set_plain(_held_prose(node.prose_key))
 	_clear_banners()
 	var single := _candidates.size() == 1
 	var cx := 960.0
@@ -1277,6 +1311,9 @@ func _pan_curve(v: float) -> float:
 
 
 func _camera_rig() -> Dictionary:
+	if _app_state == AppState.PICKER:
+		# a close, slightly-raised hero shot for the turntable (hero stands at origin)
+		return {"pos": Vector3(0, 2.0, 5.2), "look": Vector3(0, 1.1, 0), "fov": 40.0}
 	if _app_state == AppState.MAIN and _composer.is_overworld():
 		# the main menu shows the island full-screen, zoomed out so the title floats
 		# above it -- pull the camera back from the overworld framing and widen a touch
@@ -1492,18 +1529,77 @@ func _show_main_menu() -> void:
 	_update_camera(0.0, true)
 	_show_menu("TypeQuest", [
 		{"text": "Start", "on_press": _show_overworld_from_menu},
+		{"text": "Kies je held", "on_press": _pick_hero_from_menu},
 		{"text": "Opties", "on_press": _show_options},
 		{"text": "Stoppen", "on_press": _quit_app, "secondary": true},
 	])
 
 
+func _pick_hero_from_menu() -> void:
+	_show_character_picker(_show_main_menu)   # re-pick, then back to the menu
+
+
 func _show_overworld_from_menu() -> void:
+	# first-run: pick a hero before anything else, then flow into the intro/island
+	if AppProgress.get_choice("hero_chosen", "") == "":
+		_show_character_picker(_after_hero_chosen)
+	else:
+		_after_hero_chosen()
+
+
+func _after_hero_chosen() -> void:
 	# the wake-up intro plays once (unless --intro forces a replay); afterwards Start
 	# goes straight to the island
 	if _force_intro or not AppProgress.intro_seen():
 		_start_intro()
 	else:
 		_show_overworld(_ow_at)
+
+
+# --- character picker (rotating carousel: arrows/scroll to cycle, Enter to choose) -----
+
+func _show_character_picker(after: Callable) -> void:
+	_app_state = AppState.PICKER
+	_picker_after = after
+	_music.play_context("menu")
+	_clear_menu()
+	_clear_ow_banners()
+	_set_playing_ui(false)
+	_set_menu_fullscreen(false)
+	if _back_button != null:
+		_back_button.visible = false
+	var cur: String = AppProgress.get_choice("hero", Characters.DEFAULT_ID)
+	_picker_index = 0
+	var roster: Array = Characters.all()
+	for i in roster.size():
+		if roster[i].id == cur:
+			_picker_index = i
+			break
+	_update_picker()
+
+
+func _update_picker() -> void:
+	var c: Dictionary = Characters.all()[_picker_index]
+	_composer.compose_character(c.id)
+	_update_camera(0.0, true)
+	_set_top_prompt("Kies je held:  %s\n(  <  pijltjes  >   --  Enter om te kiezen  )" % c.label)
+
+
+func _picker_step(dir: int) -> void:
+	var n: int = Characters.all().size()
+	_picker_index = (_picker_index + dir + n) % n
+	_update_picker()
+
+
+func _picker_confirm() -> void:
+	AppProgress.set_choice("hero", Characters.all()[_picker_index].id)
+	AppProgress.set_choice("hero_chosen", "1")
+	var after: Callable = _picker_after
+	_picker_after = Callable()
+	if after.is_valid():
+		after.call()
+	else:
+		_show_main_menu()
 
 
 # --- intro (wake up, walk out of the house, into the world) -------------------

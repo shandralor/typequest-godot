@@ -57,6 +57,7 @@ var _is_overworld := false
 var _clouds: Array = []   # [{ node: Node3D, speed: float }] drifting sky clouds
 var _mist: Array = []      # [{ node, angle, base_y, mat }] coastal mist ring (masks unexplored)
 var _mist_t := 0.0         # accumulator for the mist's gentle bob
+var _char_preview: Node3D = null   # the slowly-spinning hero on the character-picker stage
 var _windmill_fan: Node3D   # the overworld windmill sail, spun in _process
 var _is_archery_scene := false
 var _is_house_scene := false   # the intro interior (wake up, walk out the door)
@@ -117,10 +118,28 @@ func compose(descriptor, variant: String = "") -> void:
 		set_lead_animation(false)
 
 
+## Character-picker stage: a small grass disc with the chosen hero standing on it, idling,
+## and slowly turning like a turntable so the child can see it from all sides.
+func compose_character(char_id: String) -> void:
+	_clear()
+	_hero = HeroRig.new()
+	_apply_mood("day", false)
+	var ground := SceneKit.make_ground(Vector2(9, 9), SceneKit.C_GRASS)
+	add_child(ground)
+	var hero := _hero.build(Characters.model_for(char_id))
+	hero.name = "Actor_hero"
+	add_child(hero)
+	_hero.set_walking(false)
+	hero.position = Vector3.ZERO
+	_hero.play_loop(HeroRig.HERO_IDLE)
+	_char_preview = hero
+
+
 func _clear() -> void:
 	for c in get_children():
 		c.queue_free()
 	_location = null
+	_char_preview = null
 	_hero = null
 	_chest_lid = null
 	_is_work_scene = false
@@ -301,6 +320,8 @@ func _process(delta: float) -> void:
 				mn.position.y = m.base_y + sin(_mist_t * 0.6 + m.phase) * 0.2  # gentle bob
 	if _windmill_fan != null:
 		_windmill_fan.rotate_object_local(Vector3(0, 0, 1), 0.9 * delta)   # sails turn
+	if _char_preview != null:
+		_char_preview.rotate_y(0.7 * delta)   # picker turntable
 
 
 func is_overworld() -> bool:

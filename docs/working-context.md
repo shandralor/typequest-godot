@@ -3,6 +3,49 @@
 Update this at the end of every session: current state + next step. This plus
 CLAUDE.md is how another device picks up the work (git pull -> read these).
 
+## Character choice + variant prose ({held} subject token) (2026-07-19)
+
+Character choice (roadmap G1/G2) + the dynamic-subject-noun design knot are now BUILT.
+
+- **Roster** (`game/characters.gd`): 6 heroes -- Knight, Barbarian, Mage, Ranger, Rogue,
+  Witch. Each = { id, model, label }. All share KayKit Rig_Medium so the grafted
+  animation set resolves for every one. The 15 other purchased hero models were removed
+  from `assets/kaykit/heroes/` (only Witch.glb stays there; the rest are Adventurers).
+- **Picker** (game_controller PICKER state + `_show_character_picker`): a turntable
+  carousel, arrows/scroll to spin, Enter to choose. Shown first-run (before the intro)
+  and from a "Kies je held" main-menu entry. Choice persists via AppProgress [profile]
+  hero / hero_chosen. Debug: `--menu=picker`, and `--hero=<id>` to preview any hero.
+- **Variant prose (the A4/band knot, RESOLVED via the template-hash approach)**: typed
+  prose now carries a **{held} token** for the hero subject ("de {held} stapt..."). The
+  subject NOUN per hero lives in the LOCALE (`nl_be.gd` "hero.<id>" keys: ridder,
+  barbaar, magier [not "tovenaar", 8>7], jager, dief, heks) -- band-1 nl-BE content.
+  - Runtime: `game_controller._held_prose(key)` fills {held} with the chosen hero's noun
+    at every typing target (`resolve_held` on the locale).
+  - **Safety hash is over the TEMPLATE** (with the token). The 8 affected hashes were
+    recomputed as the sign-off for this deliberate authored change (start a69bd641, grot
+    07954cfa, naGrot 68a2ee24, brug 360036c6, schat 4c6d879d, slijpen e7256a7d,
+    boogschieten 03a2617e, thuiskeuze 8f19de48). NOTE: the noun set is NOT hash-guarded
+    (only the template is) -- it is instead guarded by the validator checking every
+    variant is band-1 + typeable. Adding a hero = add a "hero.<id>" noun; the validator
+    re-checks all variants automatically.
+  - `logic/content_validator.gd` + `tests/test_layouts.gd` are now VARIANT-AWARE: they
+    substitute every hero noun (from `locale.hero_nouns()`) and check band + typeability
+    on each concrete string, never the raw braces. Validator stays pure (nouns come from
+    the locale, not game/Characters).
+  - `test_menu_flow.gd` marks hero_chosen transiently (new `AppProgress.set_choice_transient`)
+    so Start -> overworld skips the first-run picker.
+- All 7 headless tests PASS. Screenshots were NOT captured this session: a windowed
+  `--shot` run cannot grab the GPU while the Godot EDITOR is open (it holds the Vulkan
+  device) -- close the editor, then `--menu=picker --shot` / `--hero=witch --scenario=band1
+  --type=45 --shot` writes res://.shots/game.png. The witch-on-island render was verified
+  visually in the prior session.
+- NOT committed yet (owner verifies each change; owner's overworld.tscn/forge.tscn editor
+  edits + adventurers *.import reimport churn are intermixed in the tree -- commit only the
+  feature files + the heroes/ deletions, leave the owner's tscn work).
+- NEXT: character-specific GEAR (a Mage holding a sword reads odd -- G1 gear sets); read-
+  aloud strings still say "De ridder" (not typed, so free -- adapt later for flavour);
+  Gem_Large crystal; then Wave 2 surfaces (quest log, progress screen).
+
 ## Editable scenes (HOW TO TWEAK VISUALS)
 
 Static scenery is authored as **editable scenes** in `scenes/sets/` (owner rule:

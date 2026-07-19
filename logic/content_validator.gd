@@ -63,10 +63,13 @@ static func _check_node(problems: Array, graph, locale, band_spec: Dictionary, n
 	else:
 		problems.append("node '%s' has no safety record for locale %s" % [id, locale_id])
 
-	# band limits + layout typeability on resolved prose
-	_check_limits(problems, id, prose, band_spec)
-	if not Layout.supports_text(prose):
-		problems.append("node '%s' prose has characters not typeable on the layout" % id)
+	# band limits + layout typeability. When the prose carries the {held} subject token,
+	# check EVERY hero-noun substitution (so all variants are band-1 + typeable), never the
+	# raw template -- the braces are not typeable and the token hides the real word length.
+	for variant in _prose_variants(prose, locale):
+		_check_limits(problems, id, variant, band_spec)
+		if not Layout.supports_text(variant):
+			problems.append("node '%s' prose has characters not typeable on the layout" % id)
 
 	# scene ids resolve
 	if node.scene != null:
@@ -76,6 +79,18 @@ static func _check_node(problems: Array, graph, locale, band_spec: Dictionary, n
 static func _check_key(problems: Array, locale, key: String, id: String, role: String) -> void:
 	if key == "" or not locale.has_key(key):
 		problems.append("node '%s' %s '%s' does not resolve in the locale" % [id, role, key])
+
+
+## The concrete prose strings a child could actually type. No {held} token -> just the
+## prose itself; with the token -> one string per hero noun (the locale owns the nouns, so
+## the validator stays pure -- no game/ dependency).
+static func _prose_variants(prose: String, locale) -> Array:
+	if not prose.contains("{held}"):
+		return [prose]
+	var variants: Array = []
+	for noun in locale.hero_nouns():
+		variants.append(prose.replace("{held}", noun))
+	return variants
 
 
 static func _check_limits(problems: Array, id: String, prose: String, band_spec: Dictionary) -> void:

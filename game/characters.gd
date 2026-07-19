@@ -11,28 +11,17 @@ const ADV := "res://assets/kaykit/adventurers/"
 const HERO := "res://assets/kaykit/heroes/"
 
 
+## The TYPED subject word per hero (the {held} token in prose) lives in the LOCALE, keyed
+## "hero.<id>" -- it is nl-BE content, band-1 safe, and the content validator checks every
+## variant. `label` is the read-aloud picker name.
 static func all() -> Array:
 	return [
-		{"id": "knight",      "model": ADV + "Knight.glb",         "label": "Ridder"},
-		{"id": "barbarian",   "model": ADV + "Barbarian.glb",      "label": "Barbaar"},
-		{"id": "mage",        "model": ADV + "Mage.glb",           "label": "Tovenaar"},
-		{"id": "ranger",      "model": ADV + "Ranger.glb",         "label": "Jager"},
-		{"id": "rogue",       "model": ADV + "Rogue.glb",          "label": "Dief"},
-		{"id": "blackknight", "model": HERO + "BlackKnight.glb",   "label": "Zwarte ridder"},
-		{"id": "cleric",      "model": HERO + "Cleric.glb",        "label": "Priester"},
-		{"id": "lorekeeper",  "model": HERO + "Lorekeeper.glb",    "label": "Wijze"},
-		{"id": "witch",       "model": HERO + "Witch.glb",         "label": "Heks"},
-		{"id": "vampire",     "model": HERO + "Vampire.glb",       "label": "Vampier"},
-		{"id": "tiefling",    "model": HERO + "Tiefling.glb",      "label": "Duiveltje"},
-		{"id": "orc",         "model": HERO + "OrcBrute.glb",      "label": "Ork"},
-		{"id": "plant",       "model": HERO + "PlantWarrior.glb",  "label": "Groenling"},
-		{"id": "avian",       "model": HERO + "AvianSwordsman.glb","label": "Vogelridder"},
-		{"id": "magicalgirl", "model": HERO + "MagicalGirl.glb",   "label": "Tovermeisje"},
-		{"id": "monster",     "model": HERO + "Monstrosity.glb",   "label": "Monster"},
-		{"id": "golem",       "model": HERO + "FrostGolem.glb",    "label": "IJsgolem"},
-		{"id": "caveman",     "model": HERO + "Caveman.glb",       "label": "Holbewoner"},
-		{"id": "farmer",      "model": HERO + "Farmer_A.glb",      "label": "Boer"},
-		{"id": "hoarder",     "model": HERO + "Hoarder.glb",       "label": "Verzamelaar"},
+		{"id": "knight",    "model": ADV + "Knight.glb",    "label": "Ridder"},
+		{"id": "barbarian", "model": ADV + "Barbarian.glb", "label": "Barbaar"},
+		{"id": "mage",      "model": ADV + "Mage.glb",      "label": "Tovenaar"},
+		{"id": "ranger",    "model": ADV + "Ranger.glb",    "label": "Jager"},
+		{"id": "rogue",     "model": ADV + "Rogue.glb",     "label": "Dief"},
+		{"id": "witch",     "model": HERO + "Witch.glb",    "label": "Heks"},
 	]
 
 

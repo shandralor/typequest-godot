@@ -71,9 +71,17 @@ func _check_content_typeable(layouts: Dictionary) -> void:
 	for graph in [Band1Arc.build(), GrindArc.build(), ArcheryArc.build(), IntroArc.build(), HomeArc.build()]:
 		for id in graph.nodes:
 			var prose: String = locale.resolve(graph.nodes[id].prose_key)
-			for name in layouts:
-				if not layouts[name].supports_text(prose):
-					_bad("%s: node '%s' prose not typeable" % [name, id])
+			# the {held} subject token stands in for a chosen hero; check EVERY hero-noun
+			# substitution (the concrete strings a child types), never the raw braces.
+			var variants: Array = [prose]
+			if prose.contains("{held}"):
+				variants = []
+				for noun in locale.hero_nouns():
+					variants.append(prose.replace("{held}", noun))
+			for variant in variants:
+				for name in layouts:
+					if not layouts[name].supports_text(variant):
+						_bad("%s: node '%s' prose not typeable" % [name, id])
 
 
 func _bad(msg: String) -> void:

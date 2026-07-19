@@ -28,7 +28,7 @@ static func build() -> StoryGraph:
 		StoryGraph.Choice.new("word.zwaard", "neem_zwaard", "right"),
 		StoryGraph.Choice.new("word.boog", "neem_boog", "left"),
 	]
-	keuze.safety = _safety("fnv1a:9c08a087")
+	keuze.safety = _safety("fnv1a:8f19de48")
 	keuze.scene = _house_scene()
 	g.add_node(keuze)
 

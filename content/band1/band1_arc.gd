@@ -34,7 +34,7 @@ static func build() -> StoryGraph:
 	start.prose_key = "start.prose"
 	start.narration_key = "start.narration"
 	start.choices = [StoryGraph.Choice.new("word.verder", "kruispunt", "forward")]
-	start.safety = _nl_be_safety("fnv1a:dff7ec80")
+	start.safety = _nl_be_safety("fnv1a:a69bd641")
 	start.scene = Scenes.start()
 	g.add_node(start)
 
@@ -68,7 +68,7 @@ static func build() -> StoryGraph:
 	# he sees the skeleton AND grabs a glowing crystal before fleeing: met_skeleton unlocks
 	# training + the bridge; has_crystal is the key that later lowers the drawbridge.
 	grot.sets_flag = "met_skeleton has_crystal"
-	grot.safety = _nl_be_safety("fnv1a:3778a255")
+	grot.safety = _nl_be_safety("fnv1a:07954cfa")
 	grot.scene = Scenes.grot()
 	g.add_node(grot)
 
@@ -79,7 +79,7 @@ static func build() -> StoryGraph:
 	na_grot.narration_key = "naGrot.narration"
 	na_grot.prerevealed = true
 	na_grot.choices = [StoryGraph.Choice.new("word.brug", "brug", "right")]
-	na_grot.safety = _nl_be_safety("fnv1a:859459c1")
+	na_grot.safety = _nl_be_safety("fnv1a:68a2ee24")
 	na_grot.scene = Scenes.na_grot()
 	g.add_node(na_grot)
 
@@ -93,7 +93,7 @@ static func build() -> StoryGraph:
 	brug.ending = "win"
 	brug.exit_walk = true
 	brug.sets_flag = "crossed_bridge"   # lifts the coastal mist over the region past the bridge
-	brug.safety = _nl_be_safety("fnv1a:a585a423")
+	brug.safety = _nl_be_safety("fnv1a:360036c6")
 	brug.scene = Scenes.brug()
 	g.add_node(brug)
 
@@ -104,7 +104,7 @@ static func build() -> StoryGraph:
 	schat.narration_key = "schat.narration"
 	schat.ending = "win"
 	schat.win_key = "schat.win"
-	schat.safety = _nl_be_safety("fnv1a:1f2d5082")
+	schat.safety = _nl_be_safety("fnv1a:4c6d879d")
 	schat.scene = Scenes.schat()
 	g.add_node(schat)
 

@@ -132,6 +132,13 @@ static func set_choice(name: String, v: String) -> void:
 	cf.save(CONFIG_PATH)
 
 
+## Set a profile choice WITHOUT persisting -- for tests, so they do not depend on (or
+## mutate) the machine's saved [profile] (e.g. mark a hero chosen without a disk write).
+static func set_choice_transient(name: String, v: String) -> void:
+	_ensure_loaded()
+	_profile[name] = v
+
+
 static func set_intro_seen(v: bool) -> void:
 	_intro_seen = v
 	_loaded = true

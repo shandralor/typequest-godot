@@ -45,10 +45,11 @@ var _oneshot := false   # a one-shot (e.g. PickUp) is playing -- do not let walk
 # Builds the animated hero (B3): mesh + idle from the General rig, with the walk
 # cycle grafted in from the Movement rig (same Rig_Medium skeleton, so the tracks
 # resolve). `anim` is then driven by the SceneActivity state.
-func build() -> Node3D:
+func build(model_override: String = "") -> Node3D:
 	# the character MESH is the chosen hero (all share Rig_Medium, so the grafted clips
-	# below resolve for any of them); the animation glbs stay fixed.
-	var model: String = Characters.model_for(AppProgress.get_choice("hero", Characters.DEFAULT_ID))
+	# below resolve for any of them); the animation glbs stay fixed. `model_override` lets
+	# the picker preview a specific hero without changing the saved choice.
+	var model: String = model_override if model_override != "" else Characters.model_for(AppProgress.get_choice("hero", Characters.DEFAULT_ID))
 	var hero := SceneKit.instance_path(model)
 	if hero == null:
 		node = SceneKit.red_placeholder("hero")
