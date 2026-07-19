@@ -16,6 +16,10 @@
 [ext_resource type="PackedScene" uid="uid://b6r4brnyw7ggr" path="res://assets/kaykit/forest_nature/Tree_2_D_Color1.gltf" id="14_ka4xk"]
 [ext_resource type="PackedScene" uid="uid://f7sexa8nrcm5" path="res://assets/kaykit/fantasy_weapons_bits/bow_A_withString.gltf" id="15_qtuwl"]
 [ext_resource type="PackedScene" uid="uid://svvmfrs45arj" path="res://assets/kaykit/fantasy_weapons_bits/bow_B_withString.gltf" id="16_uxnme"]
+[ext_resource type="PackedScene" uid="uid://cf3ap4mqj3nga" path="res://assets/kaykit/fantasy_weapons_bits/axe_C.gltf" id="17_axe"]
+[ext_resource type="PackedScene" uid="uid://4m1g6ddsmlda" path="res://assets/kaykit/fantasy_weapons_bits/staff_A.gltf" id="18_staf"]
+[ext_resource type="PackedScene" uid="uid://cy53gu16s7pk5" path="res://assets/kaykit/fantasy_weapons_bits/dagger_A.gltf" id="19_dolk"]
+[ext_resource type="PackedScene" uid="uid://bhyrvkobybr12" path="res://assets/kaykit/adventurers/crossbow_1handed.gltf" id="20_xbow"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_field"]
 albedo_color = Color(0.32, 0.47, 0.24, 1)
@@ -192,6 +196,7 @@ transform = Transform3D(-0.023414694, 0, 0.9997258, 0, 1, 0, -0.9997258, 0, -0.0
 
 [node name="shelf_sword" parent="." unique_id=411000004 instance=ExtResource("9_swrd")]
 transform = Transform3D(-0.033219803, -0.0428293, -1.9992656, 1.9997241, -0.0007114886, -0.033212185, 0, -1.9995413, 0.04283521, 5.9, 2.4915533, 1.9812158)
+visible = false
 
 [node name="cabinet_key" parent="." unique_id=411000005 instance=ExtResource("10_key")]
 transform = Transform3D(0.089232646, 0, 0.99601084, 0, 1, 0, -0.99601084, 0, 0.089232646, -5.4453187, 2.233201, -1.1236377)
@@ -216,3 +221,24 @@ transform = Transform3D(0.31276578, 0.9498303, 0, -0.8000158, 0.26343396, -0.539
 
 [node name="bow_B_withString2" parent="." unique_id=1685285488 instance=ExtResource("16_uxnme")]
 transform = Transform3D(0.095161915, 0.9924672, -0.07715632, -0.7548563, 0.021415802, -0.65554047, -0.64895004, 0.12062442, 0.75120807, -5.789095, 2.1526093, -5.6229086)
+
+[node name="Weapons" type="Node3D" parent="." unique_id=411000100]
+
+[node name="weapon_knight" parent="Weapons" unique_id=411000101 groups=["weapon_knight"] instance=ExtResource("9_swrd")]
+transform = Transform3D(-0.033219803, -0.0428293, -1.9992656, 1.9997241, -0.0007114886, -0.033212185, 0, -1.9995413, 0.04283521, 5.9, 2.4915533, 1.9812158)
+visible = false
+
+[node name="weapon_barbarian" parent="Weapons" unique_id=411000102 groups=["weapon_barbarian"] instance=ExtResource("17_axe")]
+transform = Transform3D(-0.033219803, -0.042829305, -1.9992656, 0.19066916, -1.9904993, 0.03947335, -1.9906135, -0.18994348, 0.037145108, 5.9, 2.4915533, 2.0727096)
+visible = false
+
+[node name="weapon_mage" parent="Weapons" unique_id=411000103 groups=["weapon_mage", "weapon_witch"] instance=ExtResource("18_staf")]
+transform = Transform3D(0.040531065, 0.5426088, -1.9245605, 0.24468915, 1.9091433, 0.54341525, 1.9845619, -0.24647209, -0.02769544, 5.4057393, 2.1000094, 2.150836)
+visible = false
+
+[node name="weapon_ranger" parent="Weapons" unique_id=411000104 groups=["weapon_ranger"] instance=ExtResource("20_xbow")]
+transform = Transform3D(0.009869688, 1.9219778, 0.55308586, -0.010217916, -0.55303687, 1.9219899, 1.9999493, -0.012310354, 0.007090166, 5.2293916, 2.3081512, 2.1371632)
+
+[node name="weapon_rogue" parent="Weapons" unique_id=411000105 groups=["weapon_rogue"] instance=ExtResource("19_dolk")]
+transform = Transform3D(-0.033219803, -0.0428293, -1.9992656, 1.9997241, -0.0007114886, -0.033212185, 0, -1.9995413, 0.04283521, 5.9, 2.4915533, 1.9812158)
+visible = false

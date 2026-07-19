@@ -22,6 +22,14 @@ const CATALOG := {
 	"hero.ranger": "jager",
 	"hero.rogue": "dief",
 	"hero.witch": "heks",
+	# primary weapon per hero (the {wapen} token) -- same band-1 rules; the intro names it and
+	# the house wall shows the matching prop (composer picks the chosen hero's weapon node).
+	"wapen.knight": "zwaard",
+	"wapen.barbarian": "bijl",
+	"wapen.mage": "staf",
+	"wapen.ranger": "kruisboog",
+	"wapen.rogue": "dolk",
+	"wapen.witch": "staf",
 	# prose (typed to reveal the beat)
 	"start.prose": "de kleine {held} wandelt door het bos. hij volgt het pad en stapt verder.",
 	"kruispunt.prose": "het pad gaat twee kanten op. links gaapt een zwarte grot. rechts staat een oude brug.",
@@ -49,7 +57,7 @@ const CATALOG := {
 	"boog.win": "Raak! Recht in de roos.",
 	# intro -- short words teach the core move: type a sentence, the knight does the deed
 	# (4 sentences = 4 legs: rise, fetch the sword, fetch the key, leave)
-	"intro.prose": "hij loopt naar de muur. hier hangt zijn zwaard. de sleutel heeft hij later nodig. nu gaat hij naar de deur.",
+	"intro.prose": "het is morgen. de {held} loopt naar het rek aan de muur. hier hangt je {wapen}. aan de andere kant hangt de sleutel. deze komt later nog van pas. je maakt een ommetje in het bos.",
 	"intro.narration": "Typ de woorden.",
 	"intro.win": "Hij maakt een ommetje in het bos!",
 	# home -- a RETURN visit: walk in, then CHOOSE which gear to collect (campaign v2)
@@ -86,7 +94,7 @@ const CATALOG := {
 # the typing starts (game_controller plays them). Not typed -- so free capitals and
 # punctuation, no band/hash/layout constraints. EDIT / ADD / REORDER these freely.
 const INTRO_BRIEFING := [
-	"Dit is jouw ridder.",
+	"Dit is jouw {held}.",
 	"Hij zal bewegen als je de woorden typt die je onderaan ziet verschijnen.",
 	"Volg zo goed mogelijk de aanwijzingen voor het plaatsen van je vingers.",
 ]
@@ -100,23 +108,35 @@ func resolve(key: String) -> String:
 	return CATALOG.get(key, "")
 
 
-## Every hero subject noun (the "hero.*" keys) -- the content validator substitutes each
-## into every {held} prose so ALL variants are proven band-1 + typeable, not just one.
-func hero_nouns() -> Array:
-	var nouns: Array = []
+## The hero ids the prose tokens can resolve for (derived from the "hero.*" keys, so the
+## roster of typable heroes lives entirely in this content axis -- the validator stays pure).
+func hero_ids() -> Array:
+	var ids: Array = []
 	for k in CATALOG:
 		if (k as String).begins_with("hero."):
-			nouns.append(CATALOG[k])
-	return nouns
+			ids.append((k as String).substr(5))
+	return ids
 
 
-## Resolve a prose key AND fill the {held} token with a specific hero noun (runtime typing
-## target). `noun` empty -> the raw template (with the token) is returned.
-func resolve_held(key: String, noun: String) -> String:
-	var text: String = CATALOG.get(key, "")
-	if noun == "":
-		return text
-	return text.replace("{held}", noun)
+## Fill the per-hero prose tokens for ONE hero: {held} -> subject noun (hero.<id>),
+## {wapen} -> primary weapon (wapen.<id>). Used at runtime for the chosen hero and by the
+## validator/tests for every hero. An unknown token key resolves to "" (caught by the checks).
+func fill_tokens(text: String, hero_id: String) -> String:
+	text = text.replace("{held}", CATALOG.get("hero." + hero_id, ""))
+	text = text.replace("{wapen}", CATALOG.get("wapen." + hero_id, ""))
+	return text
+
+
+## Every concrete string a child could type from a template: no token -> [text]; with a
+## {held}/{wapen} token -> one fully-filled string PER hero (the tokens are correlated, so
+## this is per-hero, not a cross-product). The content validator + layout test check each.
+func hero_prose_variants(text: String) -> Array:
+	if not (text.contains("{held}") or text.contains("{wapen}")):
+		return [text]
+	var out: Array = []
+	for id in hero_ids():
+		out.append(fill_tokens(text, id))
+	return out
 
 
 func has_key(key: String) -> bool:

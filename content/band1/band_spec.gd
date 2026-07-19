@@ -15,7 +15,8 @@ const SPEC := {
 	"minAccuracy": 0.8,
 	"timePressure": false,
 	"narrationAutoAdvance": false,
-	"maxWordLen": 7,           # per-band balance point, not a universal rule (A2)
+	"maxWordLen": 9,           # per-band balance point, not a universal rule (A2); raised
+	                           # 7 -> 9 so weapon nouns like "kruisboog" (crossbow) are typeable
 	"maxSentenceLen": 10,
 	"vocab": "familiar",
 	"repetition": "high",

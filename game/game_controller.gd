@@ -432,14 +432,21 @@ func _make_label(size: int, align: int) -> Label:
 
 # --- beat lifecycle ----------------------------------------------------------
 
-## Resolve a typed-prose key with the {held} subject token filled by the CHOSEN hero's noun
-## ("de {held} stapt..." -> "de heks stapt..."). Every typing target routes through here so
-## the child types the character they picked; prose without the token is unaffected.
+## Resolve a typed-prose key with the per-hero tokens ({held} subject, {wapen} weapon) filled
+## for the CHOSEN hero ("de {held} pakt je {wapen}" -> "de heks pakt je bezem"). Every typing
+## target routes through here so the child types the character they picked; token-free prose
+## is unaffected.
 func _held_prose(key: String) -> String:
-	var noun: String = _locale.resolve("hero." + AppProgress.get_choice("hero", Characters.DEFAULT_ID))
-	if noun == "":   # unknown/stale id -> fall back to the default hero, never leak "{held}"
-		noun = _locale.resolve("hero." + Characters.DEFAULT_ID)
-	return _locale.resolve_held(key, noun)
+	return _locale.fill_tokens(_locale.resolve(key), _chosen_hero_id())
+
+
+## The saved hero id, guarded: an unknown/stale id falls back to the default so a token
+## never leaks and the wall weapon always resolves.
+func _chosen_hero_id() -> String:
+	var hero_id: String = AppProgress.get_choice("hero", Characters.DEFAULT_ID)
+	if _locale.resolve("hero." + hero_id) == "":
+		hero_id = Characters.DEFAULT_ID
+	return hero_id
 
 
 func _enter_node() -> void:
@@ -448,6 +455,8 @@ func _enter_node() -> void:
 	_bridge_lower = {}
 	_type_along.visible = true
 	_composer.compose(node.scene, node.id)
+	if _in_intro:
+		_composer.show_hero_weapon(_chosen_hero_id())   # the chosen hero's weapon on the wall rack
 	_update_camera(0.0, true)   # snap to the new scene's framing
 	_activity.reset()
 	_set_top_prompt(_locale.resolve(node.narration_key))   # instruction in the top bar
@@ -463,10 +472,10 @@ func _enter_node() -> void:
 		if _composer.is_archery_scene():
 			_setup_archery(_prose.target)
 		if _composer.is_house_scene():
-			_apply_house_locks()                     # ghost bows until their flag is set
 			if _in_intro:
-				_setup_house(_prose.target)         # rise + fetch quest (the intro)
+				_setup_house(_prose.target)         # a morning walk; only the chosen weapon shows
 			else:
+				_apply_house_locks()                # ghost bows until their flag is set (fetch visit)
 				_setup_house_visit(_prose.target)   # a return visit: just walk in
 		if node.exit_walk:
 			_setup_crossing()                        # the crystal drops the drawbridge first
@@ -901,9 +910,9 @@ func _archery_check_fire() -> void:
 
 # --- house intro: one sentence = one leg of a waypoint walk -------------------
 
-# Map each sentence to a leg + its destination waypoint. Sentence 0 rises in place at
-# path_near; sentences 1.. walk to sword_point, key_point, then the door (path_far).
-# The sword is fetched at the end of leg 1, the key at the end of leg 2.
+# Map each sentence to a leg + its destination waypoint (see the `stops` list below). The
+# intro is a MORNING WALK: he steps off the bed, walks to the weapon rack and LOOKS at his
+# weapon, then to the key wall and looks at the key, then out the door -- no pickups (H1).
 func _setup_house(prose: String) -> void:
 	_house_span = _sentence_spans(prose)
 	_house_pickups = []
@@ -920,9 +929,16 @@ func _setup_house(prose: String) -> void:
 	# child types -- the walk then tracks the typing with no rushed catch-up
 	_house_getup_started = true
 	_composer.house_stand_up()
-	# END position per typed sentence: walk FORWARD a few steps off the bed, THEN angle to
-	# the sword wall, then the keys, then the door
-	var stops := ["forward_point", "sword_point", "key_point", "path_far"]
+	# END position per typed sentence, one waypoint per sentence of intro.prose (6 beats):
+	#   0 "het is morgen"            -> step off the bed (forward_point), the wake-up
+	#   1 "loopt naar het rek"       -> the weapon rack on the wall (sword_point)
+	#   2 "hier hangt je {wapen}"    -> STAY at the rack (zero-length leg = a LOOK beat)
+	#   3 "aan de andere kant ... sleutel" -> the key wall (key_point)
+	#   4 "deze komt later van pas"  -> STAY at the key (a LOOK beat)
+	#   5 "nu is het tijd ... dag"   -> the door (path_far); it opens at the win
+	# A repeated waypoint makes a zero-length leg, which _house_walk_yaw keeps facing -- so he
+	# pauses and looks while the child types the "hier hangt / komt later" lines.
+	var stops := ["forward_point", "sword_point", "sword_point", "key_point", "key_point", "path_far"]
 	_house_way = []
 	for i in _house_span.size():
 		var anchor: String = stops[i] if i < stops.size() else "path_far"
@@ -948,6 +964,12 @@ func _update_house(delta: float) -> bool:
 	var s := _house_current_sentence()
 	var from: Vector3 = _house_way[s - 1] if s > 0 else _house_bed
 	var to: Vector3 = _house_way[s]
+	# LOOK beat (a repeated waypoint -> zero-length leg): he has arrived; HOLD him exactly at
+	# the rack/key and only keep facing. Without this the smoothed move keeps catching up from
+	# the previous leg, so he visibly drifts while typing "hier hangt je .." / "komt later ..".
+	if s > 0 and from.distance_to(to) < 0.01:
+		_composer.house_move_to(to, 0.0, _composer.lead_yaw())
+		return true
 	var prog := _house_sentence_progress(s)
 	var walk := from.lerp(to, prog)
 	var wy: float = lerpf(lie, stand, prog) if s == 0 else stand   # step down off the bed
@@ -1642,7 +1664,7 @@ func _begin_briefing() -> void:
 	for i in lines.size():
 		if i > 0:
 			full += "\n"
-		full += str(lines[i])
+		full += _locale.fill_tokens(str(lines[i]), _chosen_hero_id())   # name the CHOSEN hero
 		ends.append(full.length())
 	_brief_label.text = full
 	_brief_label.visible_ratio = 0.0

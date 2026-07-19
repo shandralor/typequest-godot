@@ -108,6 +108,8 @@ func compose(descriptor, variant: String = "") -> void:
 	if _is_archery_scene:
 		_build_archery_target()
 	set_lead_progress(0.0)
+	if _is_house_scene:
+		_hide_hero_weapons()   # the per-hero rack weapons stay hidden until the intro reveals one
 	if _is_house_scene and _hero.walking:
 		# the INTRO (a walking scene starting at path_near) sinks him for the getting-up
 		# rise; a RETURN visit (starts at path_far/door, not walking) just stands there
@@ -242,6 +244,39 @@ func _is_mist_node(node: Node) -> bool:
 		if String(g).begins_with("reveal_"):
 			return true
 	return false
+
+
+# --- per-hero primary weapons (house "Weapons" node) -------------------------
+# The house authors one weapon per hero under the "Weapons" node, each in a group
+# weapon_<id>. All are hidden on compose; the intro reveals ONLY the chosen hero's, so
+# "hier hangt je {wapen}" shows the matching prop on the wall rack.
+
+func _hide_hero_weapons() -> void:
+	if _location == null:
+		return
+	for n in _location.find_children("*", "Node3D", true, false):
+		for g in n.get_groups():
+			if String(g).begins_with("weapon_"):
+				(n as Node3D).visible = false
+				break
+
+
+## Reveal the chosen hero's primary weapon on the rack; hide the standalone fetch sword so
+## the knight is not shown two swords. Idempotent -- call after composing a house scene.
+func show_hero_weapon(hero_id: String) -> void:
+	if _location == null:
+		return
+	_hide_hero_weapons()
+	var want := "weapon_" + hero_id
+	for n in _location.find_children("*", "Node3D", true, false):
+		if n.is_in_group(want):
+			(n as Node3D).visible = true
+	# hide EVERY other wall weapon (the fetch sword + bows + the decorative sword+shield) so the
+	# intro shows ONLY the chosen hero's weapon on the rack -- no stray sword/bow for any hero.
+	for other in ["shelf_sword", "sword_shield_gold2", "bow_A_withString2", "bow_B_withString2"]:
+		var sw := _location.find_child(other, true, false) as Node3D
+		if sw != null:
+			sw.visible = false
 
 
 func _register_authored_mist() -> void:

@@ -81,16 +81,11 @@ static func _check_key(problems: Array, locale, key: String, id: String, role: S
 		problems.append("node '%s' %s '%s' does not resolve in the locale" % [id, role, key])
 
 
-## The concrete prose strings a child could actually type. No {held} token -> just the
-## prose itself; with the token -> one string per hero noun (the locale owns the nouns, so
-## the validator stays pure -- no game/ dependency).
+## The concrete prose strings a child could actually type. No {held}/{wapen} token -> just
+## the prose itself; with a token -> one fully-filled string per hero (the locale owns the
+## per-hero words and the substitution, so the validator stays pure -- no game/ dependency).
 static func _prose_variants(prose: String, locale) -> Array:
-	if not prose.contains("{held}"):
-		return [prose]
-	var variants: Array = []
-	for noun in locale.hero_nouns():
-		variants.append(prose.replace("{held}", noun))
-	return variants
+	return locale.hero_prose_variants(prose)
 
 
 static func _check_limits(problems: Array, id: String, prose: String, band_spec: Dictionary) -> void:
