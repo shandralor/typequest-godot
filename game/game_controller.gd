@@ -96,7 +96,8 @@ var _banners: Array = []
 var _walkoff: Dictionary = {}
 var _bridge_lower: Dictionary = {}
 const CHOICE_WALK_DUR := 1.4
-const EXIT_WALK_DUR := 2.6      # stroll off the far path at the end of a crossing
+const EXIT_WALK_DUR := 2.6      # stroll off the far path at the end of a crossing (minimum)
+const EXIT_WALK_SPEED := 1.3    # units/sec -- a farther cross_exit = a longer walk, same pace
 const EXIT_FADE_DUR := 0.8      # soft fade-to-black on either side of the island swap
 const BRIDGE_LOWER_DUR := 1.6   # the crystal-lowering drop before the crossing walk
 var _ui: Control
@@ -457,7 +458,7 @@ func _enter_node() -> void:
 	_composer.compose(node.scene, node.id)
 	if _in_intro:
 		_composer.show_hero_weapon(_chosen_hero_id())   # the chosen hero's weapon on the wall rack
-	_update_camera(0.0, true)   # snap to the new scene's framing
+	_update_camera(0.0, not _composer.did_restage())   # snap on a fresh scene; ease a continuous re-stage
 	_activity.reset()
 	_set_top_prompt(_locale.resolve(node.narration_key))   # instruction in the top bar
 	if node.prerevealed:
@@ -692,7 +693,17 @@ func _choice_char(c: String) -> void:
 		var hint: String = _picked.choice.hint
 		_run.choose(_locale.resolve(_picked.choice.word_key))
 		if _composer.has_fork() and (hint == "left" or hint == "right"):
-			_begin_choice_walk(_composer.fork_pos(hint))   # stroll toward cave/bridge first
+			# If the chosen path continues on the SAME set as a walking scene (the bridge
+			# crossing), stroll ALL the way to where it begins so the next beat re-stages with
+			# no teleport. Otherwise (the cave -> dungeon) amble toward the landmark, then cut.
+			var tgt = _run.graph.get_node_by_id(_picked.choice.target)
+			var same_set_walk: bool = tgt != null and tgt.scene != null \
+				and tgt.scene.set_name == _composer.current_set() \
+				and tgt.scene.path == SceneDescriptor.PATH_STRAIGHT
+			if same_set_walk:
+				_begin_choice_walk(_composer.anchor_pos(tgt.scene.travel_from), true)
+			else:
+				_begin_choice_walk(_composer.fork_pos(hint), false)
 		else:
 			_enter_node()
 
@@ -742,13 +753,15 @@ func _update_banner_highlight() -> void:
 
 
 # Walk the hero a couple of steps toward the chosen fork path, then cut to the scene.
-func _begin_choice_walk(dest: Vector3) -> void:
+func _begin_choice_walk(dest: Vector3, full: bool = false) -> void:
 	_clear_banners()
 	_set_top_prompt("")
 	_keyboard.highlight("")
 	_phase = Phase.PAUSE
 	var from: Vector3 = _composer.lead_position()
-	_walkoff = {"from": from, "to": from.lerp(dest, 0.5), "t": 0.0, "dur": CHOICE_WALK_DUR}
+	# `full` walks all the way to dest (a same-set crossing entry); otherwise a couple of
+	# steps toward the landmark before the cut.
+	_walkoff = {"from": from, "to": from.lerp(dest, 1.0 if full else 0.5), "t": 0.0, "dur": CHOICE_WALK_DUR}
 	var d: Vector3 = dest - from
 	if d.length() > 0.001:
 		_composer.set_lead_facing(atan2(d.x, d.z))
@@ -771,7 +784,10 @@ func _begin_exit_walk() -> void:
 	var d: Vector3 = dest - from
 	if d.length() > 0.001:
 		_composer.set_lead_facing(atan2(d.x, d.z))
-	_walkoff = {"from": from, "to": dest, "t": 0.0, "dur": EXIT_WALK_DUR, "on_done": _fade_to_overworld}
+	# duration scales with distance so moving cross_exit farther makes him walk FARTHER at the
+	# same pace (not a faster stroll)
+	var dur: float = maxf(EXIT_WALK_DUR, d.length() / EXIT_WALK_SPEED)
+	_walkoff = {"from": from, "to": dest, "t": 0.0, "dur": dur, "on_done": _fade_to_overworld}
 	_composer.set_lead_animation(true)
 
 
@@ -1206,10 +1222,10 @@ func _process(delta: float) -> void:
 			_composer.set_lead_animation(_phase == Phase.PROSE and in_walk and act == SceneActivity.Activity.MOVING)
 	elif _composer.is_walking():
 		_composer.set_lead_progress(p)
-		# Facing and the walk clip are separate: face the travel direction once
-		# underway and KEEP facing it on pauses (only the fresh idle pose, no typing
-		# yet, faces the camera); but play the idle clip when momentarily paused.
-		_composer.set_lead_moving(p > 0.02)
+		# Face the travel direction the WHOLE time on a walking scene -- including before the
+		# first keystroke -- so he never spawns facing the camera and then spins to the path
+		# (janky). The walk vs idle CLIP is separate (driven below by typing activity).
+		_composer.set_lead_moving(true)
 		if drive_anim:
 			_composer.set_lead_animation(_phase == Phase.PROSE and act == SceneActivity.Activity.MOVING)
 	elif _composer.is_archery_scene():

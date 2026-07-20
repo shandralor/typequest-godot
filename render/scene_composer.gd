@@ -40,9 +40,14 @@ const TARGET_RADIUS := 1.0   # crosshair/arrow spread on the target face (world 
 var _variant := ""
 var _location: Node3D
 var _hero: HeroRig
+var _current_set := ""             # the set_name currently instanced (for the continuous re-stage)
+var _did_restage := false          # last compose() re-staged in place instead of rebuilding
 var _cave_pos := Vector3.ZERO
 var _bridge_pos := Vector3.ZERO
 var _bridge_leaf: Node3D          # the liftable drawbridge deck (raised until the crystal lowers it)
+var _has_bridge_lift := false     # bridge_near/bridge_far markers present -> lift the hero onto the deck
+var _bridge_near := Vector3.ZERO  # near edge of the walkable deck (at deck height)
+var _bridge_far := Vector3.ZERO   # far edge of the walkable deck (at deck height)
 var _crystal_socket: Node3D       # the pedestal anchor where the crystal is placed
 var _bridge_raised_x := 0.0       # the leaf's authored raised angle (lerp target 0 = flat)
 var _has_landmarks := false
@@ -69,6 +74,12 @@ var _target_face := Vector3.ZERO   # world centre of the target face
 
 
 func compose(descriptor, variant: String = "") -> void:
+	var set_name: String = _set_for(descriptor)
+	if _can_restage(descriptor, set_name):
+		_did_restage = true
+		_restage(descriptor, variant)   # continuous beat: keep the set + hero, no rebuild/cut
+		return
+	_did_restage = false
 	_clear()
 	_hero = HeroRig.new()
 	_variant = variant
@@ -80,8 +91,9 @@ func compose(descriptor, variant: String = "") -> void:
 	_is_work_scene = descriptor.location == "forge"
 	_is_archery_scene = descriptor.location == "archery_range"
 	_is_house_scene = descriptor.location == "house"
-	_location = _instance_set(_set_for(descriptor))
+	_location = _instance_set(set_name)
 	_location.name = "Location"
+	_current_set = set_name
 	add_child(_location)
 	_bridge_leaf = _location.find_child("bridge_leaf", true, false) as Node3D
 	_crystal_socket = _location.get_node_or_null(^"crystal_socket") as Node3D
@@ -99,7 +111,12 @@ func compose(descriptor, variant: String = "") -> void:
 			node.position = _hero.travel_start if _hero.walking else _anchor_position(actor.anchor)
 		else:
 			node.position = _anchor_position(actor.anchor)
-		SceneKit.face(node, actor.facing)
+		# a walking lead faces its travel direction from the FIRST frame (no initial turn from
+		# camera-facing, which reads as janky); everyone else uses the authored facing
+		if is_lead and _hero.walking:
+			_hero.set_moving(true)
+		else:
+			SceneKit.face(node, actor.facing)
 	for prop in descriptor.props:
 		_place_prop(prop)
 	if _is_work_scene:
@@ -141,6 +158,7 @@ func _clear() -> void:
 	for c in get_children():
 		c.queue_free()
 	_location = null
+	_current_set = ""
 	_char_preview = null
 	_hero = null
 	_chest_lid = null
@@ -156,12 +174,67 @@ func _clear() -> void:
 	_is_archery_scene = false
 	_is_house_scene = false
 	_bridge_leaf = null
+	_has_bridge_lift = false
 	_crystal_socket = null
 	_bridge_raised_x = 0.0
 	_house_door = null
 	_target = null
 	_crosshair = null
 	_bow = null
+
+
+## Whether the last compose() re-staged in place (same set, no rebuild) -- the controller
+## eases the camera instead of snapping so the beat flows continuously.
+func did_restage() -> bool:
+	return _did_restage
+
+
+## A continuous beat can re-stage on the CURRENT set instead of rebuilding: same set already
+## instanced, a live hero, and a SIMPLE hero-only forest beat (no props, no extra actors, not
+## a special staged scene). Guarded tight so only start -> kruispunt (and kin) qualify.
+func _can_restage(descriptor, set_name: String) -> bool:
+	if not descriptor.continuous:
+		return false
+	if _location == null or _hero == null or not _hero.has():
+		return false
+	if set_name != _current_set or _is_overworld:
+		return false
+	if not descriptor.props.is_empty() or descriptor.actors.size() != 1:
+		return false
+	if not (descriptor.actors[0].asset in LEAD_ASSETS):
+		return false
+	return not (descriptor.location in ["forge", "archery_range", "house"])
+
+
+## Re-stage a continuous beat: KEEP the instanced set and the hero (no flicker); drop only the
+## dynamic layer (old mood lights, any props) and re-apply the new beat's mood + hero pose.
+func _restage(descriptor, variant: String) -> void:
+	for c in get_children():
+		if c == _location or c == _hero.node:
+			continue
+		c.queue_free()   # old Mood/Sun + any props; the set + hero stay
+	_variant = variant
+	_has_landmarks = descriptor.path == SceneDescriptor.PATH_FORK
+	_needs_bloom = false
+	_is_work_scene = false
+	_is_archery_scene = false
+	_is_house_scene = false
+	_read_anchors(descriptor)
+	_apply_mood(descriptor.mood)
+	var actor = descriptor.actors[0]
+	_hero.set_walking(_is_walking_scene(descriptor, actor))
+	_hero.node.position = _hero.travel_start if _hero.walking else _anchor_position(actor.anchor)
+	if _hero.walking:
+		_hero.set_moving(true)   # face travel direction from frame 1
+	else:
+		SceneKit.face(_hero.node, actor.facing)
+	set_lead_progress(0.0)
+	set_lead_animation(false)
+
+
+## The set currently instanced (for the controller to detect a same-set continuous choice).
+func current_set() -> String:
+	return _current_set
 
 
 ## Compose the overworld island: the editable set (scenes/sets/overworld.tscn) plus
@@ -391,6 +464,27 @@ func overworld_cam() -> Dictionary:
 ## Directly place the lead (overworld travel along a route).
 func set_lead_position(pos: Vector3) -> void:
 	_hero.set_position(pos)
+	_apply_bridge_lift()
+
+
+# Raise the hero onto the bridge deck while his z is within the deck span (with short ramps at
+# each edge so he steps up/down, not pops). No markers -> a no-op (ground-level walk).
+func _apply_bridge_lift() -> void:
+	if not _has_bridge_lift or _hero.node == null:
+		return
+	var pos: Vector3 = _hero.node.position
+	var hz: float = maxf(_bridge_near.z, _bridge_far.z)   # near edge (higher z)
+	var lz: float = minf(_bridge_near.z, _bridge_far.z)   # far edge (lower z)
+	var deck: float = maxf(_bridge_near.y, _bridge_far.y)
+	var ramp := 0.9
+	var y := 0.0
+	if pos.z <= hz and pos.z >= lz:
+		y = deck                                          # on the deck
+	elif pos.z > hz and pos.z < hz + ramp:
+		y = lerpf(0.0, deck, (hz + ramp - pos.z) / ramp)  # ramp up onto the near edge
+	elif pos.z < lz and pos.z > lz - ramp:
+		y = lerpf(deck, 0.0, (lz - pos.z) / ramp)         # ramp down off the far edge
+	_hero.node.position = Vector3(pos.x, y, pos.z)
 
 
 ## Cross-fade the hero between its walk and idle clips (B3 in-place aliveness).
@@ -586,6 +680,7 @@ func anchor_pos(name: String) -> Vector3:
 ## Place the lead along the travel path by progress in [0, 1] (walking scenes only).
 func set_lead_progress(p: float) -> void:
 	_hero.set_progress(p)
+	_apply_bridge_lift()
 
 
 ## Orient the walking lead: facing travel direction while moving, camera at rest.
@@ -673,10 +768,18 @@ func _instance_set(set_name: String) -> Node3D:
 
 
 func _read_anchors(descriptor) -> void:
-	_hero.set_travel(_anchor_position("path_near"), _anchor_position("path_far"))
+	_hero.set_travel(_anchor_position(descriptor.travel_from), _anchor_position(descriptor.travel_to))
 	if descriptor.path == SceneDescriptor.PATH_FORK:
 		_cave_pos = _anchor_position("far_left")
 		_bridge_pos = _anchor_position("far_right")
+	# optional bridge-deck lift: if the owner placed bridge_near/bridge_far on the deck, the
+	# hero rises onto them while his z is within the span (else he walks through the raised deck)
+	var bn := _location.get_node_or_null(^"bridge_near")
+	var bf := _location.get_node_or_null(^"bridge_far")
+	_has_bridge_lift = bn is Node3D and bf is Node3D
+	if _has_bridge_lift:
+		_bridge_near = (bn as Node3D).position
+		_bridge_far = (bf as Node3D).position
 
 
 # Builds the STATIC staging for a set. Public so the bake tool can generate the

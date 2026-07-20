@@ -22,6 +22,13 @@ var props: Array = []   # Array[PropPlacement]
 var camera: String = ""
 var path: String = PATH_STRAIGHT  # presentation hint only, never affects logic
 var set_name: String = ""  # explicit editable-set override (else the composer picks by heuristic)
+# walking-scene travel endpoints (anchor names). Default is the full path_near -> path_far
+# run; a scene can point them elsewhere (e.g. the opening walk goes an approach -> the fork).
+var travel_from: String = "path_near"
+var travel_to: String = "path_far"
+# presentation hint: this beat CONTINUES the previous one on the same set -- the composer may
+# re-stage in place (keep the set + hero, no rebuild) instead of cutting. Never affects logic.
+var continuous: bool = false
 
 
 ## A placed actor. `facing` is one of camera|left|right|away.
