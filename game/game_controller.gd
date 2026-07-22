@@ -484,6 +484,12 @@ func _enter_node() -> void:
 	_update_hud()
 
 
+# A Callable wrapper over the flag store, passed to the pure Choice helpers (is_available /
+# resolved_target) so the logic layer can gate + branch without touching AppProgress.
+func _flag(name: String) -> bool:
+	return AppProgress.get_flag(name)
+
+
 func _begin_choice() -> void:
 	var node = _run.current()
 	if node.choices.is_empty():
@@ -491,8 +497,9 @@ func _begin_choice() -> void:
 		return
 	_candidates = []
 	for ch in node.choices:
-		# a gated choice (e.g. the bridge before the cave) is hidden until its flag is set
-		if ch.requires_flag != "" and not AppProgress.get_flag(ch.requires_flag):
+		# a gated choice (e.g. the bridge before the crystal + tip) is hidden until ALL its
+		# required flags are set
+		if not ch.is_available(_flag):
 			continue
 		# at home, only offer gear not yet collected (choice target is a take_* node)
 		var it: Dictionary = _house_item_for_node(ch.target)
@@ -691,12 +698,12 @@ func _choice_char(c: String) -> void:
 	_highlight_choice()
 	if _picked != null and _buffer == _picked.word:
 		var hint: String = _picked.choice.hint
-		_run.choose(_locale.resolve(_picked.choice.word_key))
+		_run.choose(_locale.resolve(_picked.choice.word_key), _flag)   # advances to the RESOLVED target
 		if _composer.has_fork() and (hint == "left" or hint == "right"):
 			# If the chosen path continues on the SAME set as a walking scene (the bridge
 			# crossing), stroll ALL the way to where it begins so the next beat re-stages with
 			# no teleport. Otherwise (the cave -> dungeon) amble toward the landmark, then cut.
-			var tgt = _run.graph.get_node_by_id(_picked.choice.target)
+			var tgt = _run.current()   # the node choose() advanced to (may be the alt target)
 			var same_set_walk: bool = tgt != null and tgt.scene != null \
 				and tgt.scene.set_name == _composer.current_set() \
 				and tgt.scene.path == SceneDescriptor.PATH_STRAIGHT

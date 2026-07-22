@@ -30,6 +30,9 @@ const HeroRig = preload("res://render/hero_rig.gd")
 const FOREST_DIR := "res://assets/kaykit/forest_nature/"
 
 const LEAD_ASSETS := ["hero"]
+# animated NPCs: built on the shared Rig_Medium (like the hero) so they get idle/walk clips
+# and can pace a path while the child types, instead of a frozen static mesh.
+const WALKER_ASSETS := ["molenaar"]
 const SCATTER_SEED := 20260627
 
 const TARGET_MODEL := "res://assets/kaykit/hexagon/target.gltf"
@@ -40,6 +43,10 @@ const TARGET_RADIUS := 1.0   # crosshair/arrow spread on the target face (world 
 var _variant := ""
 var _location: Node3D
 var _hero: HeroRig
+var _miller: HeroRig               # an animated NPC (the miller) that paces a path while typing
+var _miller_path: Path3D           # optional authored Curve3D the miller follows (else a straight amble)
+var _miller_t := 0.0               # distance along the miller loop (advanced by time, wraps)
+const MILLER_WALK_SPEED := 1.4     # units/sec the miller ambles his loop, regardless of typing
 var _current_set := ""             # the set_name currently instanced (for the continuous re-stage)
 var _did_restage := false          # last compose() re-staged in place instead of rebuilding
 var _cave_pos := Vector3.ZERO
@@ -95,6 +102,9 @@ func compose(descriptor, variant: String = "") -> void:
 	_location.name = "Location"
 	_current_set = set_name
 	add_child(_location)
+	# any scene with a windmill (the mill set) gets its sails turning, like the overworld one
+	_windmill_fan = _location.find_child("building_windmill_top_fan_red", true, false) as Node3D
+	_miller_path = _location.find_child("miller_path", true, false) as Path3D   # owner-authored route (optional)
 	_bridge_leaf = _location.find_child("bridge_leaf", true, false) as Node3D
 	_crystal_socket = _location.get_node_or_null(^"crystal_socket") as Node3D
 	if _bridge_leaf != null:
@@ -103,19 +113,33 @@ func compose(descriptor, variant: String = "") -> void:
 	_apply_mood(descriptor.mood)
 	for actor in descriptor.actors:
 		var is_lead: bool = actor.asset in LEAD_ASSETS
-		var node := _hero.build() if is_lead else SceneKit.instance_asset(actor.asset)
+		var is_walker: bool = actor.asset in WALKER_ASSETS
+		var node: Node3D
+		if is_lead:
+			node = _hero.build()
+		elif is_walker:
+			_miller = HeroRig.new()
+			node = _miller.build(Vocabulary.resolve(actor.asset))   # animated Rig_Medium NPC
+		else:
+			node = SceneKit.instance_asset(actor.asset)
 		node.name = "Actor_" + actor.asset
 		add_child(node)
 		if is_lead:
 			_hero.set_walking(_is_walking_scene(descriptor, actor))
 			node.position = _hero.travel_start if _hero.walking else _anchor_position(actor.anchor)
+			if _hero.walking:
+				_hero.set_moving(true)   # face travel direction from frame 1 (no janky turn)
+			else:
+				SceneKit.face(node, actor.facing)
+		elif is_walker:
+			# the miller paces far_right <-> far_left; the controller drives progress by typing.
+			_miller.set_walking(true)
+			_miller.set_travel(_anchor_position(actor.anchor), _anchor_position("far_left"))
+			node.position = _miller.travel_start
+			_miller.set_moving(true)
+			_miller.set_animation(false)   # idle until the child starts typing
 		else:
 			node.position = _anchor_position(actor.anchor)
-		# a walking lead faces its travel direction from the FIRST frame (no initial turn from
-		# camera-facing, which reads as janky); everyone else uses the authored facing
-		if is_lead and _hero.walking:
-			_hero.set_moving(true)
-		else:
 			SceneKit.face(node, actor.facing)
 	for prop in descriptor.props:
 		_place_prop(prop)
@@ -161,6 +185,8 @@ func _clear() -> void:
 	_current_set = ""
 	_char_preview = null
 	_hero = null
+	_miller = null
+	_miller_path = null
 	_chest_lid = null
 	_is_work_scene = false
 	_sparks = null
@@ -428,8 +454,28 @@ func _process(delta: float) -> void:
 				mn.position.y = m.base_y + sin(_mist_t * 0.6 + m.phase) * 0.2  # gentle bob
 	if _windmill_fan != null:
 		_windmill_fan.rotate_object_local(Vector3(0, 0, 1), 0.9 * delta)   # sails turn
+	_tick_miller(delta)
 	if _char_preview != null:
 		_char_preview.rotate_y(0.7 * delta)   # picker turntable
+
+
+# The miller ambles his authored loop continuously (by TIME, not typing) so he reads as alive
+# while the child reads/types. Close the curve (last point on the first) for a seamless loop.
+func _tick_miller(delta: float) -> void:
+	if _miller == null or not _miller.has() or _miller_path == null or _miller_path.curve == null:
+		return
+	var length: float = _miller_path.curve.get_baked_length()
+	if length <= 0.0:
+		return
+	_miller_t = fmod(_miller_t + MILLER_WALK_SPEED * delta, length)
+	var pos: Vector3 = _miller_path.position + _miller_path.curve.sample_baked(_miller_t)
+	pos.y = _miller_path.position.y   # stay on the ground -- ignore any Y drift in the points
+	var prev: Vector3 = _miller.position()
+	var dir: Vector3 = pos - prev
+	_miller.set_position(pos)
+	if dir.length() > 0.001 and dir.length() < 1.0:   # skip the wrap-around jump
+		_miller.face_yaw(atan2(dir.x, dir.z))
+	_miller.set_animation(true)   # always walking the loop
 
 
 func is_overworld() -> bool:
@@ -681,6 +727,14 @@ func anchor_pos(name: String) -> Vector3:
 func set_lead_progress(p: float) -> void:
 	_hero.set_progress(p)
 	_apply_bridge_lift()
+
+
+# --- animated NPC (the miller) ------------------------------------------------
+
+func has_miller() -> bool:
+	return _miller != null and _miller.has()
+
+
 
 
 ## Orient the walking lead: facing travel direction while moving, camera at rest.

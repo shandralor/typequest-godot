@@ -46,13 +46,17 @@ func current_prose() -> String:
 
 ## Pick a fork by the typed (resolved) choice word. Advances current_id on a
 ## match. Returns { ok: bool, target: String, hint: String }.
-func choose(typed_word: String) -> Dictionary:
+func choose(typed_word: String, get_flag: Callable = Callable()) -> Dictionary:
 	var node = current()
 	if node != null:
 		for ch in node.choices:
-			if locale.resolve(ch.word_key) == typed_word:
-				current_id = ch.target
-				return {"ok": true, "target": ch.target, "hint": ch.hint}
+			if locale.resolve(ch.word_key) != typed_word:
+				continue
+			if get_flag.is_valid() and not ch.is_available(get_flag):
+				continue   # a gated option, not selectable yet
+			var tgt: String = ch.resolved_target(get_flag) if get_flag.is_valid() else ch.target
+			current_id = tgt
+			return {"ok": true, "target": tgt, "hint": ch.hint}
 	return {"ok": false, "target": "", "hint": ""}
 
 

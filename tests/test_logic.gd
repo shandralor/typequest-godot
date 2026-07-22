@@ -98,9 +98,15 @@ func _test_traversal() -> void:
 	_check(grot_node.ending == "win", "grot is a win ending")
 	_check(not grot_node.celebrate, "grot win is not celebrated (a somber flee)")
 	_check("met_skeleton" in grot_node.sets_flag, "grot sets met_skeleton")
-	_check("has_crystal" in grot_node.sets_flag, "grot also grants the crystal")
+	_check(not ("has_crystal" in grot_node.sets_flag), "grot flee does NOT grant the crystal")
 	var ending = run.resolve_ending()
 	_check(ending.type == "win", "grot resolves as a win (no bounce)")
+	# the crystal is the reward of the ARMED return (grot_fight), reached via the grot fork
+	# once sword_sharp is set (the conditional target).
+	var g := Band1Arc.build()
+	var grot_choice = g.get_node_by_id("kruispunt").choices[0]
+	_check(grot_choice.resolved_target(func(f): return f == "sword_sharp") == "grot_fight", "grot fork -> grot_fight when trained")
+	_check("has_crystal" in g.get_node_by_id("grot_fight").sets_flag, "grot_fight grants the crystal")
 
 	# the safe bridge -> treasure path (a later, armed visit; the flag gate lives in
 	# the controller, so the pure-logic traversal reaches it directly).

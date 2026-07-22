@@ -27,4 +27,20 @@ static func all() -> Array:
 			"target_site": "thuis",
 			"hint_key": "objective.wapens",
 		},
+		{
+			# after the cave, the newly-open mill holds the miller's bridge tip.
+			"id": "vraag_molenaar",
+			"active_flag": "met_skeleton",
+			"done_flag": "molen_tip",
+			"target_site": "molen",
+			"hint_key": "objective.molen",
+		},
+		{
+			# sword sharpened -> go back and beat the skeleton for the crystal.
+			"id": "versla_skelet",
+			"active_flag": "sword_sharp",
+			"done_flag": "has_crystal",
+			"target_site": "bos",
+			"hint_key": "objective.grot",
+		},
 	]

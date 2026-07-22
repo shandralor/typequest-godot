@@ -73,18 +73,6 @@ transform = Transform3D(-1.4290593, 0, -0.22709194, 0, 1.4469904, 0, 0.22709194,
 [node name="@Node3D@14" parent="." unique_id=426204253 instance=ExtResource("5_n1sbq")]
 transform = Transform3D(-1.1453459, 0, 0.6771123, 0, 1.3305255, 0, -0.6771123, 0, -1.1453459, 6.0548744, 0, -12.027129)
 
-[node name="@Node3D@15" parent="." unique_id=1968468979 instance=ExtResource("3_ye5kb")]
-transform = Transform3D(0.017460173, 0, -1.8267548, 0, 1.8268383, 0, 1.8267548, 0, 0.017460173, 2.337469, 0, -14.204996)
-
-[node name="@Node3D@24" parent="." unique_id=1261687361 instance=ExtResource("3_ye5kb")]
-transform = Transform3D(-0.2131405, 0, 1.7745794, 0, 1.7873335, 0, -1.7745794, 0, -0.2131405, -0.06296539, 0, -14.8113575)
-
-[node name="@Node3D@25" parent="." unique_id=12687280 instance=ExtResource("4_60wsx")]
-transform = Transform3D(-1.5365443, 0, 0.45083675, 0, 1.6013188, 0, -0.45083675, 0, -1.5365443, -5.2839155, 0, -14.259457)
-
-[node name="@Node3D@26" parent="." unique_id=464985999 instance=ExtResource("3_ye5kb")]
-transform = Transform3D(-0.7558368, 0, 1.2853698, 0, 1.4911287, 0, -1.2853698, 0, -0.7558368, -4.7046423, 0, -9.56657)
-
 [node name="@Node3D@27" parent="." unique_id=639032683 instance=ExtResource("4_60wsx")]
 transform = Transform3D(0.32424995, 0, -1.5579078, 0, 1.5912935, 0, 1.5579078, 0, 0.32424995, -9.0547285, 0, -8.158842)
 

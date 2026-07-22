@@ -34,12 +34,27 @@ class Choice extends RefCounted:
 	var word_key: String
 	var target: String
 	var hint: String   # forward|left|right (presentation/guidance hint)
-	var requires_flag: String = ""   # hidden until this progress flag is set (e.g. a gate)
+	var requires_flag: String = ""   # space-separated flags -- ALL must be set for the option to show
+	var alt_target: String = ""      # if `alt_flag` is set, this choice leads here instead of `target`
+	var alt_flag: String = ""        # e.g. the armed cave: same fork choice, different beat once trained
 
 	func _init(p_word_key: String, p_target: String, p_hint: String) -> void:
 		word_key = p_word_key
 		target = p_target
 		hint = p_hint
+
+	## Every required flag is set (empty requires_flag -> always available).
+	func is_available(get_flag: Callable) -> bool:
+		for f in requires_flag.split(" ", false):
+			if not get_flag.call(f):
+				return false
+		return true
+
+	## Where this choice actually leads (the alt target when `alt_flag` is set).
+	func resolved_target(get_flag: Callable) -> String:
+		if alt_flag != "" and get_flag.call(alt_flag):
+			return alt_target
+		return target
 
 
 ## One story beat.

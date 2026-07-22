@@ -55,6 +55,14 @@ const CATALOG := {
 	"boog.prose": "de boog is klaar. de {held} mikt goed op het doel. de pijl vliegt snel recht door de lucht. de {held} raakt het doel precies in het midden.",
 	"boog.narration": "Span de boog en typ elk woord.",
 	"boog.win": "Raak! Recht in de roos.",
+	# molen -- meet the miller; he tips you how to cross the old bridge (need a crystal)
+	"mill.prose": "de molenaar maalt het graan tot fijn meel. hij ziet je bij de open deur. de oude man weet veel over het bos. de oude brug opent met een kristal. het skelet in de grot bewaakt het. versla het en pak het kristal. de molenaar zwaait je vrolijk uit.",
+	"mill.narration": "De molenaar heeft een tip voor je.",
+	"mill.win": "Nu weet je hoe je de brug opent!",
+	# grotFight -- the ARMED return: type the fight, beat the skeleton, win the crystal
+	"grotFight.prose": "de {held} trekt het scherpe zwaard. het skelet komt snel dichtbij. de {held} haalt fel uit. het zwaard klieft de botten. het skelet valt in stukken. daar ligt een glanzend kristal. de {held} pakt het kristal snel op.",
+	"grotFight.narration": "Wees dapper! Nu ben je sterk genoeg.",
+	"grotFight.win": "Je verslaat het skelet! Het kristal is van jou.",
 	# intro -- short words teach the core move: type a sentence, the knight does the deed
 	# (4 sentences = 4 legs: rise, fetch the sword, fetch the key, leave)
 	"intro.prose": "het is morgen. de {held} loopt naar het rek aan de muur. hier hangt je {wapen}. aan de andere kant hangt de sleutel. deze komt later nog van pas. je maakt een ommetje in het bos.",
@@ -74,6 +82,8 @@ const CATALOG := {
 	"hint.boog": "Haal eerst je boog thuis!",
 	# objectives -- short read-aloud nudges (not typed, so free punctuation)
 	"objective.wapens": "Haal je wapens thuis op!",
+	"objective.molen": "Ga naar de molen voor een tip!",
+	"objective.grot": "Keer terug naar de grot en versla het skelet!",
 	# choice words (typed to pick a fork)
 	"word.verder": "verder",
 	"word.grot": "grot",
@@ -86,6 +96,7 @@ const CATALOG := {
 	"site.smidse": "smidse",
 	"site.boog": "boog",
 	"site.thuis": "thuis",
+	"site.molen": "molen",
 	"overworld.narration": "Waar ga je naartoe? Typ het woord.",
 	"overworld.locked": "Nog niet open",
 }

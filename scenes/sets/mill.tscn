@@ -1,0 +1,78 @@
+[gd_scene format=3 uid="uid://c8mill0scene1"]
+
+[ext_resource type="PackedScene" uid="uid://blc4ciecv1m7i" path="res://assets/kaykit/hexagon/building_windmill_red.gltf" id="1_mill"]
+[ext_resource type="PackedScene" uid="uid://cxhfwx74k32cs" path="res://assets/kaykit/forest_nature/Tree_2_A_Color1.gltf" id="2_tree"]
+[ext_resource type="PackedScene" uid="uid://ccywamo2w0a7u" path="res://assets/kaykit/forest_nature/Tree_1_A_Color1.gltf" id="3_tree"]
+[ext_resource type="PackedScene" uid="uid://cqwavgagv7sio" path="res://assets/kaykit/forest_nature/Bush_2_D_Color1.gltf" id="4_7wku2"]
+[ext_resource type="PackedScene" uid="uid://cbc4db3cxh2go" path="res://assets/kaykit/forest_nature/Rock_1_B_Color1.gltf" id="5_7pee7"]
+[ext_resource type="PackedScene" uid="uid://c2hm54a731pvl" path="res://assets/kaykit/forest_nature/Rock_1_K_Color1.gltf" id="6_vwjwq"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_grass"]
+albedo_color = Color(0.34, 0.48, 0.24, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_water"]
+albedo_color = Color(0.23, 0.47, 0.64, 1)
+metallic = 0.3
+roughness = 0.25
+
+[sub_resource type="Curve3D" id="Curve3D_miller"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 8.719848, 0.14633131, -1.0576811, 0, 0, 0, 0, 0, 0, 5.592866, 0.12254906, -1.4958668, 0, 0, 0, 0, 0, 0, 2.139513, 0.023482323, -2.4355907, 0, 0, 0, 0, 0, 0, -1.5856228, -0.008207321, -2.6781101, 0, 0, 0, 0, 0, 0, -3.1994438, 0.03819084, -7.266716, 0, 0, 0, 0, 0, 0, -0.84521675, 0.063391685, -11.275599, 0, 0, 0, 0, 0, 0, 5.322111, 0.00039625168, -13.028921, 0, 0, 0, 0, 0, 0, 10.929819, 0.14559174, -8.786768, 0, 0, 0, 0, 0, 0, 10.724486, 0.11864948, -4.9547353, 0, 0, 0, 0, 0, 0, 8.731714, 0.20396042, -0.9145565),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+}
+point_count = 10
+
+[node name="Node3D" type="Node3D" unique_id=1947416909]
+
+[node name="Land" type="CSGPolygon3D" parent="." unique_id=1823588728]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -1.671, -1.5, 1.692)
+polygon = PackedVector2Array(-21.495628, 39.14594, -125.54031, 105.19655, 78.49069, 106.78937, 77.74109, 55.628433, 26.362925, 20.536905, 25.361977, -19.280445, 1.8595486, -21.160536, -3.116684, -18.052254, -14.40377, -18.678587, -28.291012, -18.932112, -33.373314, -3.8333578)
+depth = 1.5
+material = SubResource("StandardMaterial3D_grass")
+
+[node name="Water" type="CSGPolygon3D" parent="." unique_id=800472790]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, -18.966843, -1.5, -6.922516)
+polygon = PackedVector2Array(-75.06247, 116.1652, -20.677902, 59.3725, 52.616425, 50.57009, 95.665634, 113.18123, 147.59566, 109.18852, 202.37003, -277.1721, -363.65222, -1273.4391, -142814.92, -140059.84, -1082.762, -98.33107)
+material = SubResource("StandardMaterial3D_water")
+
+[node name="miller_path" type="Path3D" parent="." unique_id=800472999]
+curve = SubResource("Curve3D_miller")
+
+[node name="center" type="Marker3D" parent="." unique_id=1390981136]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1)
+
+[node name="far_right" type="Marker3D" parent="." unique_id=1541322499]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6, 0, -1.2)
+
+[node name="far_left" type="Marker3D" parent="." unique_id=462164311]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, 0, -1.2)
+
+[node name="path_near" type="Marker3D" parent="." unique_id=363169328]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4)
+
+[node name="path_far" type="Marker3D" parent="." unique_id=1795545818]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
+
+[node name="treasure" type="Marker3D" parent="." unique_id=566714831]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -3)
+
+[node name="building_windmill_red" parent="." unique_id=9380970 instance=ExtResource("1_mill")]
+transform = Transform3D(9, 0, 0, 0, 9, 0, 0, 0, 9, 3.8, 0, -7.859)
+
+[node name="Tree_2_A" parent="." unique_id=1546713056 instance=ExtResource("2_tree")]
+transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, -6, 0, -4)
+
+[node name="Tree_1_A" parent="." unique_id=2006195141 instance=ExtResource("3_tree")]
+transform = Transform3D(1.4, 0, 0, 0, 1.4, 0, 0, 0, 1.4, -7.5, 0, -0.5)
+
+[node name="Tree_2_A2" parent="." unique_id=873558996 instance=ExtResource("2_tree")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 12.169, 0, -3.609)
+
+[node name="Bush_2_D_Color12" parent="." unique_id=1787393834 instance=ExtResource("4_7wku2")]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 48.96727, 32.08925, -7.9507194)
+
+[node name="Rock_1_B_Color12" parent="." unique_id=1064721989 instance=ExtResource("5_7pee7")]
+transform = Transform3D(9, 0, 0, 0, 9, 0, 0, 0, 9, 23.891, -1, -17.377)
+
+[node name="Rock_1_K_Color12" parent="." unique_id=1370360181 instance=ExtResource("6_vwjwq")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -29.255, -1, -17.427)

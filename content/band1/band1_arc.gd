@@ -43,45 +43,52 @@ static func build() -> StoryGraph:
 	kruispunt.id = "kruispunt"
 	kruispunt.prose_key = "kruispunt.prose"
 	kruispunt.narration_key = "kruispunt.narration"
-	# the bridge is fence-locked until the cave is done -- so the FIRST time only `grot`
-	# is offered; after the skeleton (met_skeleton) the bridge opens.
+	# the bridge needs BOTH the crystal (won by beating the skeleton armed) and the miller's
+	# tip (molen_tip) explaining what it's for. Loop: flee the cave -> train -> beat the cave
+	# for the crystal -> hear the tip at the mill -> the bridge opens.
 	var brug_choice := StoryGraph.Choice.new("word.brug", "brug", "right")
-	brug_choice.requires_flag = "met_skeleton"
+	brug_choice.requires_flag = "has_crystal molen_tip"
+	# `grot` is the same fork choice with two beats: the first-visit FLEE, or -- once the sword
+	# is sharpened at the forge (sword_sharp) -- the armed FIGHT that wins the crystal.
+	var grot_choice := StoryGraph.Choice.new("word.grot", "grot", "left")
+	grot_choice.alt_target = "grot_fight"
+	grot_choice.alt_flag = "sword_sharp"
 	kruispunt.choices = [
-		StoryGraph.Choice.new("word.grot", "grot", "left"),
+		grot_choice,
 		brug_choice,
 	]
 	kruispunt.safety = _nl_be_safety("fnv1a:fc978a65")
 	kruispunt.scene = Scenes.kruispunt()
 	g.add_node(kruispunt)
 
-	# grot -- a SETBACK: neutral ending that bounces to naGrot, progress intact.
+	# grot -- FIRST visit: the cave FRIGHTENS him, he flees empty-handed (a terminal, non-
+	# celebratory beat). Only `met_skeleton` -- that unlocks training + the mill. The CRYSTAL is
+	# NOT grabbed here; it is the reward for coming back armed (see grot_fight).
 	var grot := StoryGraph.StoryNode.new()
 	grot.id = "grot"
 	grot.prose_key = "grot.prose"
 	grot.narration_key = "grot.narration"
-	# campaign v2: the cave FRIGHTENS him -- he flees, back to the island to train (a
-	# terminal, non-celebratory beat). The bridge stays gated for a later, armed visit.
 	grot.ending = "win"
 	grot.win_key = "grot.win"
 	grot.celebrate = false
-	# he sees the skeleton AND grabs a glowing crystal before fleeing: met_skeleton unlocks
-	# training + the bridge; has_crystal is the key that later lowers the drawbridge.
-	grot.sets_flag = "met_skeleton has_crystal"
+	grot.sets_flag = "met_skeleton"
 	grot.safety = _nl_be_safety("fnv1a:07954cfa")
 	grot.scene = Scenes.grot()
 	g.add_node(grot)
 
-	# naGrot -- pre-revealed connective beat; only the safe bridge is offered.
-	var na_grot := StoryGraph.StoryNode.new()
-	na_grot.id = "naGrot"
-	na_grot.prose_key = "naGrot.prose"
-	na_grot.narration_key = "naGrot.narration"
-	na_grot.prerevealed = true
-	na_grot.choices = [StoryGraph.Choice.new("word.brug", "brug", "right")]
-	na_grot.safety = _nl_be_safety("fnv1a:68a2ee24")
-	na_grot.scene = Scenes.na_grot()
-	g.add_node(na_grot)
+	# grot_fight -- the ARMED return (reached via the grot fork once sword_sharp is set): type
+	# the fight, BEAT the skeleton, win the glowing crystal. A CELEBRATED terminal win that sets
+	# has_crystal (the key that lowers the drawbridge).
+	var grot_fight := StoryGraph.StoryNode.new()
+	grot_fight.id = "grot_fight"
+	grot_fight.prose_key = "grotFight.prose"
+	grot_fight.narration_key = "grotFight.narration"
+	grot_fight.ending = "win"
+	grot_fight.win_key = "grotFight.win"
+	grot_fight.sets_flag = "has_crystal"
+	grot_fight.safety = _nl_be_safety("fnv1a:8ddb1fcc")
+	grot_fight.scene = Scenes.grot()
+	g.add_node(grot_fight)
 
 	# brug -- the CROSSING (campaign v2): reuses the fork set with its lowered drawbridge
 	# and the owner's lengthened far path. Type the prose to walk across; the exit-walk
@@ -96,16 +103,5 @@ static func build() -> StoryGraph:
 	brug.safety = _nl_be_safety("fnv1a:360036c6")
 	brug.scene = Scenes.brug()
 	g.add_node(brug)
-
-	# schat -- the WIN.
-	var schat := StoryGraph.StoryNode.new()
-	schat.id = "schat"
-	schat.prose_key = "schat.prose"
-	schat.narration_key = "schat.narration"
-	schat.ending = "win"
-	schat.win_key = "schat.win"
-	schat.safety = _nl_be_safety("fnv1a:4c6d879d")
-	schat.scene = Scenes.schat()
-	g.add_node(schat)
 
 	return g

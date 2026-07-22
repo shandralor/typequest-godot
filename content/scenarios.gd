@@ -9,6 +9,7 @@ const Band1Arc = preload("res://content/band1/band1_arc.gd")
 const GrindArc = preload("res://content/grind/grind_arc.gd")
 const ArcheryArc = preload("res://content/archery/archery_arc.gd")
 const HomeArc = preload("res://content/home/home_arc.gd")
+const MillArc = preload("res://content/mill/mill_arc.gd")
 
 
 static func list() -> Array:
@@ -17,6 +18,7 @@ static func list() -> Array:
 		{"id": "grind", "title": "Slijp je zwaard"},
 		{"id": "archery", "title": "Boogschieten"},
 		{"id": "home", "title": "Thuis"},
+		{"id": "mill", "title": "De molenaar"},
 	]
 
 
@@ -28,5 +30,7 @@ static func build(id: String):
 			return ArcheryArc.build()
 		"home":
 			return HomeArc.build()
+		"mill":
+			return MillArc.build()
 		_:
 			return Band1Arc.build()

@@ -26,4 +26,7 @@ static func sites() -> Array:
 		{"id": "thuis", "word_key": "site.thuis", "scenario": "home",
 			"anchor": "site_home", "route": "route_home", "unlocked": true,
 			"unlock_flag": "met_skeleton"},
+		{"id": "molen", "word_key": "site.molen", "scenario": "mill",
+			"anchor": "site_molen", "route": "route_molen", "unlocked": true,
+			"unlock_flag": "met_skeleton"},
 	]

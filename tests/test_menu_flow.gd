@@ -24,8 +24,8 @@ func _initialize() -> void:
 	start.pressed.emit()
 	await process_frame
 	fail += _check(game._app_state == game.AppState.OVERWORLD, "Start -> overworld")
-	fail += _check(game._ow_banners.size() == 4, "four site banners on the island")
-	fail += _check(game._ow_candidates.size() == 4, "four unlocked sites (bos/smidse/boog/thuis)")
+	fail += _check(game._ow_banners.size() == 5, "five site banners on the island")
+	fail += _check(game._ow_candidates.size() == 5, "five sites (bos/smidse/boog/thuis/molen)")
 	# a gated training site (boog needs the bow collected first) hints, does not travel
 	load("res://game/app_progress.gd").set_flag_transient("has_bow", false)
 	for c in ["b", "o", "o", "g"]:

@@ -22,6 +22,7 @@ static func build() -> StoryGraph:
 	node.narration_key = "slijpen.narration"
 	node.ending = "win"
 	node.win_key = "slijpen.win"
+	node.sets_flag = "sword_sharp"   # a sharp sword -- the training the armed cave fight needs
 	node.safety = {"nl-BE": {"hash": "fnv1a:e7256a7d", "date": "2026-07-13", "criteria_version": "v0-stub"}}
 	node.scene = scene()
 	g.add_node(node)

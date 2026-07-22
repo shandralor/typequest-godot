@@ -18,6 +18,7 @@ const ASSETS := {
 	# characters
 	"hero": "res://assets/kaykit/adventurers/Knight.glb",  # animated rig built in the composer
 	"skeleton": "res://assets/kaykit/skeletons/Skeleton_Warrior.glb",
+	"molenaar": "res://assets/kaykit/heroes/Farmer_A.glb",  # the miller NPC (a farmer)
 	# props (referenced by later scenes; the start scene uses none)
 	"chest": "res://assets/kaykit/dungeon/chest_gold.gltf",  # A7: a gold chest, lid a separate child
 	"bridge": "res://assets/kaykit/resource_bits/Wood_Planks_Stack_Large.gltf",

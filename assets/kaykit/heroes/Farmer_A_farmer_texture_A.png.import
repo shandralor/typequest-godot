@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://srdruh4k5oc7"
-path.s3tc="res://.godot/imported/Barbarian_barbarian_texture.png-c47a57730a82675b083af44df50a6abb.s3tc.ctex"
+uid="uid://bijysw6j3hahk"
+path.s3tc="res://.godot/imported/Farmer_A_farmer_texture_A.png-2f748ca7cdbc7de0cc8578dcf7a9df37.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "7e5fe19d7f7dc17d0a426dc28321729d"
+"md5": "1d43f356d834bc7d3ca682853282bc13"
 }
 
 [deps]
 
-source_file="res://assets/kaykit/adventurers/Barbarian_barbarian_texture.png"
-dest_files=["res://.godot/imported/Barbarian_barbarian_texture.png-c47a57730a82675b083af44df50a6abb.s3tc.ctex"]
+source_file="res://assets/kaykit/heroes/Farmer_A_farmer_texture_A.png"
+dest_files=["res://.godot/imported/Farmer_A_farmer_texture_A.png-2f748ca7cdbc7de0cc8578dcf7a9df37.s3tc.ctex"]
 
 [params]
 
