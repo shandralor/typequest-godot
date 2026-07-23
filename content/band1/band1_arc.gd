@@ -100,6 +100,7 @@ static func build() -> StoryGraph:
 	brug.narration_key = "brug.narration"
 	brug.ending = "win"
 	brug.exit_walk = true
+	brug.win_key = "demo.end"           # placeholder: crossing is the end of the demo for now
 	brug.sets_flag = "crossed_bridge"   # lifts the coastal mist over the region past the bridge
 	brug.safety = _nl_be_safety("fnv1a:360036c6")
 	brug.scene = Scenes.brug()
