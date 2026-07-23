@@ -526,7 +526,11 @@ func _resolve_ending() -> void:
 	var completing = _run.current()
 	if completing != null and completing.sets_flag != "":
 		for fl in completing.sets_flag.split(" ", false):
-			AppProgress.set_flag(fl)   # e.g. the cave sets met_skeleton + has_crystal
+			AppProgress.set_flag(fl)   # e.g. the cave flee sets met_skeleton
+		# fully_trained (both weapons practised) gates the armed cave fight -- derived, so the
+		# forge and range BOTH matter and neither alone is enough.
+		if AppProgress.get_flag("sword_sharp") and AppProgress.get_flag("archery_done"):
+			AppProgress.set_flag("fully_trained")
 	var ending = _run.resolve_ending()
 	if _in_intro:
 		# the knight has reached the door: it swings open, a beat, then out into the world
@@ -559,8 +563,7 @@ func _resolve_ending() -> void:
 				_composer.vanish_grindstone()            # poof the wheel, reveal the knight
 				_composer.play_lead_loop("Cheering")    # raise the held sword in triumph
 			elif _composer.is_archery_scene():
-				_composer.play_lead_loop("Cheering")    # bullseye! celebrate
-				AppProgress.set_flag("archery_done")    # unlocks a bow back at the house
+				_composer.play_lead_loop("Cheering")    # bullseye! celebrate (archery_done set via sets_flag)
 			elif _composer.is_house_scene():
 				if _house_visit_fetch != "":
 					var item: Dictionary = _house_item_by_id(_house_visit_fetch)

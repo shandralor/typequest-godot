@@ -60,7 +60,7 @@ const CATALOG := {
 	"mill.narration": "De molenaar heeft een tip voor je.",
 	"mill.win": "Nu weet je hoe je de brug opent!",
 	# grotFight -- the ARMED return: type the fight, beat the skeleton, win the crystal
-	"grotFight.prose": "de {held} trekt het scherpe zwaard. het skelet komt snel dichtbij. de {held} haalt fel uit. het zwaard klieft de botten. het skelet valt in stukken. daar ligt een glanzend kristal. de {held} pakt het kristal snel op.",
+	"grotFight.prose": "de {held} spant de sterke boog. een pijl vliegt door de lucht. het skelet wankelt even. de {held} trekt het scherpe zwaard. het zwaard klieft de botten. daar ligt een glanzend kristal. de {held} pakt het kristal snel op.",
 	"grotFight.narration": "Wees dapper! Nu ben je sterk genoeg.",
 	"grotFight.win": "Je verslaat het skelet! Het kristal is van jou.",
 	# intro -- short words teach the core move: type a sentence, the knight does the deed

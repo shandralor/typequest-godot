@@ -31,8 +31,8 @@ const FOREST_DIR := "res://assets/kaykit/forest_nature/"
 
 const LEAD_ASSETS := ["hero"]
 # animated NPCs: built on the shared Rig_Medium (like the hero) so they get idle/walk clips
-# and can pace a path while the child types, instead of a frozen static mesh.
-const WALKER_ASSETS := ["molenaar"]
+# instead of a frozen static mesh. The miller additionally paces a path; the skeleton idles.
+const ANIMATED_NPC := ["molenaar", "skeleton"]
 const SCATTER_SEED := 20260627
 
 const TARGET_MODEL := "res://assets/kaykit/hexagon/target.gltf"
@@ -113,13 +113,14 @@ func compose(descriptor, variant: String = "") -> void:
 	_apply_mood(descriptor.mood)
 	for actor in descriptor.actors:
 		var is_lead: bool = actor.asset in LEAD_ASSETS
-		var is_walker: bool = actor.asset in WALKER_ASSETS
+		var is_npc: bool = actor.asset in ANIMATED_NPC
+		var npc_rig: HeroRig = null
 		var node: Node3D
 		if is_lead:
 			node = _hero.build()
-		elif is_walker:
-			_miller = HeroRig.new()
-			node = _miller.build(Vocabulary.resolve(actor.asset))   # animated Rig_Medium NPC
+		elif is_npc:
+			npc_rig = HeroRig.new()
+			node = npc_rig.build(Vocabulary.resolve(actor.asset))   # animated Rig_Medium NPC
 		else:
 			node = SceneKit.instance_asset(actor.asset)
 		node.name = "Actor_" + actor.asset
@@ -131,13 +132,15 @@ func compose(descriptor, variant: String = "") -> void:
 				_hero.set_moving(true)   # face travel direction from frame 1 (no janky turn)
 			else:
 				SceneKit.face(node, actor.facing)
-		elif is_walker:
-			# the miller paces far_right <-> far_left; the controller drives progress by typing.
-			_miller.set_walking(true)
-			_miller.set_travel(_anchor_position(actor.anchor), _anchor_position("far_left"))
-			node.position = _miller.travel_start
-			_miller.set_moving(true)
-			_miller.set_animation(false)   # idle until the child starts typing
+		elif is_npc:
+			node.position = _anchor_position(actor.anchor)
+			SceneKit.face(node, actor.facing)
+			npc_rig.play_loop(HeroRig.HERO_IDLE)   # animated idle -- no frozen T-pose (e.g. the skeleton)
+			if actor.asset == "molenaar":
+				# the miller paces a `miller_path` loop, driven each frame by _tick_miller
+				_miller = npc_rig
+				_miller.set_walking(true)
+				_miller.set_travel(_anchor_position(actor.anchor), _anchor_position("far_left"))
 		else:
 			node.position = _anchor_position(actor.anchor)
 			SceneKit.face(node, actor.facing)

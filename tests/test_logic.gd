@@ -105,7 +105,9 @@ func _test_traversal() -> void:
 	# once sword_sharp is set (the conditional target).
 	var g := Band1Arc.build()
 	var grot_choice = g.get_node_by_id("kruispunt").choices[0]
-	_check(grot_choice.resolved_target(func(f): return f == "sword_sharp") == "grot_fight", "grot fork -> grot_fight when trained")
+	_check(grot_choice.resolved_target(func(f): return false) == "grot", "grot fork -> grot (flee) when untrained")
+	_check(grot_choice.resolved_target(func(f): return f == "sword_sharp") == "grot", "grot fork -> still flee with only the sword")
+	_check(grot_choice.resolved_target(func(f): return f == "fully_trained") == "grot_fight", "grot fork -> grot_fight when fully_trained")
 	_check("has_crystal" in g.get_node_by_id("grot_fight").sets_flag, "grot_fight grants the crystal")
 
 	# the safe bridge -> treasure path (a later, armed visit; the flag gate lives in

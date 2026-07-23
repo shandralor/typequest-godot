@@ -48,11 +48,12 @@ static func build() -> StoryGraph:
 	# for the crystal -> hear the tip at the mill -> the bridge opens.
 	var brug_choice := StoryGraph.Choice.new("word.brug", "brug", "right")
 	brug_choice.requires_flag = "has_crystal molen_tip"
-	# `grot` is the same fork choice with two beats: the first-visit FLEE, or -- once the sword
-	# is sharpened at the forge (sword_sharp) -- the armed FIGHT that wins the crystal.
+	# `grot` is the same fork choice with two beats: the first-visit FLEE, or -- once FULLY
+	# trained (fully_trained = sword_sharp at the forge AND archery_done at the range) -- the
+	# armed FIGHT that wins the crystal. Both trainings matter; neither alone opens the fight.
 	var grot_choice := StoryGraph.Choice.new("word.grot", "grot", "left")
 	grot_choice.alt_target = "grot_fight"
-	grot_choice.alt_flag = "sword_sharp"
+	grot_choice.alt_flag = "fully_trained"
 	kruispunt.choices = [
 		grot_choice,
 		brug_choice,
@@ -86,7 +87,7 @@ static func build() -> StoryGraph:
 	grot_fight.ending = "win"
 	grot_fight.win_key = "grotFight.win"
 	grot_fight.sets_flag = "has_crystal"
-	grot_fight.safety = _nl_be_safety("fnv1a:8ddb1fcc")
+	grot_fight.safety = _nl_be_safety("fnv1a:b665e070")
 	grot_fight.scene = Scenes.grot()
 	g.add_node(grot_fight)
 

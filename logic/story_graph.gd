@@ -50,11 +50,15 @@ class Choice extends RefCounted:
 				return false
 		return true
 
-	## Where this choice actually leads (the alt target when `alt_flag` is set).
+	## Where this choice actually leads: the alt target when EVERY flag in `alt_flag`
+	## (space-separated) is set, otherwise the default target.
 	func resolved_target(get_flag: Callable) -> String:
-		if alt_flag != "" and get_flag.call(alt_flag):
-			return alt_target
-		return target
+		if alt_flag == "" or alt_target == "":
+			return target
+		for f in alt_flag.split(" ", false):
+			if not get_flag.call(f):
+				return target
+		return alt_target
 
 
 ## One story beat.

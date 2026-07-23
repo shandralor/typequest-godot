@@ -36,9 +36,9 @@ static func all() -> Array:
 			"hint_key": "objective.molen",
 		},
 		{
-			# sword sharpened -> go back and beat the skeleton for the crystal.
+			# fully trained (both weapons) -> go back and beat the skeleton for the crystal.
 			"id": "versla_skelet",
-			"active_flag": "sword_sharp",
+			"active_flag": "fully_trained",
 			"done_flag": "has_crystal",
 			"target_site": "bos",
 			"hint_key": "objective.grot",
