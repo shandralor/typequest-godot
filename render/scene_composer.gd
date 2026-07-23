@@ -738,6 +738,25 @@ func has_miller() -> bool:
 	return _miller != null and _miller.has()
 
 
+func has_skeleton() -> bool:
+	return find_child("Actor_skeleton", true, false) != null
+
+
+## Topple the beaten skeleton at the fight win: freeze its idle, then tip it over and let it
+## sink into the ground so it reads as defeated (a crumbling pile of bones).
+func topple_skeleton() -> void:
+	var skel := find_child("Actor_skeleton", true, false) as Node3D
+	if skel == null:
+		return
+	var aps := skel.find_children("*", "AnimationPlayer", true, false)
+	if not aps.is_empty():
+		(aps[0] as AnimationPlayer).stop()   # freeze the pose -> a rigid topple, not a limp bob
+	var t := create_tween()
+	t.set_parallel(true)
+	t.tween_property(skel, "rotation:x", skel.rotation.x - deg_to_rad(96), 0.7).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	t.tween_property(skel, "position:y", skel.position.y - 0.5, 0.9).set_delay(0.25)
+
+
 
 
 ## Orient the walking lead: facing travel direction while moving, camera at rest.

@@ -573,6 +573,9 @@ func _resolve_ending() -> void:
 						AppProgress.set_flag("has_gear")    # completes the "get your gear" objective
 				else:
 					_composer.play_lead_loop("Cheering")   # a plain visit: a small wave
+			elif _composer.has_skeleton():
+				_composer.topple_skeleton()             # the beaten skeleton crumples
+				_composer.play_lead_oneshot("PickUp")   # the hero picks up the crystal
 			else:
 				_composer.open_chest()                  # treasure win: open the chest
 				_composer.play_lead_oneshot("PickUp")
