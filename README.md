@@ -42,5 +42,13 @@ Full asset-by-asset attribution is in [`CREDITS.md`](CREDITS.md).
 
 ## License
 
-Code is open source (license TBD). Bundled art/music are CC0 or royalty-free per the
-credits above; their respective terms apply to those assets.
+TypeQuest's own code and content are licensed under the **PolyForm Noncommercial
+License 1.0.0** (see [`LICENSE.md`](LICENSE.md)): free to use, modify, and share
+for any purpose EXCEPT commercial. This is source-available, not OSI "open source"
+(that term forbids a no-commercial-use restriction).
+
+The bundled art, fonts, and music are NOT ours and keep their own, more permissive
+licenses -- the 3D and UI art are CC0, the fonts are OFL 1.1, the music is
+royalty-free. See [`CREDITS.md`](CREDITS.md) and the per-pack `License.txt` files.
+The noncommercial term applies to *TypeQuest* (the code + game); it does not and
+cannot restrict those CC0/OFL assets.
