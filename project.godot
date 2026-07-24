@@ -34,3 +34,5 @@ theme/custom_font="res://assets/fonts/Andika-Regular.ttf"
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+rendering/renderer/rendering_method="forward_plus"
+rendering/renderer/rendering_method.web="gl_compatibility"

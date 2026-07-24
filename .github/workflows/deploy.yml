@@ -1,0 +1,83 @@
+name: Deploy to GitHub Pages
+
+# Builds the Godot web export on every push to main and publishes it to
+# GitHub Pages. Single-threaded export (see export_presets.cfg) so it runs on
+# Pages without the COOP/COEP cross-origin-isolation headers Pages can't set.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least-privilege token: read the repo, write the Pages deployment.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a newer push cancels an in-flight run.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7"
+  GODOT_RELEASE: "stable"
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot ${{ env.GODOT_VERSION }} + export templates
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}"
+          EDITOR="Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64"
+          TEMPLATES="Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz"
+
+          curl -fSL -o godot.zip "${BASE}/${EDITOR}.zip"
+          unzip -q godot.zip
+          install -Dm755 "${EDITOR}" /usr/local/bin/godot
+
+          curl -fSL -o templates.tpz "${BASE}/${TEMPLATES}"
+          unzip -q templates.tpz
+          # The .tpz extracts a `templates/` dir; Godot looks for them under
+          # <data>/export_templates/<version>.<release>/
+          TPL_DIR="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p "${TPL_DIR}"
+          mv templates/* "${TPL_DIR}/"
+
+          godot --version
+
+      - name: Import resources
+        # First headless pass builds the .godot/imported cache the export needs.
+        run: godot --headless --import --path . || true
+
+      - name: Export web build
+        run: |
+          set -euo pipefail
+          mkdir -p build/web
+          godot --headless --path . --export-release "Web" build/web/index.html
+          # GitHub Pages runs Jekyll by default, which strips files/dirs that
+          # start with an underscore; disable it so Godot's assets survive.
+          touch build/web/.nojekyll
+          test -f build/web/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: export
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
