@@ -1271,6 +1271,14 @@ func _apply_mood(mood: String, with_fog: bool = true) -> void:
 				env.fog_light_color = Color(0.74, 0.82, 0.92)
 				env.fog_density = 0.013
 				env.fog_aerial_perspective = 0.5
+	# Web runs the Compatibility (WebGL2) renderer, which derives far less ambient
+	# light (and no environment reflections) from the sky than Forward+ does. Left as
+	# tuned for the desktop pipeline the browser build reads flat + slightly cold, so
+	# lift the sky ambient and give the sun a small boost on web only (desktop keeps
+	# its tuned values). First-pass factors -- tune against the deployed build.
+	if OS.has_feature("web"):
+		env.ambient_light_energy *= 1.9
+		sun.light_energy *= 1.2
 	we.environment = env
 	add_child(we)
 	add_child(sun)
