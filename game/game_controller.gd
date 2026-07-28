@@ -22,6 +22,7 @@ const MEDIEVAL_FONT = preload("res://assets/fonts/MedievalSharp-Regular.ttf")
 const TypeAlongPanel = preload("res://ui/type_along.gd")
 const KeyboardGuide = preload("res://ui/keyboard_guide.gd")
 const ChoiceBannerScript = preload("res://ui/choice_banner.gd")
+const SiteLegendScript = preload("res://ui/site_legend.gd")
 const MenuScreenScene = preload("res://scenes/menu/menu_screen.tscn")
 const MenuBannerScene = preload("res://ui/menu_banner.tscn")
 const Scenarios = preload("res://content/scenarios.gd")
@@ -120,7 +121,7 @@ var _back_button: TextureButton   # leave a scenario, back to the island
 # overworld (the walkable scenario picker)
 var _ow_candidates: Array = []   # unlocked sites: [{ word, site }]
 var _ow_buffer := ""
-var _ow_banners: Array = []      # [{ banner, site, word, locked }]
+var _legend: SiteLegend          # right-side colour key (replaces the floating site banners)
 var _ow_walk = null              # { legs: [{route, reverse}], leg, dist, site }
 var _ow_at := "hub"              # anchor the hero stands at on the island
 var _walk_capture := false       # debug: hold at the route end instead of starting the scenario
@@ -133,11 +134,20 @@ const OW_IDLE_ZOOM_DEFAULT := 1.5   # default island pull-back (bigger = more zo
 const OW_ZOOM_MIN := 0.8
 const OW_ZOOM_MAX := 3.0
 const OW_ZOOM_STEP := 0.12
-const OW_LABEL_HIDE_DEFAULT := 1.5   # zoomed out past this, world labels hide for a clean map
 var _ow_zoom := OW_IDLE_ZOOM_DEFAULT       # mouse-wheel adjustable + persisted (settings.cfg)
-var _ow_label_hide := OW_LABEL_HIDE_DEFAULT # configurable label-hide zoom (settings.cfg key "ow_label_hide")
 const OW_WALK_SPEED := 4.5
-const OW_BANNER_LIFT := Vector3(0, 7.2, 0)   # banner floats this far above a site (into the sky, off the hexes)
+
+# Overworld site colour coding: each site gets a coloured flag ON the map and a matching pill
+# in the right-side legend (SiteLegend), so no text floats over the island. 5 sites, 4 native
+# KayKit flag colours; molen uses a tinted (orange) flag -- no native asset for it. The pill
+# colour matches the flag so the legend reads as a key. Re-colouring a site is a one-liner.
+const SITE_FLAGS := {
+	"bos": {"model": "flag_green", "color": Color("5aa84b")},
+	"smidse": {"model": "flag_red", "color": Color("c0392b")},
+	"boog": {"model": "flag_yellow", "color": Color("e2b53a")},
+	"thuis": {"model": "flag_blue", "color": Color("3778b8")},
+	"molen": {"model": "flag_yellow", "color": Color("e07d22"), "tint": Color("e07d22")},
+}
 
 # demo / capture
 var _demo := false
@@ -166,7 +176,6 @@ func _ready() -> void:
 		AppProgress.set_choice("hero", hero_arg)
 	_build_layout()
 	_ow_zoom = AppProgress.get_setting("ow_zoom", OW_IDLE_ZOOM_DEFAULT)   # restore saved island zoom
-	_ow_label_hide = AppProgress.get_setting("ow_label_hide", OW_LABEL_HIDE_DEFAULT)   # configurable
 	_topcam = "--topcam" in args
 	_hidebanners = "--nobanner" in args
 	_demo = "--demo" in args
@@ -1180,7 +1189,9 @@ func _process(delta: float) -> void:
 			_ow_walk_tick(delta)
 		elif _composer.has_lead():
 			_composer.set_lead_animation(false)
-		_position_ow_banners()
+		if _topcam:
+			_composer.hide_clouds()   # debug road-tracing view: clear the sky
+		_position_legend()
 		_update_camera(delta, false)
 		if _demo:
 			_demo_tick(delta)
@@ -1576,7 +1587,7 @@ func _show_main_menu() -> void:
 	_set_top_prompt("")
 	_set_playing_ui(false)
 	_set_menu_fullscreen(true)
-	_clear_ow_banners()
+	_hide_ow_legend()
 	_update_camera(0.0, true)
 	_show_menu("TypeQuest", [
 		{"text": "Start", "on_press": _show_overworld_from_menu},
@@ -1614,7 +1625,7 @@ func _show_character_picker(after: Callable) -> void:
 	_picker_after = after
 	_music.play_context("menu")
 	_clear_menu()
-	_clear_ow_banners()
+	_hide_ow_legend()
 	_set_playing_ui(false)
 	_set_menu_fullscreen(false)
 	if _back_button != null:
@@ -1827,7 +1838,7 @@ func _show_overworld(at_anchor: String = "hub") -> void:
 	for s in OverworldSites.sites():
 		if s.scenario != "":   # locked sites stay typeable so they can HINT ("nog niet open")
 			_ow_candidates.append({"word": _locale.resolve(s.word_key), "site": s})
-	_build_ow_banners()
+	_build_ow_legend()
 	_update_ow_highlight()
 	_update_camera(0.0, true)
 	_reveal_unlocked_regions()  # lift the coastal mist over any region already opened
@@ -1849,23 +1860,39 @@ func _reveal_unlocked_regions() -> void:
 			AppProgress.set_flag(seen_key)
 
 
-func _build_ow_banners() -> void:
-	_clear_ow_banners()
-	var i := 0
+# Colour-code the island: a flag ON each site (via the composer) plus a matching pill in the
+# right-side legend. Replaces the old per-site floating banners, so the map itself stays clear
+# of text. Locked sites get a grey flag + a greyed pill; an open objective adds a "!" badge.
+func _build_ow_legend() -> void:
+	var flag_specs: Array = []
+	var legend_specs: Array = []
 	for s in OverworldSites.sites():
+		var fc: Dictionary = SITE_FLAGS.get(s.id, {"model": "flag_red", "color": Color("c0392b")})
 		var locked: bool = _site_locked(s)
-		var banner = ChoiceBannerScript.new()
-		_choice_layer.add_child(banner)
-		banner.size = Vector2(190, 64)
-		banner.configure(_locale.resolve(s.word_key), "none", float(i) * 1.3)
-		banner.set_compact(30)   # small site label, floats above its site
-		if locked:
-			banner.set_active(false)
-		banner.set_badge(_site_has_open_objective(s.id))   # "!" if something to do here
-		_ow_banners.append({"banner": banner, "site": s,
-			"word": _locale.resolve(s.word_key), "locked": locked})
-		i += 1
-	_position_ow_banners()
+		flag_specs.append({
+			"anchor": s.anchor, "model": fc.model,
+			"tint": fc.get("tint", Color(1, 1, 1)), "locked": locked,
+		})
+		legend_specs.append({
+			"id": s.id, "word": _locale.resolve(s.word_key), "color": fc.color,
+			"locked": locked, "badge": _site_has_open_objective(s.id),
+		})
+	_composer.stage_site_flags(flag_specs)
+	if _legend == null:
+		_legend = SiteLegendScript.new()
+		_choice_layer.add_child(_legend)
+	_legend.build(legend_specs)
+	_legend.visible = not _hidebanners   # --nobanner debug still hides the key
+	_position_legend()
+
+
+# Pin the legend to the right edge, vertically centred. Uses the panel's laid-out size, so it
+# stays correct once the container has measured itself (called every overworld frame + on build).
+func _position_legend() -> void:
+	if _legend == null or not _legend.visible:
+		return
+	var sz: Vector2 = _legend.size
+	_legend.position = Vector2(1920.0 - sz.x - 44.0, (1080.0 - sz.y) * 0.5)
 
 
 # --- objectives (discoverability) --------------------------------------------
@@ -1913,10 +1940,9 @@ func _ow_show_hint(text: String) -> void:
 	_after(3.5, _restore_ow_prompt)
 
 
-func _clear_ow_banners() -> void:
-	for e in _ow_banners:
-		e.banner.queue_free()
-	_ow_banners.clear()
+func _hide_ow_legend() -> void:
+	if _legend != null:
+		_legend.visible = false
 
 
 func _set_top_prompt(text: String) -> void:
@@ -1938,34 +1964,6 @@ func _set_top_prompt(text: String) -> void:
 		_top_bar.offset_right = half
 		var line_h: float = float(fs) + 8.0
 		_top_bar.offset_bottom = 14.0 + maxf(66.0, lines.size() * line_h + 24.0)
-
-
-# Banners float above their site, projected from the 3D anchor each frame -- so a
-# larger scrolling island later needs no banner changes.
-func _position_ow_banners() -> void:
-	if _camera == null:
-		return
-	var force_hide: bool = _topcam or _hidebanners   # debug camera / --nobanner
-	if _topcam:
-		_composer.hide_clouds()
-	for e in _ow_banners:
-		if force_hide or not _place_world_label(e.banner, _composer.anchor_pos(e.site.anchor) + OW_BANNER_LIFT):
-			e.banner.visible = false
-
-
-# Shared rule for every world-anchored label (the site banners now, any future labels too):
-# position it at the world point's screen spot, scale it with the island zoom so it stays
-# proportional, and HIDE it once zoomed out past OW_LABEL_HIDE_ZOOM (so the map reads clean).
-# Returns false when the label should be hidden (zoomed out). Typing still selects a site.
-func _place_world_label(label: ChoiceBanner, world: Vector3) -> bool:
-	if _camera == null or _ow_zoom > _ow_label_hide:
-		return false
-	var s: float = clampf(OW_IDLE_ZOOM_DEFAULT / _ow_zoom, 0.55, 1.25)
-	label.visible = true
-	label.scale = Vector2(s, s)
-	var screen: Vector2 = _camera.unproject_position(world)
-	label.set_base_position(screen - Vector2(label.size.x * 0.5, 0))
-	return true
 
 
 ## Typed site selection: the buffer must stay a prefix of at least one unlocked
@@ -2001,18 +1999,10 @@ func _update_ow_highlight() -> void:
 	for cand in _ow_candidates:
 		if cand.word.begins_with(_ow_buffer):
 			matches.append(cand)
-	for e in _ow_banners:
-		if e.locked:
-			e.banner.set_typed(0)
-			e.banner.set_active(false)
-		elif _ow_buffer != "" and e.word.begins_with(_ow_buffer):
-			e.banner.set_typed(_ow_buffer.length())
-			e.banner.set_active(true)
-		else:
-			e.banner.set_typed(0)
-			e.banner.set_active(_ow_buffer == "")
+	if _legend != null:
+		_legend.set_prefix(_ow_buffer)
 	# guide the next key only once the typed prefix singles a site out (an open
-	# pick shows no bias -- the banners themselves show the words)
+	# pick shows no bias -- the legend itself shows the words)
 	if matches.size() == 1 and _ow_buffer.length() < matches[0].word.length():
 		_keyboard.highlight(matches[0].word.substr(_ow_buffer.length(), 1))
 	else:
@@ -2038,7 +2028,7 @@ func _begin_ow_travel(site) -> void:
 				legs.append({"route": s.route, "reverse": true})
 	legs.append({"route": site.route, "reverse": false})
 	_ow_walk = {"legs": legs, "leg": 0, "dist": 0.0, "site": site}
-	_clear_ow_banners()
+	_hide_ow_legend()
 	_keyboard.highlight("")
 	_narration.text = _locale.resolve(site.word_key)
 

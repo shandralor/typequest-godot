@@ -726,6 +726,41 @@ func anchor_pos(name: String) -> Vector3:
 	return _anchor_position(name)
 
 
+const OW_FLAG_DIR := "res://assets/kaykit/hexagon/"
+const OW_FLAG_SCALE := 3.0
+
+
+## Plant a colour-coded flag at each overworld site (replaces the floating banners). Called
+## by the controller right after compose_overworld. specs: [{ anchor, model, tint: Color
+## (white = keep the asset's own colour), locked: bool }]. Flags live under _location, so the
+## next compose_overworld -- which rebuilds _location -- clears them.
+func stage_site_flags(specs: Array) -> void:
+	if _location == null:
+		return
+	for spec in specs:
+		var flag := SceneKit.instance_path(OW_FLAG_DIR + String(spec.model) + ".gltf")
+		if flag == null:
+			continue
+		flag.name = "site_flag_" + String(spec.anchor)
+		flag.position = anchor_pos(String(spec.anchor))
+		flag.scale = Vector3.ONE * OW_FLAG_SCALE
+		var tint: Color = spec.get("tint", Color(1, 1, 1))
+		if spec.get("locked", false):
+			_recolor_flag(flag, Color(0.5, 0.5, 0.52))
+		elif tint != Color(1, 1, 1):
+			_recolor_flag(flag, tint)
+		_location.add_child(flag)
+
+
+# Flat-colour a flag's surfaces: used for the tinted 5th site and the grey "locked" flags.
+# Native-coloured flags are left untouched so they keep the KayKit cloth shading.
+func _recolor_flag(node: Node3D, color: Color) -> void:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	for c in node.find_children("*", "MeshInstance3D", true, false):
+		(c as MeshInstance3D).material_override = mat
+
+
 ## Place the lead along the travel path by progress in [0, 1] (walking scenes only).
 func set_lead_progress(p: float) -> void:
 	_hero.set_progress(p)
