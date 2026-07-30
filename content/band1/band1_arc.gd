@@ -3,8 +3,10 @@ extends RefCounted
 
 ## The band-1 story graph `band1-arc` (brief A7/A9), built as pure data.
 ##
-## Arc shape: start -> kruispunt -> { grot (setback, returns to naGrot -> brug ->
-## schat) | brug -> schat }. Two ways to the win; the cave is a recoverable detour.
+## Arc shape: start -> kruispunt -> { grot (first visit: FLEE, sets met_skeleton) |
+## grot_fight (armed return once fully_trained: wins has_crystal) | brug (the crossing,
+## needs has_crystal + molen_tip) }. All three forks are terminal wins; the cave gates
+## the bridge. (start is skipped on revisits -- see game_controller _start_scenario.)
 ##
 ## Safety records carry the per-locale FNV-1a hash from A7 (criteria_version is a
 ## deliberate stub, A4). AUTHORED -- do not regenerate casually.
@@ -77,7 +79,8 @@ static func build() -> StoryGraph:
 	grot.scene = Scenes.grot()
 	g.add_node(grot)
 
-	# grot_fight -- the ARMED return (reached via the grot fork once sword_sharp is set): type
+	# grot_fight -- the ARMED return (reached via the grot fork once fully_trained -- sword_sharp
+	# AND archery_done -- is set): type
 	# the fight, BEAT the skeleton, win the glowing crystal. A CELEBRATED terminal win that sets
 	# has_crystal (the key that lowers the drawbridge).
 	var grot_fight := StoryGraph.StoryNode.new()

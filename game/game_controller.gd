@@ -2100,6 +2100,13 @@ func _start_scenario(id: String) -> void:
 	_set_playing_ui(true)
 	_app_state = AppState.PLAYING
 	_run = RunState.new(Scenarios.build(id), _locale)
+	# Revisit skip (forest): once the cave has been met, the `start` walk node is pure
+	# repetition on every return -- the child re-types the same forest-walk sentence just to
+	# reach a fork they already know. Land bos REVISITS straight at `kruispunt` (the genuine
+	# grot/brug crossroads), keeping the fight + crossing prose (real typing practice) but
+	# dropping the redundant walk-in. Mirrors the --scene debug jump above.
+	if id == "band1" and AppProgress.get_flag("met_skeleton") and _run.graph.has_node("kruispunt"):
+		_run.current_id = "kruispunt"
 	_enter_node()
 
 

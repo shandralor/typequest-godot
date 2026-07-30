@@ -47,16 +47,6 @@ static func grot() -> SceneDescriptor:
 	return d
 
 
-# naGrot (post-cave fork) -- forest_path, day, path fork; hero at center, idle.
-static func na_grot() -> SceneDescriptor:
-	var d := SceneDescriptor.new()
-	d.location = "forest_path"
-	d.mood = "day"
-	d.path = SceneDescriptor.PATH_FORK
-	d.actors = [SceneDescriptor.ActorPlacement.new("hero", "center", "idle", "camera")]
-	return d
-
-
 # brug (the crossing) -- REUSES the fork set (its raised drawbridge + crystal socket +
 # the owner's lengthened far path). A walking straight-scene: hero starts at path_near
 # and walks path_near -> path_far as the prose is typed, then the exit-walk terminator
@@ -71,16 +61,4 @@ static func brug() -> SceneDescriptor:
 	# place (no rebuild/teleport); the crystal-lower + crossing then play from there.
 	d.continuous = true
 	d.actors = [SceneDescriptor.ActorPlacement.new("hero", "path_near", "walk", "camera")]
-	return d
-
-
-# schat (the treasure, the win) -- forest_path, day; hero at center idle; chest at
-# treasure.
-static func schat() -> SceneDescriptor:
-	var d := SceneDescriptor.new()
-	d.location = "forest_path"
-	d.mood = "day"
-	d.path = SceneDescriptor.PATH_STRAIGHT
-	d.actors = [SceneDescriptor.ActorPlacement.new("hero", "center", "idle", "camera")]
-	d.props = [SceneDescriptor.PropPlacement.new("chest", "treasure")]
 	return d

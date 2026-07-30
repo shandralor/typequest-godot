@@ -34,21 +34,16 @@ const CATALOG := {
 	"start.prose": "de kleine {held} wandelt door het bos. hij volgt het pad en stapt verder.",
 	"kruispunt.prose": "het pad gaat twee kanten op. links gaapt een zwarte grot. rechts staat een oude brug.",
 	"grot.prose": "in de grot rammelt een wit skelet. de {held} rent snel terug naar het licht.",
-	"naGrot.prose": "de {held} kiest nu voor de veilige brug.",
 	"brug.prose": "de brug ligt naar beneden. de {held} stapt over de brug en gaat verder.",
-	"schat.prose": "de {held} opent de kist vol goud. hij vindt de schat en is heel blij.",
 	# narration (read aloud; optional toggle later)
 	"start.narration": "Luister goed en typ elk woord dat je leest.",
 	"kruispunt.narration": "Kies je weg en typ het woord.",
 	"grot.narration": "Wees moedig en lees rustig verder.",
 	"grot.win": "Het skelet is te eng! De ridder moet eerst sterker worden en zijn wapens halen.",
-	"naGrot.narration": "De ridder kiest de veilige weg.",
 	"brug.narration": "Stap voor stap over de brug.",
 	"brug.lower": "De kristal laat de brug zakken!",
 	# placeholder end-of-demo message (read aloud on the crossing win; free text, not typed)
 	"demo.end": "Knap gedaan! Je hebt de demo uitgespeeld. Nieuwe avonturen komen binnenkort!",
-	"schat.narration": "Goed gedaan, kleine held!",
-	"schat.win": "Goed gedaan! Je hebt de schat.",
 	# grinding session (the slijplied -- a short song the child types)
 	"slijpen.prose": "slijp slijp slijp het grote zwaard. draai het wiel heel snel rond. vonken vliegen door de lucht. de {held} houdt het staal goed vast. het wiel draait rond en rond. kijk de vonken dansen fel. nog een keer en dan nog een. het zwaard wordt heel erg scherp. bijna klaar roept de smid. de laatste vonken spatten hoog. nu is het zwaard weer scherp. de {held} lacht heel blij.",
 	"slijpen.narration": "Zing het slijplied en typ elk woord.",
