@@ -35,6 +35,7 @@ class Choice extends RefCounted:
 	var target: String
 	var hint: String   # forward|left|right (presentation/guidance hint)
 	var requires_flag: String = ""   # space-separated flags -- ALL must be set for the option to show
+	var hidden_flag: String = ""     # space-separated flags -- once ALL are set the option is HIDDEN
 	var alt_target: String = ""      # if `alt_flag` is set, this choice leads here instead of `target`
 	var alt_flag: String = ""        # e.g. the armed cave: same fork choice, different beat once trained
 
@@ -43,9 +44,20 @@ class Choice extends RefCounted:
 		target = p_target
 		hint = p_hint
 
-	## Every required flag is set (empty requires_flag -> always available).
+	## Available when every `requires_flag` is set AND the `hidden_flag` set is not
+	## fully met (empty requires_flag -> always shown; empty hidden_flag -> never hidden).
+	## The negative gate retires a spent branch: e.g. the cave fork vanishes once you
+	## hold the crystal AND the tip, leaving the crossing as the only move.
 	func is_available(get_flag: Callable) -> bool:
 		for f in requires_flag.split(" ", false):
+			if not get_flag.call(f):
+				return false
+		if hidden_flag != "" and _all_set(hidden_flag, get_flag):
+			return false
+		return true
+
+	func _all_set(flags: String, get_flag: Callable) -> bool:
+		for f in flags.split(" ", false):
 			if not get_flag.call(f):
 				return false
 		return true

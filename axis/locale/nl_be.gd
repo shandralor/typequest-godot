@@ -96,6 +96,9 @@ const CATALOG := {
 	"site.molen": "molen",
 	"overworld.narration": "Waar ga je naartoe? Typ het woord.",
 	"overworld.locked": "Nog niet open",
+	# revisiting a site whose objective is already done -- a gentle beat before the (optional)
+	# replay, so a return does not feel like blind repetition (read-aloud, free punctuation)
+	"overworld.again": "Dit heb je al gedaan. Oefenen mag altijd!",
 }
 
 # Intro briefing: read-aloud sentences that roll across the screen one by one BEFORE

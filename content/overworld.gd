@@ -10,6 +10,11 @@ extends RefCounted
 ## becomes derived from stars/XP without changing this shape. A site with an empty
 ## scenario is a TEASER: shown greyed on the map, not selectable.
 ##
+## Optional gating keys (all AppProgress flags): `unlock_flag` hard-locks the site until
+## set (earned progression); `requires_flag` + `hint_key` soft-gate it (unlocked but hints
+## to fetch gear first); `done_flag` marks the site's objective complete -- the site stays
+## replayable for practice but a revisit shows a gentle "al gedaan" beat first.
+##
 ## Site words are owner-approved one by one (2026-07-02: bos, smidse, boog;
 ## 2026-07-16: thuis -- the revisitable house, reuses scenes/sets/house.tscn).
 
@@ -19,14 +24,16 @@ static func sites() -> Array:
 			"anchor": "site_bos", "route": "route_bos", "unlocked": true},
 		{"id": "smidse", "word_key": "site.smidse", "scenario": "grind",
 			"anchor": "site_smidse", "route": "route_smidse", "unlocked": true,
-			"unlock_flag": "met_skeleton", "requires_flag": "has_sword", "hint_key": "hint.smidse"},
+			"unlock_flag": "met_skeleton", "requires_flag": "has_sword", "hint_key": "hint.smidse",
+			"done_flag": "sword_sharp"},
 		{"id": "boog", "word_key": "site.boog", "scenario": "archery",
 			"anchor": "site_boog", "route": "route_boog", "unlocked": true,
-			"unlock_flag": "met_skeleton", "requires_flag": "has_bow", "hint_key": "hint.boog"},
+			"unlock_flag": "met_skeleton", "requires_flag": "has_bow", "hint_key": "hint.boog",
+			"done_flag": "archery_done"},
 		{"id": "thuis", "word_key": "site.thuis", "scenario": "home",
 			"anchor": "site_home", "route": "route_home", "unlocked": true,
 			"unlock_flag": "met_skeleton"},
 		{"id": "molen", "word_key": "site.molen", "scenario": "mill",
 			"anchor": "site_molen", "route": "route_molen", "unlocked": true,
-			"unlock_flag": "met_skeleton"},
+			"unlock_flag": "met_skeleton", "done_flag": "molen_tip"},
 	]

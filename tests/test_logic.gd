@@ -109,6 +109,14 @@ func _test_traversal() -> void:
 	_check(grot_choice.resolved_target(func(f): return f == "sword_sharp") == "grot", "grot fork -> still flee with only the sword")
 	_check(grot_choice.resolved_target(func(f): return f == "fully_trained") == "grot_fight", "grot fork -> grot_fight when fully_trained")
 	_check("has_crystal" in g.get_node_by_id("grot_fight").sets_flag, "grot_fight grants the crystal")
+	# the grot fork retires once the crystal is won AND the tip heard (brug is open) -- no
+	# pointless re-fight; before both are set it stays available, and hiding it never
+	# strands the fork (brug is available in exactly that state).
+	_check(grot_choice.is_available(func(f): return false), "grot fork available at the start")
+	_check(grot_choice.is_available(func(f): return f == "has_crystal"), "grot fork still shown with crystal but no tip")
+	_check(not grot_choice.is_available(func(f): return f in ["has_crystal", "molen_tip"]), "grot fork HIDDEN once crystal + tip are both set")
+	var brug_choice = g.get_node_by_id("kruispunt").choices[1]
+	_check(brug_choice.is_available(func(f): return f in ["has_crystal", "molen_tip"]), "brug fork open in exactly that state (no soft-lock)")
 
 	# the safe bridge -> treasure path (a later, armed visit; the flag gate lives in
 	# the controller, so the pure-logic traversal reaches it directly).

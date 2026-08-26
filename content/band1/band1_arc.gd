@@ -6,7 +6,9 @@ extends RefCounted
 ## Arc shape: start -> kruispunt -> { grot (first visit: FLEE, sets met_skeleton) |
 ## grot_fight (armed return once fully_trained: wins has_crystal) | brug (the crossing,
 ## needs has_crystal + molen_tip) }. All three forks are terminal wins; the cave gates
-## the bridge. (start is skipped on revisits -- see game_controller _start_scenario.)
+## the bridge. Once has_crystal AND molen_tip are both set the grot fork is HIDDEN (spent),
+## so a revisit offers only the crossing. (start is skipped on revisits -- see
+## game_controller _start_scenario.)
 ##
 ## Safety records carry the per-locale FNV-1a hash from A7 (criteria_version is a
 ## deliberate stub, A4). AUTHORED -- do not regenerate casually.
@@ -56,6 +58,9 @@ static func build() -> StoryGraph:
 	var grot_choice := StoryGraph.Choice.new("word.grot", "grot", "left")
 	grot_choice.alt_target = "grot_fight"
 	grot_choice.alt_flag = "fully_trained"
+	# once the crystal is won AND the tip heard (brug is open), the cave has nothing left --
+	# retire the grot fork so a revisit points straight at the crossing (no pointless re-fight).
+	grot_choice.hidden_flag = "has_crystal molen_tip"
 	kruispunt.choices = [
 		grot_choice,
 		brug_choice,

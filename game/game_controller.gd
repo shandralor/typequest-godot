@@ -123,6 +123,7 @@ var _ow_candidates: Array = []   # unlocked sites: [{ word, site }]
 var _ow_buffer := ""
 var _legend: SiteLegend          # right-side colour key (replaces the floating site banners)
 var _ow_walk = null              # { legs: [{route, reverse}], leg, dist, site }
+var _ow_entering := false        # true during the brief "al gedaan" ack beat before a replay
 var _ow_at := "hub"              # anchor the hero stands at on the island
 var _walk_capture := false       # debug: hold at the route end instead of starting the scenario
 var _topcam := false             # debug: overhead overworld camera for tracing roads
@@ -642,7 +643,7 @@ func _input(event: InputEvent) -> void:
 			get_tree().quit()         # main menu -> quit
 		return
 	if _app_state == AppState.OVERWORLD:
-		if _ow_walk == null:   # ignore keys while the knight is traveling
+		if _ow_walk == null and not _ow_entering:   # ignore keys while traveling / mid-ack
 			var oc := KeyboardInput.char_for_physical(event.physical_keycode)
 			if oc != "":
 				get_viewport().set_input_as_handled()
@@ -1437,7 +1438,7 @@ func _demo_tick(delta: float) -> void:
 		return
 	_demo_accum = 0.0
 	if _app_state == AppState.OVERWORLD:
-		if _ow_walk == null and not _ow_candidates.is_empty():
+		if _ow_walk == null and not _ow_entering and not _ow_candidates.is_empty():
 			var target: String = _ow_candidates[0].word
 			if _ow_buffer.length() < target.length():
 				_ow_char(target.substr(_ow_buffer.length(), 1))
@@ -1834,6 +1835,7 @@ func _show_overworld(at_anchor: String = "hub") -> void:
 	_ow_at = at_anchor
 	_ow_buffer = ""
 	_ow_walk = null
+	_ow_entering = false
 	_ow_candidates = []
 	for s in OverworldSites.sites():
 		if s.scenario != "":   # locked sites stay typeable so they can HINT ("nog niet open")
@@ -2065,7 +2067,21 @@ func _ow_arrive() -> void:
 	if _walk_capture:
 		_composer.set_lead_animation(false)   # debug: rest at the route end, no scenario cut
 		return
+	# already-done site: a short "you can still practise" beat before the (optional) replay,
+	# so a revisit does not feel like blind repetition. Input stays blocked (_ow_entering).
+	var df: String = site.get("done_flag", "")
+	if df != "" and AppProgress.get_flag(df):
+		_composer.set_lead_animation(false)
+		_ow_entering = true
+		_set_top_prompt(_locale.resolve("overworld.again"))
+		_after(2.5, _finish_ow_entry.bind(site.scenario))
+		return
 	_start_scenario(site.scenario)
+
+
+func _finish_ow_entry(scenario: String) -> void:
+	_ow_entering = false
+	_start_scenario(scenario)
 
 
 func _quit_app() -> void:
