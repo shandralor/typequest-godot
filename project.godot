@@ -35,6 +35,4 @@ theme/custom_font="res://assets/fonts/Andika-Regular.ttf"
 
 rendering_device/driver.windows="d3d12"
 rendering/renderer/rendering_method="forward_plus"
-; EXPERIMENT: try Forward+ (WebGPU) on web for the richer look. Revert this line to
-; "gl_compatibility" (WebGL2, universal support) if the browser build black-screens.
 rendering/renderer/rendering_method.web="forward_plus"
