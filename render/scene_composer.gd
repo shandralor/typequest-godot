@@ -1311,9 +1311,19 @@ func _apply_mood(mood: String, with_fog: bool = true) -> void:
 	# tuned lighting reads flat + cold there. Gate the lift on the ACTIVE renderer, not on
 	# "web": RenderingServer has no RenderingDevice on the GL backend. This way a Forward+
 	# web build (WebGPU) is left alone, and a low-end GL fallback anywhere still gets lit.
+	# The GL Compatibility renderer (WebGL2 on the web build, and any low-end GL fallback)
+	# tonemaps + derives sky ambient more crudely than the RenderingDevice renderers, so the
+	# desktop-tuned scenes read TOO BRIGHT and OVER-SATURATED there (neon grass, cyan water,
+	# few tones). A Forward+/WebGPU build has a RenderingDevice and is left untouched. Pull
+	# exposure + saturation back to approximate the Forward+ look. The overworld island art is
+	# authored far more saturated than the scene sets, so it over-eggs more -> desaturate it
+	# harder (its distinct "light" mood is the discriminator).
 	if RenderingServer.get_rendering_device() == null:
-		env.ambient_light_energy *= 1.9
-		sun.light_energy *= 1.2
+		env.tonemap_exposure = 0.88
+		env.adjustment_enabled = true
+		env.adjustment_brightness = 0.97
+		env.adjustment_contrast = 1.04
+		env.adjustment_saturation = 0.74 if mood == "light" else 0.86
 	we.environment = env
 	add_child(we)
 	add_child(sun)
