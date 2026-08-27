@@ -1,15 +1,20 @@
-name: Deploy to GitHub Pages
+name: Build and Deploy
 
-# Builds the Godot web export on every push to main and publishes it to
-# GitHub Pages. Single-threaded export (see export_presets.cfg) so it runs on
-# Pages without the COOP/COEP cross-origin-isolation headers Pages can't set.
+# On every push to main:
+#   1. export the Godot WEB build and publish it to GitHub Pages, AND
+#   2. export the LINUX build, wrap it in an AppImage, and publish it to a rolling
+#      `latest` GitHub Release so there is always one stable download link that
+#      refreshes on each push.
+# Web export is single-threaded (see export_presets.cfg) so it runs on Pages
+# without the COOP/COEP cross-origin-isolation headers Pages can't set.
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# Least-privilege token: read the repo, write the Pages deployment.
+# Least-privilege token: read the repo, write the Pages deployment. The Linux
+# release job raises contents->write for itself only (job-level override below).
 permissions:
   contents: read
   pages: write
@@ -44,8 +49,8 @@ jobs:
 
           curl -fSL -o templates.tpz "${BASE}/${TEMPLATES}"
           unzip -q templates.tpz
-          # The .tpz extracts a `templates/` dir; Godot looks for them under
-          # <data>/export_templates/<version>.<release>/
+          # The .tpz extracts a `templates/` dir (all platforms, incl. Linux);
+          # Godot looks for them under <data>/export_templates/<version>.<release>/
           TPL_DIR="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
           mkdir -p "${TPL_DIR}"
           mv templates/* "${TPL_DIR}/"
@@ -53,7 +58,7 @@ jobs:
           godot --version
 
       - name: Import resources
-        # First headless pass builds the .godot/imported cache the export needs.
+        # First headless pass builds the .godot/imported cache the exports need.
         run: godot --headless --import --path . || true
 
       - name: Export web build
@@ -71,6 +76,61 @@ jobs:
         with:
           path: build/web
 
+      - name: Export Linux build
+        run: |
+          set -euo pipefail
+          mkdir -p build/linux
+          # single self-contained x86_64 executable (PCK embedded, see export_presets.cfg)
+          godot --headless --path . --export-release "Linux" build/linux/typequest.x86_64
+          test -f build/linux/typequest.x86_64
+
+      - name: Package AppImage
+        run: |
+          set -euo pipefail
+          # a PNG icon for the AppImage (icon.svg is the project icon)
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq librsvg2-bin >/dev/null
+
+          APPDIR="build/TypeQuest.AppDir"
+          rm -rf "${APPDIR}"
+          mkdir -p "${APPDIR}/usr/bin" "${APPDIR}/usr/share/icons/hicolor/256x256/apps" "${APPDIR}/usr/share/applications"
+          install -Dm755 build/linux/typequest.x86_64 "${APPDIR}/usr/bin/typequest.x86_64"
+          rsvg-convert -w 256 -h 256 icon.svg -o "${APPDIR}/typequest.png"
+          cp "${APPDIR}/typequest.png" "${APPDIR}/usr/share/icons/hicolor/256x256/apps/typequest.png"
+
+          cat > "${APPDIR}/typequest.desktop" <<'DESKTOP'
+          [Desktop Entry]
+          Type=Application
+          Name=TypeQuest
+          Comment=Leer typen in een fantasieavontuur
+          Exec=typequest.x86_64
+          Icon=typequest
+          Categories=Game;Education;
+          Terminal=false
+          DESKTOP
+          cp "${APPDIR}/typequest.desktop" "${APPDIR}/usr/share/applications/typequest.desktop"
+
+          cat > "${APPDIR}/AppRun" <<'APPRUN'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "${HERE}/usr/bin/typequest.x86_64" "$@"
+          APPRUN
+          chmod +x "${APPDIR}/AppRun"
+
+          # appimagetool is itself an AppImage; runners lack FUSE, so extract-and-run.
+          curl -fSL -o appimagetool "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x appimagetool
+          ARCH=x86_64 ./appimagetool --appimage-extract-and-run "${APPDIR}" build/TypeQuest-x86_64.AppImage
+          test -f build/TypeQuest-x86_64.AppImage
+
+      - name: Upload AppImage artifact (inter-job transfer)
+        uses: actions/upload-artifact@v4
+        with:
+          name: typequest-linux
+          path: build/TypeQuest-x86_64.AppImage
+          retention-days: 14
+          if-no-files-found: error
+
   deploy:
     needs: export
     runs-on: ubuntu-latest
@@ -81,3 +141,38 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  release:
+    # Publish the AppImage to a rolling `latest` release -- a stable link that
+    # always serves the newest build:
+    #   https://github.com/<owner>/<repo>/releases/download/latest/TypeQuest-x86_64.AppImage
+    needs: export
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # job-scoped: only this job can write releases/tags
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download AppImage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: typequest-linux
+          path: dist
+
+      - name: Publish/refresh the `latest` release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          NOTES="Automated Linux build from ${GITHUB_SHA}. Download TypeQuest-x86_64.AppImage, \`chmod +x\` it, and run."
+          if gh release view latest >/dev/null 2>&1; then
+            # quietly replace the asset in place (no new release notification)
+            gh release upload latest dist/TypeQuest-x86_64.AppImage --clobber
+            gh release edit latest --notes "${NOTES}"
+          else
+            gh release create latest dist/TypeQuest-x86_64.AppImage \
+              --title "Latest Linux build" \
+              --notes "${NOTES}" \
+              --target "${GITHUB_SHA}"
+          fi
