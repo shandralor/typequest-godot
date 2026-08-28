@@ -48,6 +48,9 @@ func _initialize() -> void:
 	while game._ow_walk != null and guard < 200:
 		game._ow_walk_tick(0.25)
 		guard += 1
+	# arrival now fades into the scenario (async: _start_scenario runs at the fade midpoint) --
+	# let the fade settle before asserting the end state
+	await game.get_tree().create_timer(0.7).timeout
 	fail += _check(game._app_state == game.AppState.PLAYING, "arrival -> playing")
 	fail += _check(game._run != null and game._run.current_id == "start", "run started at 'start'")
 	fail += _check(game._ow_at == "site_bos", "hero remembered at the bos site")

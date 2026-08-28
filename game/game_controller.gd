@@ -100,6 +100,8 @@ const CHOICE_WALK_DUR := 1.4
 const EXIT_WALK_DUR := 2.6      # stroll off the far path at the end of a crossing (minimum)
 const EXIT_WALK_SPEED := 1.3    # units/sec -- a farther cross_exit = a longer walk, same pace
 const EXIT_FADE_DUR := 0.8      # soft fade-to-black on either side of the island swap
+const SCENE_FADE_DUR := 0.28    # quick fade-to-black that cushions a scene CUT (fork->cave,
+								# island<->scenario, win->island) so nothing snaps
 const BRIDGE_LOWER_DUR := 1.6   # the crystal-lowering drop before the crossing walk
 var _ui: Control
 var _menu_layer: Control
@@ -652,7 +654,8 @@ func _input(event: InputEvent) -> void:
 	if _app_state != AppState.PLAYING:
 		return  # the main menu is mouse-driven
 	if _phase == Phase.WIN and event.keycode == KEY_ENTER:
-		_show_overworld(_ow_at)   # finishing + enter returns to the island
+		_phase = Phase.PAUSE                       # a second Enter during the fade is ignored
+		_fade_cut(_show_overworld.bind(_ow_at))    # finishing + enter returns to the island
 		return
 	var c := KeyboardInput.char_for_physical(event.physical_keycode)
 	if c != "":
@@ -782,9 +785,11 @@ func _begin_choice_walk(dest: Vector3, full: bool = false) -> void:
 	_keyboard.highlight("")
 	_phase = Phase.PAUSE
 	var from: Vector3 = _composer.lead_position()
-	# `full` walks all the way to dest (a same-set crossing entry); otherwise a couple of
-	# steps toward the landmark before the cut.
-	_walkoff = {"from": from, "to": from.lerp(dest, 1.0 if full else 0.5), "t": 0.0, "dur": CHOICE_WALK_DUR}
+	# `full` walks all the way to dest (a same-set crossing entry) and re-stages continuously
+	# (no cut). Otherwise a couple of steps toward the landmark, then a quick fade covers the
+	# cut to a DIFFERENT set (e.g. forest -> the dark cave), so the tonal jump never snaps.
+	var done: Callable = Callable() if full else _fade_cut.bind(_enter_node, SCENE_FADE_DUR)
+	_walkoff = {"from": from, "to": from.lerp(dest, 1.0 if full else 0.5), "t": 0.0, "dur": CHOICE_WALK_DUR, "on_done": done}
 	var d: Vector3 = dest - from
 	if d.length() > 0.001:
 		_composer.set_lead_facing(atan2(d.x, d.z))
@@ -814,10 +819,13 @@ func _begin_exit_walk() -> void:
 	_composer.set_lead_animation(true)
 
 
-# Soft fade-to-black, swap to the island under cover of the black, then fade back in.
-func _fade_to_overworld() -> void:
+# A reusable soft cut: fade to black, run `midpoint` under cover of the black (swap the
+# scene / view), then fade back in. Softens the hard cuts that otherwise SNAP -- the camera
+# jump + compose hitch both happen while the screen is black. `midpoint` runs even with no
+# UI layer (headless/tests) so the state change is never skipped.
+func _fade_cut(midpoint: Callable, dur: float = SCENE_FADE_DUR) -> void:
 	if _ui == null:
-		_show_overworld(_ow_at)
+		midpoint.call()
 		return
 	var f := ColorRect.new()
 	f.color = Color(0, 0, 0, 0.0)
@@ -825,10 +833,15 @@ func _fade_to_overworld() -> void:
 	f.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ui.add_child(f)
 	var t := create_tween()
-	t.tween_property(f, "color:a", 1.0, EXIT_FADE_DUR)
-	t.tween_callback(_show_overworld.bind(_ow_at))
-	t.tween_property(f, "color:a", 0.0, EXIT_FADE_DUR)
+	t.tween_property(f, "color:a", 1.0, dur)
+	t.tween_callback(midpoint)
+	t.tween_property(f, "color:a", 0.0, dur)
 	t.tween_callback(f.queue_free)
+
+
+# Soft fade-to-black, swap to the island under cover of the black, then fade back in.
+func _fade_to_overworld() -> void:
+	_fade_cut(_show_overworld.bind(_ow_at), EXIT_FADE_DUR)
 
 
 # Crossing opening beat: if he has the crystal, drop it into the socket and lower the
@@ -2076,12 +2089,14 @@ func _ow_arrive() -> void:
 		_set_top_prompt(_locale.resolve("overworld.again"))
 		_after(2.5, _finish_ow_entry.bind(site.scenario))
 		return
-	_start_scenario(site.scenario)
+	_ow_entering = true   # block island input during the fade into the scenario
+	_fade_cut(_start_scenario.bind(site.scenario))
 
 
 func _finish_ow_entry(scenario: String) -> void:
-	_ow_entering = false
-	_start_scenario(scenario)
+	# _ow_entering stays true through the fade (reset when the island is next shown), so no
+	# stray keystroke during the black starts another travel.
+	_fade_cut(_start_scenario.bind(scenario))
 
 
 func _quit_app() -> void:
