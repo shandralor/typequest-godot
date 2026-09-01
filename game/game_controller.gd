@@ -1419,9 +1419,10 @@ func _camera_rig() -> Dictionary:
 		return {"pos": focus + iso, "look": focus, "fov": ow2.get("fov", 30.0)}
 	var lead: Vector3 = _composer.lead_position()
 	if _composer.is_house_scene():
-		# a fixed frame from INSIDE the room (near the front), looking down it at the
-		# doorway -- walls + ceiling enclose the view so only the interior is seen
-		return {"pos": Vector3(0, 4.7, 9.2), "look": Vector3(0, 1.2, -4.5), "fov": 54.0}
+		# a fixed frame from INSIDE the room, raised + pulled back and tilted DOWN toward the
+		# front floor so the wake-up (near the bed) sits well up in the frame -- not mashed
+		# into the bottom behind the keyboard -- while the doorway walk still reads down the room
+		return {"pos": Vector3(0, 6.1, 11.2), "look": Vector3(0, 0.2, -2.4), "fov": 56.0}
 	if _composer.is_walking():
 		return {"pos": lead + CAM_OFFSET, "look": lead + Vector3(0, CAM_LOOK_Y, 0)}
 	if _composer.has_landmarks():
