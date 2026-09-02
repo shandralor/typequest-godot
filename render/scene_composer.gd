@@ -76,7 +76,8 @@ var _is_house_scene := false   # the intro interior (wake up, walk out the door)
 var _house_door: Node3D      # the doorway leaf that swings open at the intro end
 var _target: Node3D          # the archery target
 var _crosshair: Node3D       # reticle on the target face
-var _bow: Node3D             # bow held by the knight (arrow spawn point)
+var _bow: Node3D             # the ranged weapon held by the hero (projectile spawn point)
+var _ranged: Dictionary = {}   # the chosen hero's ranged loadout (Characters.ranged_for)
 var _target_face := Vector3.ZERO   # world centre of the target face
 
 
@@ -97,6 +98,8 @@ func compose(descriptor, variant: String = "") -> void:
 			_needs_bloom = true   # only the treasure scenes get bloom
 	_is_work_scene = descriptor.location == "forge"
 	_is_archery_scene = descriptor.location == "archery_range"
+	if _is_archery_scene:
+		_ranged = Characters.ranged_for(AppProgress.get_choice("hero", Characters.DEFAULT_ID))
 	_is_house_scene = descriptor.location == "house"
 	_location = _instance_set(set_name)
 	_location.name = "Location"
@@ -158,8 +161,8 @@ func compose(descriptor, variant: String = "") -> void:
 		# the INTRO (a walking scene starting at path_near) sinks him for the getting-up
 		# rise; a RETURN visit (starts at path_far/door, not walking) just stands there
 		set_house_start()
-	if _is_archery_scene and _hero.anim != null and _hero.anim.has_animation(HeroRig.HERO_AIM):
-		_hero.anim.play(HeroRig.HERO_AIM)   # hold the bow-aim pose (not idle)
+	if _is_archery_scene and _hero.anim != null and _hero.anim.has_animation(_ranged_aim()):
+		_hero.anim.play(_ranged_aim())   # hold the ranged aim/cast pose (not idle)
 	else:
 		set_lead_animation(false)
 
@@ -210,6 +213,7 @@ func _clear() -> void:
 	_target = null
 	_crosshair = null
 	_bow = null
+	_ranged = {}
 
 
 ## Whether the last compose() re-staged in place (same set, no rebuild) -- the controller
@@ -946,6 +950,31 @@ func set_house_item_locked(name_contains: String, locked: bool) -> void:
 		(mi as GeometryInstance3D).transparency = LOCKED_GHOST if locked else 0.0
 
 
+# Swap the wall's ranged-fetch weapon (a bow) to the CHOSEN class's ranged weapon -- so a
+# witch/mage fetches a wand, a barbarian an axe, etc., not a bow (C-mini). Reuses the bow
+# node's wall transform + name, so the lock/hide/pickup path ("bow_a") still targets it.
+# No-op for the knight (already a bow). Call on a house-scene compose, before _apply_house_locks.
+func set_ranged_fetch_weapon(hero_id: String) -> void:
+	if _location == null:
+		return
+	var rw: String = Characters.ranged_for(hero_id).get("weapon", "bow")
+	if rw == "bow":
+		return
+	var old := SceneKit.find_child_containing(_location, "bow_a")
+	if old == null:
+		return
+	var xform: Transform3D = (old as Node3D).transform
+	var parent := old.get_parent()
+	var idx := old.get_index()
+	var nm := old.name
+	old.free()
+	var w := SceneKit.instance_asset(rw)
+	w.name = nm   # keep the name so set_house_item_*/pickup still find it via "bow_a"
+	parent.add_child(w)
+	parent.move_child(w, idx)
+	(w as Node3D).transform = xform
+
+
 # Hide a house item entirely (e.g. a collected bow no longer on the wall).
 func set_house_item_hidden(name_contains: String, hidden: bool) -> void:
 	if _location == null:
@@ -1077,9 +1106,9 @@ func _build_archery_target() -> void:
 	_crosshair = _make_crosshair()
 	_crosshair.position = _target_face
 	add_child(_crosshair)
-	# keep the knight in the bow-aim pose
-	if _hero.anim != null and _hero.anim.has_animation(HeroRig.HERO_AIM):
-		_hero.anim.play(HeroRig.HERO_AIM, 0.3)
+	# keep the hero in the ranged aim/cast pose
+	if _hero.anim != null and _hero.anim.has_animation(_ranged_aim()):
+		_hero.anim.play(_ranged_aim(), 0.3)
 
 
 func _make_crosshair() -> Node3D:
@@ -1124,15 +1153,23 @@ func hide_crosshair() -> void:
 		_crosshair.visible = false
 
 
-## Loose an arrow to `offset` on the target: a quick bow release, an arrow flies
-## from the bow to that point and sticks.
+func _ranged_aim() -> String:
+	return _ranged.get("aim", HeroRig.HERO_AIM)
+
+
+func _ranged_fire() -> String:
+	return _ranged.get("fire", HeroRig.HERO_SHOOT)
+
+
+## Loose a shot to `offset` on the target: the class's fire pose plays, a projectile
+## (arrow / bolt / magic bolt / thrown weapon) flies from the weapon to that point and sticks.
 func fire_arrow(offset: Vector2) -> void:
-	if _hero.anim != null and _hero.anim.has_animation(HeroRig.HERO_SHOOT):
-		_hero.anim.play(HeroRig.HERO_SHOOT, 0.1)
+	if _hero.anim != null and _hero.anim.has_animation(_ranged_fire()):
+		_hero.anim.play(_ranged_fire(), 0.1)
 		_hero.anim.animation_finished.connect(_back_to_aim, CONNECT_ONE_SHOT)
 	var o := offset.limit_length(TARGET_RADIUS)
 	var land := _target_face + Vector3(o.x, o.y, -0.5)   # into the target face
-	var arrow := SceneKit.instance_path(ARROW_MODEL)
+	var arrow := _make_projectile()
 	if arrow == null:
 		return
 	arrow.scale = Vector3(2.4, 2.4, 2.4)
@@ -1157,8 +1194,31 @@ func _stick_arrow(arrow: Node3D, land: Vector3) -> void:
 
 
 func _back_to_aim(_a: StringName) -> void:
-	if _hero.anim != null and _is_archery_scene and _hero.anim.has_animation(HeroRig.HERO_AIM):
-		_hero.anim.play(HeroRig.HERO_AIM, 0.15)
+	if _hero.anim != null and _is_archery_scene and _hero.anim.has_animation(_ranged_aim()):
+		_hero.anim.play(_ranged_aim(), 0.15)
+
+
+## The projectile for the chosen class: a vocabulary model (arrow/bolt), a code-built glowing
+## "magic" bolt, or -- when the descriptor's projectile is "" -- the weapon itself (thrown).
+func _make_projectile() -> Node3D:
+	var kind: String = _ranged.get("projectile", "arrow")
+	if kind == "magic":
+		var orb := MeshInstance3D.new()
+		var sphere := SphereMesh.new()
+		sphere.radius = 0.06
+		sphere.height = 0.12
+		orb.mesh = sphere
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.6, 0.35, 1.0)
+		mat.emission_enabled = true
+		mat.emission = Color(0.7, 0.45, 1.0)
+		mat.emission_energy_multiplier = 4.0
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		orb.material_override = mat
+		return orb
+	if kind == "":   # thrown weapon: reuse the class's weapon model
+		return SceneKit.instance_asset(_ranged.get("weapon", "dagger"))
+	return SceneKit.instance_asset(kind)
 
 
 func _hero_position_high() -> Vector3:
@@ -1196,12 +1256,16 @@ func _place_prop(prop) -> void:
 				sword.position = _anchor_position(prop.anchor)
 			_sword = sword
 		"bow":
-			var bow := SceneKit.instance_asset("bow")
+			# the RANGED weapon is per class (C-mini): bow / crossbow / wand / thrown axe|dagger,
+			# held in the class's hand slot, spun 180 only if the model's grip needs it
+			var weapon_id: String = _ranged.get("weapon", "bow")
+			var bow := SceneKit.instance_asset(weapon_id)
 			bow.name = "Prop_bow"
-			if _attach_to_hand(bow, "handslot.l", Vector3.ZERO):   # held in the off-hand
-				# the model's default grip points the string downrange; spin it so the
-				# string faces the archer and the belly (arrow rest) faces the target
-				bow.rotate_object_local(Vector3.UP, PI)
+			if _attach_to_hand(bow, _ranged.get("hand", "handslot.l"), Vector3.ZERO):
+				if _ranged.get("spin", true):
+					# the bow's default grip points the string downrange; spin it so the
+					# string faces the archer and the belly (arrow rest) faces the target
+					bow.rotate_object_local(Vector3.UP, PI)
 			else:
 				add_child(bow)
 				bow.position = _anchor_position("line")

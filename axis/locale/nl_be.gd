@@ -49,8 +49,8 @@ const CATALOG := {
 	"slijpen.narration": "Zing het slijplied en typ elk woord.",
 	"slijpen.win": "Goed gedaan! Je zwaard is scherp.",
 	# archery session -- sentences grow longer so each arrow lands closer to the bullseye
-	"boog.prose": "de boog is klaar. de {held} mikt goed op het doel. de pijl vliegt snel recht door de lucht. de {held} raakt het doel precies in het midden.",
-	"boog.narration": "Span de boog en typ elk woord.",
+	"boog.prose": "de {held} maakt zich klaar. de {held} mikt goed op het doel. het schot vliegt snel recht door de lucht. de {held} raakt het doel precies in het midden.",
+	"boog.narration": "Mik goed en typ elk woord.",
 	"boog.win": "Raak! Recht in de roos.",
 	# molen -- meet the miller; he tips you how to cross the old bridge (need a crystal)
 	"mill.prose": "de molenaar maalt het graan tot fijn meel. hij ziet je bij de open deur. de oude man weet veel over het bos. de oude brug opent met een kristal. het skelet in de grot bewaakt het. versla het en pak het kristal. de molenaar zwaait je vrolijk uit.",
@@ -68,15 +68,15 @@ const CATALOG := {
 	# home -- a RETURN visit: walk in, then CHOOSE which gear to collect (campaign v2)
 	"home.prose": "de {held} is weer thuis. de {held} pakt iets van de muur.",
 	"home.sword_prose": "de {held} pakt het zwaard van de plank.",
-	"home.bow_prose": "de {held} pakt de boog van de muur.",
+	"home.bow_prose": "de {held} pakt het wapen van de muur.",
 	"home.narration": "Typ de woorden.",
 	"home.win": "Tot de volgende keer!",
 	"home.win_sword": "Je hebt je zwaard gehaald!",
-	"home.win_bow": "Je hebt je boog gehaald!",
+	"home.win_bow": "Je hebt je wapen gehaald!",
 	"home.nothing": "Je hebt alles al gehaald!",
 	# site-prerequisite hints (read aloud): go get the gear first
 	"hint.smidse": "Haal eerst je zwaard thuis!",
-	"hint.boog": "Haal eerst je boog thuis!",
+	"hint.boog": "Haal eerst je wapen thuis!",
 	# objectives -- short read-aloud nudges (not typed, so free punctuation)
 	"objective.wapens": "Haal je wapens thuis op!",
 	"objective.molen": "Ga naar de molen voor een tip!",

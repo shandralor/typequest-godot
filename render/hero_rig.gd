@@ -32,6 +32,12 @@ const HERO_LIE := "Lie_Idle"          # looped lying pose (asleep in bed at the 
 const HERO_STANDUP := "Lie_StandUp"   # one-shot get-up (fold from lying to standing)
 const HERO_AIM := "Ranged_Bow_Aiming_Idle"   # looped bow aim, for archery
 const HERO_SHOOT := "Ranged_Bow_Release"     # one-shot loose, per arrow
+# per-class ranged variants (C-mini) -- all in the CombatRanged set + General(Throw), same rig
+const HERO_AIM_MAGIC := "Ranged_Magic_Spellcasting"   # looped cast pose (wand/staff)
+const HERO_SHOOT_MAGIC := "Ranged_Magic_Shoot"        # one-shot cast release
+const HERO_AIM_1H := "Ranged_1H_Aiming"               # looped 1H aim (crossbow)
+const HERO_SHOOT_1H := "Ranged_1H_Shoot"              # one-shot 1H shot
+const HERO_THROW := "Throw"                           # one-shot throw (axe/dagger)
 const HERO_RANGED := "res://assets/kaykit/characters/Rig_Medium_CombatRanged.glb"
 
 var node: Node3D
@@ -59,12 +65,12 @@ func build(model_override: String = "") -> Node3D:
 	ap.root_node = NodePath("..")   # resolve tracks against the Knight root
 	var lib := AnimationLibrary.new()
 	ap.add_animation_library("", lib)
-	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP])
+	_graft_animations(lib, HERO_GENERAL, [HERO_IDLE, HERO_PICKUP, HERO_THROW])
 	_graft_animations(lib, HERO_MOVE, [HERO_WALK])
 	_graft_animations(lib, HERO_TOOLS, [HERO_WORK])
 	_graft_animations(lib, HERO_SIM, [HERO_CHEER, HERO_LIE, HERO_STANDUP])
-	_graft_animations(lib, HERO_RANGED, [HERO_AIM, HERO_SHOOT])
-	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK, HERO_CHEER, HERO_AIM, HERO_LIE]:
+	_graft_animations(lib, HERO_RANGED, [HERO_AIM, HERO_SHOOT, HERO_AIM_MAGIC, HERO_SHOOT_MAGIC, HERO_AIM_1H, HERO_SHOOT_1H])
+	for clip in [HERO_IDLE, HERO_WALK, HERO_WORK, HERO_CHEER, HERO_AIM, HERO_AIM_MAGIC, HERO_AIM_1H, HERO_LIE]:
 		if lib.has_animation(clip):
 			lib.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 	anim = ap

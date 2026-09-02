@@ -38,3 +38,24 @@ static func model_for(id: String) -> String:
 
 static func label_for(id: String) -> String:
 	return _find(id).label
+
+
+## Per-class RANGED loadout for the boog/archery site (roadmap G1, C-mini). Every clip below
+## lives in the already-grafted CombatRanged / General animation sets on the shared Rig_Medium,
+## so no class mimes a bowstring. Fields:
+##   weapon     -- vocabulary asset id, held in `hand` (spun 180deg if `spin`)
+##   aim / fire -- grafted animation names (aim = held idle pose; fire = the loose one-shot)
+##   projectile -- vocabulary id that flies to the target; "magic" = a glowing bolt built in
+##                 code; "" = reuse the weapon model itself (a thrown axe / dagger, spinning)
+const RANGED := {
+	"knight":    {"weapon": "bow",      "hand": "handslot.l", "spin": true,  "aim": "Ranged_Bow_Aiming_Idle",   "fire": "Ranged_Bow_Release", "projectile": "arrow"},
+	"ranger":    {"weapon": "crossbow", "hand": "handslot.r", "spin": false, "aim": "Ranged_1H_Aiming",          "fire": "Ranged_1H_Shoot",    "projectile": "bolt"},
+	"mage":      {"weapon": "wand",     "hand": "handslot.r", "spin": false, "aim": "Ranged_Magic_Spellcasting", "fire": "Ranged_Magic_Shoot", "projectile": "magic"},
+	"witch":     {"weapon": "wand",     "hand": "handslot.r", "spin": false, "aim": "Ranged_Magic_Spellcasting", "fire": "Ranged_Magic_Shoot", "projectile": "magic"},
+	"barbarian": {"weapon": "axe",      "hand": "handslot.r", "spin": false, "aim": "Idle_A",                    "fire": "Throw",              "projectile": ""},
+	"rogue":     {"weapon": "dagger",   "hand": "handslot.r", "spin": false, "aim": "Idle_A",                    "fire": "Throw",              "projectile": ""},
+}
+
+
+static func ranged_for(id: String) -> Dictionary:
+	return RANGED.get(id, RANGED["knight"])

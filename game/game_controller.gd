@@ -493,7 +493,8 @@ func _enter_node() -> void:
 			if _in_intro:
 				_setup_house(_prose.target)         # a morning walk; only the chosen weapon shows
 			else:
-				_apply_house_locks()                # ghost bows until their flag is set (fetch visit)
+				_composer.set_ranged_fetch_weapon(_chosen_hero_id())  # a witch fetches a wand, not a bow
+				_apply_house_locks()                # ghost the gear until its flag is set (fetch visit)
 				_setup_house_visit(_prose.target)   # a return visit: just walk in
 		if node.exit_walk:
 			_setup_crossing()                        # the crystal drops the drawbridge first

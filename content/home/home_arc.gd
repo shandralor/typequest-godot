@@ -50,7 +50,7 @@ static func build() -> StoryGraph:
 	boog.narration_key = "home.narration"
 	boog.ending = "win"
 	boog.win_key = "home.win_bow"
-	boog.safety = _safety("fnv1a:d86d6e7a")
+	boog.safety = _safety("fnv1a:d9e2a77c")
 	boog.scene = _house_scene()
 	g.add_node(boog)
 	return g

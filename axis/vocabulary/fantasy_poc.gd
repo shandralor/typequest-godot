@@ -26,6 +26,13 @@ const ASSETS := {
 	"anvil": "res://assets/kaykit/rpgtools_bits/anvil.gltf",
 	"sword": "res://assets/kaykit/adventurers/sword_1handed.gltf",
 	"bow": "res://assets/kaykit/adventurers/bow_withString.gltf",
+	# per-class RANGED weapons + projectiles for the boog/archery site (roadmap G1, C-mini)
+	"crossbow": "res://assets/kaykit/adventurers/crossbow_1handed.gltf",
+	"wand": "res://assets/kaykit/adventurers/wand.gltf",
+	"axe": "res://assets/kaykit/fantasy_weapons_bits/axe_C.gltf",
+	"dagger": "res://assets/kaykit/fantasy_weapons_bits/dagger_A.gltf",
+	"arrow": "res://assets/kaykit/adventurers/arrow_bow.gltf",
+	"bolt": "res://assets/kaykit/adventurers/arrow_crossbow.gltf",
 }
 
 static func resolve(asset_id: String) -> String:
