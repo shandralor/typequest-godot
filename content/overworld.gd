@@ -28,7 +28,7 @@ static func sites() -> Array:
 			"done_flag": "sword_sharp"},
 		{"id": "boog", "word_key": "site.boog", "scenario": "archery",
 			"anchor": "site_boog", "route": "route_boog", "unlocked": true,
-			"unlock_flag": "met_skeleton", "requires_flag": "has_bow", "hint_key": "hint.boog",
+			"unlock_flag": "met_skeleton", "requires_flag": "has_ranged", "hint_key": "hint.boog",
 			"done_flag": "archery_done"},
 		{"id": "thuis", "word_key": "site.thuis", "scenario": "home",
 			"anchor": "site_home", "route": "route_home", "unlocked": true,

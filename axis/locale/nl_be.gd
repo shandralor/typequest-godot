@@ -87,11 +87,11 @@ const CATALOG := {
 	"word.brug": "brug",
 	"word.kist": "kist",
 	"word.zwaard": "zwaard",
-	"word.boog": "boog",
+	"word.boog": "doel",
 	# overworld site words (typed to travel to an adventure site)
 	"site.bos": "bos",
 	"site.smidse": "smidse",
-	"site.boog": "boog",
+	"site.boog": "doel",
 	"site.thuis": "thuis",
 	"site.molen": "molen",
 	"overworld.narration": "Waar ga je naartoe? Typ het woord.",

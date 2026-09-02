@@ -154,6 +154,11 @@ func compose(descriptor, variant: String = "") -> void:
 		_grindstone = SceneKit.find_child_containing(_location, "grindstone")
 	if _is_archery_scene:
 		_build_archery_target()
+		# the arrow bucket is bow/crossbow flavour -- hide it for casters + throwers
+		if not (_ranged.get("projectile", "arrow") in ["arrow", "bolt"]):
+			var quiver := SceneKit.find_child_containing(_location, "bucket_arrows")
+			if quiver != null:
+				quiver.visible = false
 	set_lead_progress(0.0)
 	if _is_house_scene:
 		_hide_hero_weapons()   # the per-hero rack weapons stay hidden until the intro reveals one

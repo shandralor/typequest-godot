@@ -587,7 +587,7 @@ func _resolve_ending() -> void:
 					var item: Dictionary = _house_item_by_id(_house_visit_fetch)
 					_composer.house_pickup_item(item.node)   # take the item off the wall
 					AppProgress.set_flag(item.flag)         # prerequisite for its training site
-					if AppProgress.get_flag("has_sword") and AppProgress.get_flag("has_bow"):
+					if AppProgress.get_flag("has_sword") and AppProgress.get_flag("has_ranged"):
 						AppProgress.set_flag("has_gear")    # completes the "get your gear" objective
 				else:
 					_composer.play_lead_loop("Cheering")   # a plain visit: a small wave
@@ -1126,7 +1126,7 @@ func _update_house_visit(delta: float) -> bool:
 # so adding an item (shield, keys, ...) is a row here + a wall node + a *_point anchor.
 const HOUSE_ITEMS := [
 	{"id": "sword", "node": "shelf_sword", "anchor": "sword_point", "flag": "has_sword", "take_node": "neem_zwaard"},
-	{"id": "bow", "node": "bow_a", "anchor": "bow_point", "flag": "has_bow", "take_node": "neem_boog"},
+	{"id": "bow", "node": "bow_a", "anchor": "bow_point", "flag": "has_ranged", "take_node": "neem_boog"},
 ]
 
 
@@ -1791,9 +1791,9 @@ const DEV_CODE := "devmode"
 const DEV_FLAGS := [
 	{"label": "Cave", "flag": "met_skeleton"},
 	{"label": "Zwaard", "flag": "has_sword"},
-	{"label": "Boog", "flag": "has_bow"},
+	{"label": "Wapen", "flag": "has_ranged"},
 	{"label": "Wapens", "flag": "has_gear"},
-	{"label": "Boog getr.", "flag": "archery_done"},
+	{"label": "Getraind", "flag": "archery_done"},
 	{"label": "Kristal", "flag": "has_crystal"},
 	{"label": "Brug over", "flag": "crossed_bridge"},
 ]

@@ -26,19 +26,19 @@ func _initialize() -> void:
 	fail += _check(game._app_state == game.AppState.OVERWORLD, "Start -> overworld")
 	fail += _check(game._legend != null and game._legend._pills.size() == 5, "five site pills in the legend")
 	fail += _check(game._ow_candidates.size() == 5, "five sites (bos/smidse/boog/thuis/molen)")
-	# a gated training site (boog needs the bow collected first) hints, does not travel
-	load("res://game/app_progress.gd").set_flag_transient("has_bow", false)
-	for c in ["b", "o", "o", "g"]:
+	# a gated training site (the ranged 'doel' needs the weapon collected first) does not travel
+	load("res://game/app_progress.gd").set_flag_transient("has_ranged", false)
+	for c in ["d", "o", "e", "l"]:
 		game._ow_char(c)
-	fail += _check(game._ow_walk == null, "gated 'boog' (no bow) does not travel")
+	fail += _check(game._ow_walk == null, "gated 'doel' (no ranged weapon) does not travel")
 	fail += _check(game._ow_buffer == "", "gated site clears the buffer (hint shown)")
 	# a key matching no site word is rejected (buffer unchanged)
 	game._ow_char("x")
 	fail += _check(game._ow_buffer == "", "non-matching key rejected")
-	# shared prefix bos/boog: 'bo' is ambiguous (buffered, no site shadowed yet)
+	# 'bo' is a valid prefix of bos (buffered, awaiting the next key)
 	for c in ["b", "o"]:
 		game._ow_char(c)
-	fail += _check(game._ow_buffer == "bo", "shared prefix 'bo' buffered")
+	fail += _check(game._ow_buffer == "bo", "prefix 'bo' buffered")
 	# completing 'bos' starts the travel to the forest
 	game._ow_char("s")
 	fail += _check(game._ow_walk != null, "typing 'bos' starts the travel")

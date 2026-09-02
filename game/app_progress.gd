@@ -174,3 +174,7 @@ static func _ensure_loaded() -> void:
 		if cf.has_section("profile"):
 			for k in cf.get_section_keys("profile"):
 				_profile[k] = String(cf.get_value("profile", k, ""))
+	# migration: has_bow was renamed to has_ranged (per-class ranged weapons, C-mini). Carry an
+	# old save's value forward so an already-fetched ranged weapon is not forgotten.
+	if _flags.has("has_bow") and not _flags.has("has_ranged"):
+		_flags["has_ranged"] = _flags["has_bow"]
