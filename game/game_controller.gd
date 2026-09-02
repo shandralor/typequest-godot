@@ -157,6 +157,11 @@ var _demo := false
 var _in_intro := false      # the wake-up-and-leave-the-house intro is running
 var _intro_briefing := false  # the intro explanation is rolling (typing is disabled)
 var _force_intro := false   # --intro dev flag: replay the intro even once seen
+# Dev tools are HIDDEN on the shipped build (web/AppImage) so a child can't reset or flip
+# their own progress. Reveal them by typing DEV_CODE on the main menu; a debug build (the
+# editor) shows them without the code. Session-only -- re-type each launch.
+var _dev_unlocked := false
+var _dev_code_buf := ""
 var _intro_reset := false   # options: intro-seen was just cleared (confirmation label)
 var _demo_accum := 0.0
 const DEMO_INTERVAL := 0.10
@@ -650,6 +655,14 @@ func _input(event: InputEvent) -> void:
 			if oc != "":
 				get_viewport().set_input_as_handled()
 				_ow_char(oc)
+		return
+	if _app_state == AppState.MAIN and not _dev_unlocked and event.keycode >= KEY_A and event.keycode <= KEY_Z:
+		# watch the main menu for the secret DEV_CODE -> reveal the (otherwise hidden) Dev tools
+		_dev_code_buf = (_dev_code_buf + char(event.keycode).to_lower()).right(DEV_CODE.length())
+		if _dev_code_buf == DEV_CODE:
+			_dev_unlocked = true
+			_dev_code_buf = ""
+			_show_dev()   # jump straight in as confirmation
 		return
 	if _app_state != AppState.PLAYING:
 		return  # the main menu is mouse-driven
@@ -1758,15 +1771,22 @@ func _show_options() -> void:
 	_app_state = AppState.MAIN
 	_set_playing_ui(false)
 	_set_menu_fullscreen(true)
-	_show_menu("Opties", [
+	var opts: Array = [
 		{"text": _kbd_item_text(), "on_press": _toggle_keyboard_layout},
 		{"text": _intro_item_text(), "on_press": _reset_intro},
-		{"text": "Dev", "on_press": _show_dev},
-		{"text": "Terug", "on_press": _show_main_menu, "secondary": true},
-	])
+	]
+	# Dev tools only on a debug build (editor) or once unlocked by the secret code -- never
+	# openly on the shipped web/AppImage build.
+	if _dev_unlocked or OS.is_debug_build():
+		opts.append({"text": "Dev", "on_press": _show_dev})
+	opts.append({"text": "Terug", "on_press": _show_main_menu, "secondary": true})
+	_show_menu("Opties", opts)
 
 
 # --- dev screen: reset/jump progress for testing different scenario states -----------
+# Secret unlock: type this on the main menu to reveal the Dev tools on a shipped build.
+# Change it to whatever you like (lowercase letters only).
+const DEV_CODE := "devmode"
 const DEV_FLAGS := [
 	{"label": "Cave", "flag": "met_skeleton"},
 	{"label": "Zwaard", "flag": "has_sword"},
