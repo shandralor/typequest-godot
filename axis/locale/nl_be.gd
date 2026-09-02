@@ -31,7 +31,7 @@ const CATALOG := {
 	"wapen.rogue": "dolk",
 	"wapen.witch": "staf",
 	# prose (typed to reveal the beat)
-	"start.prose": "de kleine {held} wandelt door het bos. hij volgt het pad en stapt verder.",
+	"start.prose": "de kleine {held} wandelt door het bos. de {held} volgt het pad en stapt verder.",
 	"kruispunt.prose": "het pad gaat twee kanten op. links gaapt een zwarte grot. rechts staat een oude brug.",
 	"grot.prose": "in de grot rammelt een wit skelet. de {held} rent snel terug naar het licht.",
 	"brug.prose": "de brug ligt naar beneden. de {held} stapt over de brug en gaat verder.",
@@ -39,7 +39,7 @@ const CATALOG := {
 	"start.narration": "Luister goed en typ elk woord dat je leest.",
 	"kruispunt.narration": "Kies je weg en typ het woord.",
 	"grot.narration": "Wees moedig en lees rustig verder.",
-	"grot.win": "Het skelet is te eng! De ridder moet eerst sterker worden en zijn wapens halen.",
+	"grot.win": "Het skelet is te eng! Jouw {held} moet eerst sterker worden en de wapens halen.",
 	"brug.narration": "Stap voor stap over de brug.",
 	"brug.lower": "De kristal laat de brug zakken!",
 	# placeholder end-of-demo message (read aloud on the crossing win; free text, not typed)
@@ -64,11 +64,11 @@ const CATALOG := {
 	# (4 sentences = 4 legs: rise, fetch the sword, fetch the key, leave)
 	"intro.prose": "het is morgen. de {held} loopt naar het rek aan de muur. hier hangt je {wapen}. aan de andere kant hangt de sleutel. deze komt later nog van pas. je maakt een ommetje in het bos.",
 	"intro.narration": "Typ de woorden.",
-	"intro.win": "Hij maakt een ommetje in het bos!",
+	"intro.win": "Jouw {held} maakt een ommetje in het bos!",
 	# home -- a RETURN visit: walk in, then CHOOSE which gear to collect (campaign v2)
-	"home.prose": "de {held} is weer thuis. hij pakt iets van de muur.",
-	"home.sword_prose": "hij pakt zijn zwaard van de plank.",
-	"home.bow_prose": "hij pakt zijn boog van de muur.",
+	"home.prose": "de {held} is weer thuis. de {held} pakt iets van de muur.",
+	"home.sword_prose": "de {held} pakt het zwaard van de plank.",
+	"home.bow_prose": "de {held} pakt de boog van de muur.",
 	"home.narration": "Typ de woorden.",
 	"home.win": "Tot de volgende keer!",
 	"home.win_sword": "Je hebt je zwaard gehaald!",
@@ -106,7 +106,7 @@ const CATALOG := {
 # punctuation, no band/hash/layout constraints. EDIT / ADD / REORDER these freely.
 const INTRO_BRIEFING := [
 	"Dit is jouw {held}.",
-	"Hij zal bewegen als je de woorden typt die je onderaan ziet verschijnen.",
+	"Jouw {held} beweegt als je de woorden typt die je onderaan ziet verschijnen.",
 	"Volg zo goed mogelijk de aanwijzingen voor het plaatsen van je vingers.",
 ]
 

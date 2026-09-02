@@ -38,7 +38,7 @@ static func build() -> StoryGraph:
 	start.prose_key = "start.prose"
 	start.narration_key = "start.narration"
 	start.choices = [StoryGraph.Choice.new("word.verder", "kruispunt", "forward")]
-	start.safety = _nl_be_safety("fnv1a:a69bd641")
+	start.safety = _nl_be_safety("fnv1a:dd59dea4")
 	start.scene = Scenes.start()
 	g.add_node(start)
 

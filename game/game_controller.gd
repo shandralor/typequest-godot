@@ -2107,7 +2107,9 @@ func _quit_app() -> void:
 func _win_message() -> String:
 	var node = _run.current()
 	if node != null and node.win_key != "":
-		return _locale.resolve(node.win_key)
+		# fill {held} so a win line can name the CHOSEN hero (jouw jager/heks/...), never a
+		# hardcoded "ridder" -- matches the prose + briefing (all reference the same character)
+		return _locale.fill_tokens(_locale.resolve(node.win_key), _chosen_hero_id())
 	return "goed gedaan."
 
 

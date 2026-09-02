@@ -28,7 +28,7 @@ static func build() -> StoryGraph:
 		StoryGraph.Choice.new("word.zwaard", "neem_zwaard", "right"),
 		StoryGraph.Choice.new("word.boog", "neem_boog", "left"),
 	]
-	keuze.safety = _safety("fnv1a:8f19de48")
+	keuze.safety = _safety("fnv1a:faa09ff1")
 	keuze.scene = _house_scene()
 	g.add_node(keuze)
 
@@ -39,7 +39,7 @@ static func build() -> StoryGraph:
 	zwaard.narration_key = "home.narration"
 	zwaard.ending = "win"
 	zwaard.win_key = "home.win_sword"
-	zwaard.safety = _safety("fnv1a:ef4ca746")
+	zwaard.safety = _safety("fnv1a:b3d74729")
 	zwaard.scene = _house_scene()
 	g.add_node(zwaard)
 
@@ -50,7 +50,7 @@ static func build() -> StoryGraph:
 	boog.narration_key = "home.narration"
 	boog.ending = "win"
 	boog.win_key = "home.win_bow"
-	boog.safety = _safety("fnv1a:02668763")
+	boog.safety = _safety("fnv1a:d86d6e7a")
 	boog.scene = _house_scene()
 	g.add_node(boog)
 	return g
