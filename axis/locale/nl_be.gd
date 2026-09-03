@@ -91,7 +91,7 @@ const CATALOG := {
 	# overworld site words (typed to travel to an adventure site)
 	"site.bos": "bos",
 	"site.smidse": "smidse",
-	"site.boog": "doel",
+	"site.boog": "oefenplein",
 	"site.thuis": "thuis",
 	"site.molen": "molen",
 	"overworld.narration": "Waar ga je naartoe? Typ het woord.",

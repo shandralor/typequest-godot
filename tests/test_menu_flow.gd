@@ -26,11 +26,11 @@ func _initialize() -> void:
 	fail += _check(game._app_state == game.AppState.OVERWORLD, "Start -> overworld")
 	fail += _check(game._legend != null and game._legend._pills.size() == 5, "five site pills in the legend")
 	fail += _check(game._ow_candidates.size() == 5, "five sites (bos/smidse/boog/thuis/molen)")
-	# a gated training site (the ranged 'doel' needs the weapon collected first) does not travel
+	# a gated training site (the 'oefenplein' needs the ranged weapon first) does not travel
 	load("res://game/app_progress.gd").set_flag_transient("has_ranged", false)
-	for c in ["d", "o", "e", "l"]:
+	for c in "oefenplein":
 		game._ow_char(c)
-	fail += _check(game._ow_walk == null, "gated 'doel' (no ranged weapon) does not travel")
+	fail += _check(game._ow_walk == null, "gated 'oefenplein' (no ranged weapon) does not travel")
 	fail += _check(game._ow_buffer == "", "gated site clears the buffer (hint shown)")
 	# a key matching no site word is rejected (buffer unchanged)
 	game._ow_char("x")
