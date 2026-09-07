@@ -56,9 +56,14 @@ scene.add(new THREE.HemisphereLight(0xdcefff, 0x465f39, 0.5));
 const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.5, 900);
 
 // Godot Transform3D(a,b,c, d,e,f, g,h,i, ox,oy,oz) -> THREE.Matrix4 (both Y-up right-handed).
+// The .tscn serializes the Basis ROW-major (Godot's Basis stores `rows[]` internally): the first
+// three floats are the basis matrix's first ROW, not its first column. So the Matrix4 is the
+// straight row-major fill -- NOT a column build. (Verified empirically: only this makes the
+// rotated road/coast tiles tessellate and the road network connect. A column build is identity
+// for the pure-scale grass tiles but rotates every road/coast tile the wrong way.)
 function godotMatrix(t: number[]): THREE.Matrix4 {
   const [a, b, c, d, e, f, g, h, i, ox, oy, oz] = t;
-  return new THREE.Matrix4().set(a, d, g, ox, b, e, h, oy, c, f, i, oz, 0, 0, 0, 1);
+  return new THREE.Matrix4().set(a, b, c, ox, d, e, f, oy, g, h, i, oz, 0, 0, 0, 1);
 }
 
 const loader = new GLTFLoader();
@@ -81,10 +86,18 @@ async function loadModel(path: string): Promise<THREE.Object3D> {
   return base;
 }
 
-async function buildOverworld(): Promise<THREE.Box3> {
+// tiles that are "the sea/sky", not the land -- excluded when framing the camera so the
+// ISLAND fills the view (like Godot), not the wide flat water around it.
+function isSeaOrSky(model: string): boolean {
+  return /hex_water|hex_coast|cloud_big/.test(model);
+}
+
+async function buildOverworld(): Promise<{ full: THREE.Box3; land: THREE.Box3 }> {
   const layout = (await (await fetch("/overworld-layout.json")).json()) as { nodes: LayoutNode[]; models: string[] };
   await Promise.all(layout.models.map((m) => loadModel(m)));
   const island = new THREE.Group();
+  island.name = "island";
+  const land = new THREE.Box3();
   for (const node of layout.nodes) {
     const base = cache.get(node.model)!;
     const inst = base.clone(true);
@@ -92,18 +105,33 @@ async function buildOverworld(): Promise<THREE.Box3> {
     wrap.applyMatrix4(godotMatrix(node.t));
     wrap.add(inst);
     island.add(wrap);
+    if (!isSeaOrSky(node.model)) land.expandByObject(wrap);
   }
   scene.add(island);
-  return new THREE.Box3().setFromObject(island);
+  return { full: new THREE.Box3().setFromObject(island), land };
 }
 
 // Frame the island with an iso camera roughly matching the Godot overworld view.
+// Frame tight on the LAND with a Godot-like low iso view + narrow (tele) lens.
 function frame(box: THREE.Box3): void {
   const center = box.getCenter(new THREE.Vector3());
   const size = box.getSize(new THREE.Vector3());
-  const radius = Math.max(size.x, size.z) * 0.62;
-  camera.position.set(center.x + radius * 0.15, center.y + radius * 1.05, center.z + radius * 1.35);
-  camera.lookAt(center.x, center.y - size.y * 0.1, center.z);
+  camera.fov = 30;
+  camera.updateProjectionMatrix();
+  const radius = Math.max(size.x, size.z) * 0.5;
+  const dist = (radius / Math.tan((camera.fov * Math.PI) / 360)) * 1.25;
+  if (location.search.includes("top")) {
+    camera.position.set(center.x, center.y + dist, center.z + 0.01);
+  } else {
+    const elev = (33 * Math.PI) / 180; // elevation angle above the island
+    const azim = (12 * Math.PI) / 180; // slight offset from dead-front (+Z)
+    camera.position.set(
+      center.x + dist * Math.cos(elev) * Math.sin(azim),
+      center.y + dist * Math.sin(elev),
+      center.z + dist * Math.cos(elev) * Math.cos(azim)
+    );
+  }
+  camera.lookAt(center.x, center.y, center.z);
   sun.target.position.copy(center);
   scene.add(sun.target);
 }
@@ -138,13 +166,20 @@ function renderFrame(): void {
 }
 
 async function main(): Promise<void> {
-  const box = await buildOverworld();
-  frame(box);
+  const { full, land } = await buildOverworld();
+  frame(land);
+  // diagnostic: a single grass tile's world footprint (to check hex size/orientation)
+  const island = scene.getObjectByName("island")!;
+  const firstGrass = island.children.find((w) =>
+    w.children.some((c) => c.name === "hex_grass" || c.getObjectByName?.("hex_grass"))
+  );
+  const tileBox = firstGrass ? new THREE.Box3().setFromObject(firstGrass) : null;
   (window as unknown as { __dbg: unknown }).__dbg = {
-    boxMin: box.min.toArray(),
-    boxMax: box.max.toArray(),
-    cam: camera.position.toArray(),
-    islandChildren: (scene.getObjectByName("island")?.children.length) ?? scene.children.length,
+    landMin: land.min.toArray().map((n) => +n.toFixed(2)),
+    landMax: land.max.toArray().map((n) => +n.toFixed(2)),
+    fullMax: full.max.toArray().map((n) => +n.toFixed(2)),
+    cam: camera.position.toArray().map((n) => +n.toFixed(1)),
+    tileSize: tileBox ? tileBox.getSize(new THREE.Vector3()).toArray().map((n) => +n.toFixed(2)) : null,
   };
   if (!location.search.includes("nopost")) setupPost();
   renderFrame();

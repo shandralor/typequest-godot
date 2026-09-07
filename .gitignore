@@ -10,3 +10,8 @@
 
 # Visual-check screenshots (generated)
 .shots/
+
+# scratch: playwright captures + ad-hoc render screenshots
+.playwright-mcp/
+/three_*.png
+/godot_*.png
