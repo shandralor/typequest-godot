@@ -7,6 +7,7 @@ import * as Grind from "./grind/grindArc";
 import * as Archery from "./archery/archeryArc";
 import * as Home from "./home/homeArc";
 import * as Mill from "./mill/millArc";
+import * as Intro from "./intro/introArc";
 
 export const LIST = [
   { id: "band1", title: "De ridder en de schat" },
@@ -14,6 +15,7 @@ export const LIST = [
   { id: "archery", title: "Boogschieten" },
   { id: "home", title: "Thuis" },
   { id: "mill", title: "De molenaar" },
+  { id: "intro", title: "Het ontwaken" },
 ];
 
 export function build(id: string): StoryGraph {
@@ -22,6 +24,7 @@ export function build(id: string): StoryGraph {
     case "archery": return Archery.build();
     case "home": return Home.build();
     case "mill": return Mill.build();
+    case "intro": return Intro.build();
     default: return Band1.build();
   }
 }

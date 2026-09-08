@@ -279,10 +279,47 @@ def convert(path, report):
                 "kind": "omni", "x": d["x"], "y": d["y"], "z": d["z"], "color": color,
                 "energy": float(n["props"].get("light_energy", "1")), "range": float(n["props"].get("omni_range", "5")),
             })
+        elif n["type"] == "CSGPolygon3D":
+            pv = re.search(r'PackedVector2Array\(([^)]*)\)', n["props"].get("polygon", ""))
+            if not pv:
+                skipped.append(f"CSGPolygon3D {me}: no polygon")
+                continue
+            nums = floats("(" + pv.group(1) + ")")
+            MAXC = 10000.0  # island_doc MAX_COORD: a stray huge vertex is clamped at authoring time
+            pts = [[max(-MAXC, min(MAXC, nums[i])), max(-MAXC, min(MAXC, nums[i + 1]))] for i in range(0, len(nums) - 1, 2)]
+            mid = re.search(r'SubResource\("([^"]+)"\)', n["props"].get("material", "") or "")
+            mat = subs.get(mid.group(1)) if mid else None
+            color, alpha = color_hex(mat["props"].get("albedo_color", "Color(1,1,1,1)")) if mat else ("#ffffff", 1.0)
+            sh = {"kind": "polygon", "points": pts, "depth": float(n["props"].get("depth", "1")),
+                  "color": color, "x": d["x"], "y": d["y"], "z": d["z"], "size": []}
+            if alpha < 0.999:
+                sh["alpha"] = alpha
+            if abs(d["yaw"]) > 0.05 and abs(d["yaw"] - 360) > 0.05:
+                sh["rot"] = d["yaw"]
+            if d["tilted"]:
+                sh["tilt"] = d["tilt"]
+            if not n["name"].startswith("@"):
+                sh["name"] = n["name"]
+            if hidden:
+                sh["hidden"] = True
+            out["shapes"].append(sh)
         elif n["type"] in ("Node3D",):
             continue  # container
         else:
             skipped.append(f"{n['type']} {me} unsupported")
+    # Coplanar CSG polygons (the mill's land sitting exactly on its water) would z-fight, and
+    # Godot's CSG siblings are not combined either. Keep the authored order meaningful: each
+    # later polygon at the same height drops a hair, so the first one authored stays on top.
+    seen_y = {}
+    for sh in out["shapes"]:
+        if sh["kind"] != "polygon":
+            continue
+        key = round(sh["y"], 3)
+        n = seen_y.get(key, 0)
+        seen_y[key] = n + 1
+        if n:
+            sh["y"] -= 0.02 * n
+
     cam = None
     if "camera_pos" in camera and "camera_look" in camera:
         cam = {"pos": camera["camera_pos"], "look": camera["camera_look"]}
@@ -329,8 +366,16 @@ def emit_ts(out, cam, export_name):
     if out["shapes"]:
         L.append("  shapes: [")
         for s in out["shapes"]:
-            parts = [f'kind: "{s["kind"]}"', "size: [" + ", ".join(fmt(v) for v in s["size"]) + "]", f'color: "{s["color"]}"',
-                     f"x: {fmt(s['x'])}, z: {fmt(s['z'])}"]
+            parts = [f'kind: "{s["kind"]}"']
+            if s["kind"] == "polygon":
+                pass
+            if s["kind"] == "polygon":
+                pts = ", ".join("[" + ", ".join(fmt(v) for v in p) + "]" for p in s["points"])
+                parts.append(f"points: [{pts}]")
+                parts.append(f"depth: {fmt(s['depth'])}")
+            else:
+                parts.append("size: [" + ", ".join(fmt(v) for v in s["size"]) + "]")
+            parts += [f'color: "{s["color"]}"', f"x: {fmt(s['x'])}, z: {fmt(s['z'])}"]
             if abs(s["y"]) > 0.0005: parts.append(f"y: {fmt(s['y'])}")
             if "rot" in s: parts.append(f"rot: {fmt(s['rot'])}")
             if "tilt" in s: parts.append("tilt: [" + ", ".join(fmt(v) for v in s["tilt"]) + "]")

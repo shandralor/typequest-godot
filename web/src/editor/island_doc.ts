@@ -118,12 +118,30 @@ function sanitizeProp(raw: unknown): PropDef | null {
 
 function sanitizeShape(raw: unknown): ShapeDef | null {
   if (!isObj(raw)) return null;
-  const kind = raw.kind === "box" || raw.kind === "plane" ? raw.kind : null;
+  const kind = raw.kind === "box" || raw.kind === "plane" || raw.kind === "polygon" ? raw.kind : null;
   const color = str(raw.color, HEX);
-  if (!kind || !color || !Array.isArray(raw.size)) return null;
-  const size = raw.size.slice(0, kind === "box" ? 3 : 2).map((n) => r3(clamp(finiteNum(n, 1), 0.001, MAX_COORD)));
-  if (size.length !== (kind === "box" ? 3 : 2)) return null;
-  const sh: ShapeDef = { kind, size, color };
+  if (!kind || !color) return null;
+  let size: number[] = [];
+  if (kind !== "polygon") {
+    if (!Array.isArray(raw.size)) return null;
+    size = raw.size.slice(0, kind === "box" ? 3 : 2).map((n) => r3(clamp(finiteNum(n, 1), 0.001, MAX_COORD)));
+    if (size.length !== (kind === "box" ? 3 : 2)) return null;
+  }
+  const sh: ShapeDef = kind === "polygon" ? { kind, color } : { kind, size, color };
+  if (kind === "polygon") {
+    if (!Array.isArray(raw.points) || raw.points.length < 3) return null;
+    const pts: [number, number][] = [];
+    for (const pt of raw.points) {
+      if (!Array.isArray(pt) || pt.length !== 2) continue;
+      const x = finiteNum(pt[0], NaN);
+      const y = finiteNum(pt[1], NaN);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      pts.push([r3(clamp(x, -MAX_COORD, MAX_COORD)), r3(clamp(y, -MAX_COORD, MAX_COORD))]);
+    }
+    if (pts.length < 3) return null;
+    sh.points = pts;
+    sh.depth = r3(clamp(finiteNum(raw.depth, 1), 0.001, 1000));
+  }
   if (!sanitizePlaced(raw, sh)) return null;
   const sc = triple(raw.sc, 0.001, 1000);
   if (sc) sh.sc = sc;
@@ -270,7 +288,13 @@ export function serializeIslandTs(def: IslandDef, exportName: string): string {
   if (def.shapes?.length) {
     out.push("  shapes: [");
     for (const s of def.shapes) {
-      const parts = [`kind: "${s.kind}"`, `size: ${list(s.size)}`, `color: "${s.color}"`, ...placedParts(s)];
+      const parts = [`kind: "${s.kind}"`];
+      if (s.kind === "polygon") {
+        parts.push(`points: [${(s.points ?? []).map((p) => list(p)).join(", ")}]`, `depth: ${fmtNum(s.depth ?? 1)}`);
+      } else {
+        parts.push(`size: ${list(s.size ?? [])}`);
+      }
+      parts.push(`color: "${s.color}"`, ...placedParts(s));
       if (s.sc) parts.push(`sc: ${list(s.sc)}`);
       if (s.alpha !== undefined) parts.push(`alpha: ${fmtNum(s.alpha)}`);
       if (s.emissive) parts.push(`emissive: "${s.emissive}"`);

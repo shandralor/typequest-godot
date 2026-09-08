@@ -19,6 +19,7 @@ import type { World } from "./world";
 import type { Hud } from "../ui/hud";
 import type { SceneDef } from "../world/sceneDef";
 import { rigFor } from "./cameraRigs";
+import { setupGaze, targetYaw, lerpAngle, type GazeState, type GazeTargets } from "./gaze";
 
 export interface Locale {
   resolve(key: string): string;
@@ -50,6 +51,9 @@ export class ScenarioMode {
   private scenarioId = "";
   /** the item this home beat is collecting (walk to it, grant its flag on the win) */
   private pickup: { anchor: string; flag: string } | null = null;
+  private gaze: GazeState = { mode: "none", links: -1, rechts: -1 };
+  private gazeTargets: GazeTargets = {};
+  private gazeYaw = 0;
   private stagedProps: THREE.Object3D[] = [];
   private heldProps: THREE.Object3D[] = [];
 
@@ -110,7 +114,7 @@ export class ScenarioMode {
     for (const a of d.actors) {
       if (a.asset === "hero") {
         const hero = this.world.hero;
-        if (a.pose === "walk" && d.path === PATH_STRAIGHT) {
+        if (d.path === PATH_STRAIGHT && (a.pose === "walk" || this.scenarioId === "intro")) {
           const from = this.world.anchor(d.travelFrom);
           const to = this.world.anchor(d.travelTo);
           this.travel = { from, to };
@@ -140,6 +144,28 @@ export class ScenarioMode {
     // framing follows the scene type, exactly as the Godot rig does
     const landmarks = !!def0?.anchors?.some((a) => a.name === "bridge_near") && !this.travel;
     this.world.useRig(rigFor(setName, { walking: !!this.travel, win: false, landmarks }), fresh || !restage);
+    // the gaze owns a STANDING lead's yaw: at the fork he looks ahead, then at the cave when the
+    // prose says "links", then at the bridge at "rechts" (walking beats keep their travel facing)
+    const anchorAt = (n: string): { x: number; z: number } | undefined => {
+      const a = def0?.anchors?.find((x) => x.name === n);
+      if (!a) return undefined;
+      const v = this.world.anchor(n);
+      return { x: v.x, z: v.z };
+    };
+    this.gazeTargets = { cave: anchorAt("far_left"), bridge: anchorAt("far_right"), treasure: anchorAt("treasure") };
+    this.gaze = setupGaze({
+      walking: !!this.travel,
+      archery: setName === "archery",
+      landmarks,
+      prerevealed: node.prerevealed,
+      hasChest: d.props.some((p) => p.asset === "chest"),
+      prose: this.locale.resolve(node.proseKey),
+    });
+    if (this.gaze.mode !== "none") {
+      const h = this.world.hero.node.position;
+      this.gazeYaw = targetYaw(this.gaze, 0, { x: h.x, z: h.z }, this.gazeTargets);
+      this.world.hero.node.rotation.y = this.gazeYaw;
+    }
     this.hud.prompt(node.narrationKey ? this.locale.resolve(node.narrationKey) : "");
     this.hud.message("");
     if (node.prerevealed) {
@@ -174,6 +200,9 @@ export class ScenarioMode {
         break;
       case "right":
         rig.face(1, 0);
+        break;
+      case "away":
+        rig.face(0, -1); // down the room / path, back to the camera
         break;
       default:
         if (target) rig.lookAtPoint(target);
@@ -301,6 +330,12 @@ export class ScenarioMode {
   }
 
   update(dt: number): void {
+    if (this.gaze.mode !== "none") {
+      const h = this.world.hero.node.position;
+      const want = targetYaw(this.gaze, this.prose.cursor, { x: h.x, z: h.z }, this.gazeTargets);
+      this.gazeYaw = lerpAngle(this.gazeYaw, want, Math.min(1, dt * 3));
+      this.world.hero.node.rotation.y = this.gazeYaw;
+    }
     if (this.travel) {
       const p = Math.min(1, this.prose.progress());
       const pos = this.travel.from.clone().lerp(this.travel.to, p);

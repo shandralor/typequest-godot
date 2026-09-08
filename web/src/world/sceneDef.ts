@@ -44,9 +44,12 @@ export interface PropDef extends Placed {
 
 /** A primitive mesh (the hand-built ground planes, path ribbons, plinths). */
 export interface ShapeDef extends Placed {
-  kind: "box" | "plane";
-  /** box: [w, h, d]; plane: [w, d] (a plane lies flat, facing +y) */
-  size: number[];
+  kind: "box" | "plane" | "polygon";
+  /** box: [w, h, d]; plane: [w, d] (a plane lies flat, facing +y); omitted for polygon */
+  size?: number[];
+  /** polygon only: the 2D outline, extruded by `depth` along +z (Godot CSGPolygon3D) */
+  points?: [number, number][];
+  depth?: number;
   /** sRGB hex */
   color: string;
   alpha?: number;

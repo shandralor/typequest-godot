@@ -834,9 +834,15 @@ export class App {
       }
       case "shape": {
         const s = it as ShapeDef;
-        html += `<div class="field"><label>shape</label><select data-k="kind"><option value="box" ${s.kind === "box" ? "selected" : ""}>box</option><option value="plane" ${s.kind === "plane" ? "selected" : ""}>plane</option></select></div>` +
-          this.text("name", "name", s.name) +
-          (s.kind === "box" ? this.num("w", "size.0", s.size[0]) + this.num("h", "size.1", s.size[1]) + this.num("d", "size.2", s.size[2]) : this.num("w", "size.0", s.size[0]) + this.num("d", "size.1", s.size[1])) +
+        const sz = s.size ?? [];
+        // a polygon's outline is authored in the source file, not the inspector: show its size only
+        const dims = s.kind === "polygon"
+          ? `<div class="field"><label>outline</label><span>${s.points?.length ?? 0} points, depth ${s.depth ?? 1}</span></div>`
+          : s.kind === "box"
+            ? this.num("w", "size.0", sz[0]) + this.num("h", "size.1", sz[1]) + this.num("d", "size.2", sz[2])
+            : this.num("w", "size.0", sz[0]) + this.num("d", "size.1", sz[1]);
+        html += `<div class="field"><label>shape</label><select data-k="kind" ${s.kind === "polygon" ? "disabled" : ""}><option value="box" ${s.kind === "box" ? "selected" : ""}>box</option><option value="plane" ${s.kind === "plane" ? "selected" : ""}>plane</option><option value="polygon" ${s.kind === "polygon" ? "selected" : ""}>polygon</option></select></div>` +
+          this.text("name", "name", s.name) + dims +
           this.color("color", "color", s.color) + this.num("alpha", "alpha", s.alpha ?? 1, 0.05) + this.color("emissive", "emissive", s.emissive ?? "#000000") +
           this.placedFields(s, false) +
           this.num("scale x", "sc.0", s.sc?.[0] ?? 1) + this.num("scale y", "sc.1", s.sc?.[1] ?? 1) + this.num("scale z", "sc.2", s.sc?.[2] ?? 1) + this.check("hidden", "hidden", s.hidden);

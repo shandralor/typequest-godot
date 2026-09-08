@@ -6,11 +6,23 @@ import * as THREE from "three";
 import { placedMatrix } from "../world/hexGrid";
 import type { LightDef, ShapeDef } from "../world/sceneDef";
 
+function polygonGeometry(sh: ShapeDef): THREE.BufferGeometry {
+  // Godot CSGPolygon3D: a 2D polygon in XY extruded along +Z by `depth` (the node's own
+  // transform lays it flat). Extrude with no bevel so the silhouette matches exactly.
+  const shape = new THREE.Shape();
+  const pts = sh.points ?? [];
+  pts.forEach(([x, y], i) => (i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y)));
+  shape.closePath();
+  return new THREE.ExtrudeGeometry(shape, { depth: sh.depth ?? 1, bevelEnabled: false });
+}
+
 export function buildShape(sh: ShapeDef): THREE.Object3D {
   const geo =
-    sh.kind === "box"
-      ? new THREE.BoxGeometry(sh.size[0] ?? 1, sh.size[1] ?? 1, sh.size[2] ?? 1)
-      : new THREE.PlaneGeometry(sh.size[0] ?? 2, sh.size[1] ?? 2);
+    sh.kind === "polygon"
+      ? polygonGeometry(sh)
+      : sh.kind === "box"
+        ? new THREE.BoxGeometry(sh.size?.[0] ?? 1, sh.size?.[1] ?? 1, sh.size?.[2] ?? 1)
+        : new THREE.PlaneGeometry(sh.size?.[0] ?? 2, sh.size?.[1] ?? 2);
   const mat = new THREE.MeshStandardMaterial({
     color: new THREE.Color(sh.color),
     roughness: 0.9,
@@ -24,7 +36,7 @@ export function buildShape(sh: ShapeDef): THREE.Object3D {
   }
   const mesh = new THREE.Mesh(geo, mat);
   if (sh.kind === "plane") mesh.rotation.x = -Math.PI / 2; // Godot PlaneMesh lies flat facing +y
-  mesh.castShadow = sh.kind === "box";
+  mesh.castShadow = sh.kind !== "plane";
   mesh.receiveShadow = true;
   const wrap = new THREE.Group();
   wrap.add(mesh);
