@@ -872,7 +872,11 @@ Godot `main` is untouched; this branch holds the Three.js rebuild spike (`web/`)
   shapes, anchors, camera, routes, lights) is editable in web/editor.html with a placement
   ghost and a scene dropdown. Launch: ./editor.sh. Only the mill's two CSG polygons are not
   represented yet (rebuild them as shapes).
-- NEXT: (a) the playable loop -- the game currently draws only the overworld; wire the scene
-  descriptors to load SceneDefs (forest_fork etc.) and walk the hero along routes to anchors,
-  then the band-1 type-along; (b) later, package the editor as a standalone tool (keep new
-  code behind the document / grid / catalog / renderer seams); (c) engine direction decision.
+- Playable loop DONE (2026-09-08): web/src/game/ -- island (typed site words, route walk),
+  scenario (RunState over band1, prose type-along drives the walk, first-letter choices,
+  endings/setbacks set flags), HUD (prompt, band, legend, keyboard). Whole band-1 arc plays
+  end to end in the browser: bos -> forest -> kruispunt -> grot -> setback -> island unlocks.
+- NEXT: (a) port the other scenarios (grind / archery / home / mill: their arcs, props, poses,
+  the crystal + bridge path); (b) polish: choice walk toward the fork before the cut, cheer
+  clip, score/XP HUD, music; (c) engine direction decision (Godot vs web) -- the web build now
+  covers band-1 with the editor; (d) later, package the editor standalone.

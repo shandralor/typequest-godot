@@ -1,98 +1,91 @@
-// TypeQuest overworld -- the game entry. Builds the authored island (data-as-code) through the
-// shared island renderer, drops the hero at the hub, and frames the Godot overworld camera.
-// If the island editor stashed a playtest island, that one is drawn instead.
+// TypeQuest -- the game entry. One World (the shared island renderer), a HUD, and two modes:
+// the island (type a site word, walk there) and a scenario (type the prose, pick forks). The
+// editor's playtest stash, when present, replaces the island for a look.
 
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { createIslandScene, buildIslandGroup, type IslandScene } from "./render/islandScene";
+import * as nlBe from "./axis/locale/nlBe";
+import * as Characters from "./content/characters";
 import { OVERWORLD } from "./content/island/overworld";
 import { takeEditorIsland } from "./world/editorHandoff";
-import type { CameraDef } from "./world/sceneDef";
+import { World } from "./game/world";
+import { Hud } from "./ui/hud";
+import { OverworldMode } from "./game/overworldMode";
+import { ScenarioMode } from "./game/scenarioMode";
+import { getChoice, resetProgress } from "./game/flags";
 
-// The Godot overworld camera, read verbatim from scenes/sets/overworld.tscn
-// (camera_pos / camera_look markers + the controller's fov 30).
-const OW_CAM_POS = new THREE.Vector3(0, 30, 34);
-const OW_CAM_LOOK = new THREE.Vector3(0, 0, -2);
-const OW_CAM_FOV = 30;
-
-function frame(s: IslandScene, box: THREE.Box3, cam?: CameraDef): void {
-  const center = box.getCenter(new THREE.Vector3());
-  s.camera.fov = OW_CAM_FOV;
-  s.camera.updateProjectionMatrix();
-  if (location.search.includes("top")) {
-    const size = box.getSize(new THREE.Vector3());
-    s.camera.position.set(center.x, center.y + Math.max(size.x, size.z) * 1.4, center.z + 0.01);
-    s.camera.lookAt(center);
-  } else if (cam) {
-    s.camera.fov = cam.fov ?? OW_CAM_FOV;
-    s.camera.updateProjectionMatrix();
-    s.camera.position.set(cam.pos[0], cam.pos[1], cam.pos[2]);
-    s.camera.lookAt(cam.look[0], cam.look[1], cam.look[2]);
-  } else {
-    s.camera.position.copy(OW_CAM_POS);
-    s.camera.lookAt(OW_CAM_LOOK);
-  }
-  s.sun.target.position.copy(center);
-}
-
-// The hero: a KayKit adventurer on the shared Rig_Medium. The character GLB carries the skinned
-// mesh but NO clips; clips live in the shared rig GLB and bind by BONE NAME, so the mixer plays
-// a Rig_Medium_General clip on the Knight with no retargeting.
-async function loadHero(s: IslandScene): Promise<THREE.AnimationMixer> {
-  const loader = new GLTFLoader();
-  const [heroGltf, rigGltf] = await Promise.all([
-    loader.loadAsync("/assets/kaykit/adventurers/Knight.glb"),
-    loader.loadAsync("/assets/kaykit/adventurers/Rig_Medium_General.glb"),
-  ]);
-  const hero = heroGltf.scene;
-  hero.name = "hero";
-  hero.traverse((o) => {
-    const m = o as THREE.Mesh;
-    if (m.isMesh) {
-      m.castShadow = true;
-      m.receiveShadow = true;
-      m.frustumCulled = false; // skinned parts can report stale bind-pose bounds and vanish
-    }
-  });
-  hero.position.set(0, 0, 0); // hub anchor = origin; pivot at the feet
-  hero.rotation.y = Math.PI; // face the camera (KayKit faces +Z; camera sits at +Z)
-  s.scene.add(hero);
-  hero.position.y -= new THREE.Box3().setFromObject(hero).min.y; // seat the feet on the tile top
-  const idle = rigGltf.animations.find((a) => a.name === "Idle_A") ?? rigGltf.animations[0];
-  const mixer = new THREE.AnimationMixer(hero);
-  mixer.clipAction(idle).play();
-  return mixer;
-}
+const locale = { resolve: nlBe.resolve, fillTokens: nlBe.fillTokens };
 
 async function main(): Promise<void> {
+  if (location.search.includes("reset")) resetProgress();
   const canvas = document.getElementById("app") as HTMLCanvasElement;
-  const s = createIslandScene(canvas);
-  new ResizeObserver(() => s.resize()).observe(canvas);
-  const def = takeEditorIsland() ?? OVERWORLD;
-  const { land, full } = await buildIslandGroup(s, def);
-  const mixer = await loadHero(s);
-  frame(s, land, def.camera); // the authored camera (from the set) when present
-  (window as unknown as { __dbg: unknown }).__dbg = {
-    landMin: land.min.toArray().map((n) => +n.toFixed(2)),
-    landMax: land.max.toArray().map((n) => +n.toFixed(2)),
-    fullMax: full.max.toArray().map((n) => +n.toFixed(2)),
-    cam: s.camera.position.toArray().map((n) => +n.toFixed(1)),
-    tiles: def.tiles.length,
-    props: def.props.length,
-  };
-  if (!location.search.includes("nopost")) s.setupPost();
-  const clock = new THREE.Clock();
+  const world = new World(canvas, document.getElementById("fade")!);
+  const hud = new Hud();
+  const heroId = getChoice("hero", Characters.DEFAULT_ID);
+  await world.loadHero(Characters.modelFor(heroId).replace(/^(res:\/\/)?assets\//, ""));
+
+  let active: "island" | "scenario" = "island";
+  let scenario: ScenarioMode | null = null;
+  const backBtn = document.getElementById("back") as HTMLButtonElement;
+
+  const island = new OverworldMode(world, hud, locale, (site) => {
+    void world.fadeCut(async () => {
+      active = "scenario";
+      backBtn.hidden = false;
+      scenario = new ScenarioMode(world, hud, locale, heroId, () => void backToIsland());
+      await scenario.start(site.scenario);
+    });
+  });
+  const backToIsland = (): Promise<void> =>
+    world.fadeCut(async () => {
+      scenario?.exit();
+      scenario = null;
+      active = "island";
+      backBtn.hidden = true;
+      await island.enter(island.at);
+    });
+  backBtn.onclick = () => void backToIsland();
+
+  // an editor playtest stash shows that island instead of the authored one (look only)
+  const stash = takeEditorIsland();
+  if (stash) {
+    await world.loadScene(stash, false);
+    world.useSceneCamera(stash.camera ?? OVERWORLD.camera);
+    world.hero.node.position.copy(world.anchor("hub"));
+    world.hero.face(0, 1);
+    hud.prompt("Playtest: island preview");
+  } else {
+    await island.enter("hub");
+  }
+
+  window.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "Escape" && active === "scenario") return void backToIsland();
+    if (e.key === "Enter") return scenario?.key("Enter");
+    if (e.key.length !== 1) return;
+    const c = e.key.toLowerCase();
+    if (!/^[a-z .'\-]$/.test(c)) return;
+    e.preventDefault();
+    if (active === "island") island.char(c);
+    else scenario?.char(c);
+  });
+
+  if (!location.search.includes("nopost")) world.s.setupPost();
+  let last = performance.now();
   const tick = (): void => {
-    mixer.update(clock.getDelta());
-    s.render();
+    const now = performance.now();
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    if (active === "island") island.update(dt);
+    else scenario?.update(dt);
+    world.update(dt);
   };
-  tick();
   tick();
   document.body.setAttribute("data-ready", "1");
-  s.renderer.setAnimationLoop(tick);
-  // screenshot harness: pause/resume the loop so a headless capture is not starved by rAF
-  (window as unknown as { __pause: () => void; __resume: () => void }).__pause = () => s.renderer.setAnimationLoop(null);
-  (window as unknown as { __pause: () => void; __resume: () => void }).__resume = () => s.renderer.setAnimationLoop(tick);
+  world.s.renderer.setAnimationLoop(tick);
+  // harness hooks: drive the game from a script + pause the loop for captures
+  const w = window as unknown as Record<string, unknown>;
+  w.__game = { world, island, get scenario() { return scenario; }, get active() { return active; }, char: (c: string) => (active === "island" ? island.char(c) : scenario?.char(c)), enter: () => scenario?.key("Enter"), type: (s: string) => { for (const c of s) (active === "island" ? island.char(c) : scenario?.char(c)); } };
+  w.__pause = () => world.s.renderer.setAnimationLoop(null);
+  w.__resume = () => world.s.renderer.setAnimationLoop(tick);
 }
 
 main().catch((err) => {
