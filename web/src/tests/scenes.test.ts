@@ -10,8 +10,8 @@ import { sanitizeIslandDef, serializeIslandJson, serializeIslandTs } from "../ed
 
 describe("authored scenes (all converted sets)", () => {
   it("discovers every set", () => {
-    const names = AUTHORED.map((s) => s.name).sort();
-    expect(names).toEqual(["archery", "dungeon", "forest_bridge", "forest_fork", "forest_straight", "forge", "house", "mill", "overworld"]);
+    const names = new Set(AUTHORED.map((s) => s.name));
+    for (const n of ["archery", "dungeon", "forest_bridge", "forest_fork", "forest_straight", "forge", "house", "mill", "overworld"]) expect(names.has(n)).toBe(true);
   });
   for (const s of AUTHORED) {
     it(`${s.dir}/${s.name}: JSON + sanitizer round-trip is lossless`, () => {

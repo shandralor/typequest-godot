@@ -15,7 +15,8 @@ import { CommitCoalescer, NUDGE_STEP, NUDGE_STEP_BIG, PROP_ROT_STEP_BIG_DEG, PRO
 import { Viewport, type Hit } from "./viewport";
 import type { Kind, Selection } from "./scene_view";
 import { PROPS, PROP_CATEGORIES, TILES } from "./catalog.generated";
-import { AUTHORED, findAuthored, type AuthoredScene } from "./content_index";
+import { AUTHORED, type AuthoredScene } from "./content_index";
+import { starterIsland, starterInterior } from "./starters";
 
 type Tool = "select" | "tile" | "prop" | "shape" | "anchor" | "light" | "route" | "erase";
 type Item = TileDef | PropDef | ShapeDef | AnchorDef | LightDef | RouteDef;
@@ -61,13 +62,15 @@ export class App {
   snapProps = false;
   dirty = false;
   scene: AuthoredScene;
+  /** the authored scenes plus any created this session (unsaved until Ctrl+S) */
+  readonly scenes: AuthoredScene[] = [...AUTHORED];
   private readonly vp: Viewport;
   private readonly coalescer = new CommitCoalescer();
   private liveBase: { sel: Exclude<Selection, null>; prev: Item } | null = null;
   private draftTimer: number | null = null;
 
   constructor() {
-    this.scene = findAuthored("overworld") ?? AUTHORED[0];
+    this.scene = this.scenes.find((x) => x.name === "overworld") ?? this.scenes[0];
     this.def = this.loadInitial();
     this.vp = new Viewport($<HTMLCanvasElement>("view"), {
       onHover: (h) => this.onHover(h),
@@ -134,7 +137,7 @@ export class App {
   }
 
   openScene(name: string): void {
-    const s = findAuthored(name);
+    const s = this.scenes.find((x) => x.name === name);
     if (!s || s.name === this.scene.name) return;
     if (this.dirty && !window.confirm("Discard unsaved changes to the current scene? (a draft is kept)")) {
       this.renderSceneSelect();
@@ -153,6 +156,32 @@ export class App {
     this.refreshUi();
   }
 
+  /** Create a scene from a template (or a copy of the current one) and open it unsaved. */
+  newScene(name: string, dir: "island" | "scenes", template: "clone" | "island" | "interior" | "empty"): boolean {
+    name = name.trim().toLowerCase();
+    if (!/^[a-z][a-z0-9_]{0,40}$/.test(name)) { this.toast("Name: lowercase letters, digits, underscores"); return false; }
+    if (this.scenes.some((x) => x.name === name)) { this.toast(`A scene named ${name} already exists`); return false; }
+    if (this.dirty && !window.confirm("Discard unsaved changes to the current scene? (a draft is kept)")) return false;
+    const def: SceneDef = template === "clone" ? cloneIsland(this.def) : template === "island" ? starterIsland() : template === "interior" ? starterInterior() : { tiles: [], props: [] };
+    const entry: AuthoredScene = { name, dir, def: cloneIsland(def) };
+    this.scenes.push(entry);
+    this.scene = entry;
+    this.def = def;
+    this.undo.clear();
+    this.sel = null;
+    this.dirty = true;
+    localStorage.removeItem(this.draftKey());
+    this.renderSceneSelect();
+    void this.vp.view.ensureModels(this.def).then(() => {
+      this.vp.view.rebuildAll(this.def);
+      this.frame();
+      this.markDirty();
+    });
+    this.toast(`New scene ${dir}/${name} -- unsaved until Ctrl+S`);
+    this.refreshUi();
+    return true;
+  }
+
   async save(): Promise<void> {
     const exportName = this.scene.name.toUpperCase();
     const source = serializeIslandTs(this.def, exportName);
@@ -162,6 +191,7 @@ export class App {
       if (!res.ok || !j.ok) throw new Error(j.error ?? String(res.status));
       this.dirty = false;
       localStorage.removeItem(this.draftKey());
+      this.scene.def = cloneIsland(this.def); // "Reset to file" now returns to what was written
       this.toast(`Saved ${j.file}`);
     } catch (err) {
       this.toast(`Save failed: ${String(err)} (dev server only)`);
@@ -655,6 +685,14 @@ export class App {
     $<HTMLButtonElement>("btn-save").onclick = () => void this.save();
     $<HTMLInputElement>("snap-props").onchange = (e) => (this.snapProps = (e.target as HTMLInputElement).checked);
     $<HTMLSelectElement>("scene-select").onchange = (e) => this.openScene((e.target as HTMLSelectElement).value);
+    const dlg = $<HTMLDialogElement>("new-dialog");
+    $<HTMLButtonElement>("btn-new").onclick = () => { $<HTMLInputElement>("new-name").value = ""; dlg.showModal(); };
+    $<HTMLButtonElement>("new-cancel").onclick = () => dlg.close();
+    $<HTMLFormElement>("new-form").onsubmit = (e) => {
+      e.preventDefault();
+      const ok = this.newScene($<HTMLInputElement>("new-name").value, $<HTMLSelectElement>("new-dir").value as "island" | "scenes", $<HTMLSelectElement>("new-template").value as "clone" | "island" | "interior" | "empty");
+      if (ok) dlg.close();
+    };
     $<HTMLSelectElement>("shape-kind").onchange = (e) => (this.shapeKind = (e.target as HTMLSelectElement).value as "box" | "plane");
     $<HTMLInputElement>("shape-color").oninput = (e) => (this.shapeColor = (e.target as HTMLInputElement).value);
     $<HTMLInputElement>("tile-search").oninput = () => this.renderPalettes();
@@ -702,7 +740,7 @@ export class App {
 
   private renderSceneSelect(): void {
     const sel = $<HTMLSelectElement>("scene-select");
-    sel.innerHTML = AUTHORED.map((s) => `<option value="${s.name}" ${s.name === this.scene.name ? "selected" : ""}>${s.dir}/${s.name}</option>`).join("");
+    sel.innerHTML = this.scenes.map((s) => `<option value="${s.name}" ${s.name === this.scene.name ? "selected" : ""}>${s.dir}/${s.name}${AUTHORED.includes(s) ? "" : " (new)"}</option>`).join("");
   }
 
   private renderPalettes(): void {

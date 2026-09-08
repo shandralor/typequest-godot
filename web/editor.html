@@ -11,6 +11,7 @@
       <header id="topbar">
         <strong class="brand">TypeQuest scene editor</strong>
         <label class="name">scene <select id="scene-select"></select></label>
+        <button id="btn-new" title="Create a new scene (empty, starter, or a copy)">New / Clone</button>
         <span id="dirty" class="dirty" hidden>unsaved</span>
         <span class="spacer"></span>
         <button id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
@@ -64,6 +65,21 @@
         <div id="stats" class="muted"></div>
       </aside>
       <div id="toast" hidden></div>
+      <dialog id="new-dialog">
+        <form method="dialog" id="new-form">
+          <h3>New scene</h3>
+          <div class="field"><label>name</label><input id="new-name" placeholder="my_island" pattern="[a-z][a-z0-9_]{0,40}" required spellcheck="false" /></div>
+          <div class="field"><label>folder</label><select id="new-dir"><option value="island">island (hex floor)</option><option value="scenes">scenes (story set)</option></select></div>
+          <div class="field"><label>start from</label><select id="new-template">
+            <option value="clone">copy of the current scene</option>
+            <option value="island">starter hex island</option>
+            <option value="interior">starter interior (ground + center + camera)</option>
+            <option value="empty">empty</option>
+          </select></div>
+          <p class="muted">Opens unsaved. Ctrl+S writes src/content/&lt;folder&gt;/&lt;name&gt;.ts.</p>
+          <div class="row"><button value="cancel" type="button" id="new-cancel">Cancel</button><button value="ok" class="primary" id="new-ok">Create</button></div>
+        </form>
+      </dialog>
     </div>
     <script type="module" src="/src/editor/main.ts"></script>
   </body>
