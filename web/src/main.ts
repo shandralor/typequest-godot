@@ -8,6 +8,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { N8AOPass } from "n8ao";
 
 interface LayoutNode {
@@ -22,8 +23,10 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+// ACES desaturates cartoon colours; NeutralToneMapping (Khronos PBR-Neutral) keeps hue and
+// saturation, which is what a bright kids' island wants. Grade pass below adds the final pop.
+renderer.toneMapping = THREE.NeutralToneMapping;
+renderer.toneMappingExposure = 1.05;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
@@ -33,7 +36,7 @@ scene.fog = new THREE.Fog(0xa6c6e0, 120, 340);
 // IBL: prefilter a RoomEnvironment through PMREM for grounded, sky-matched ambient reflectance.
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-scene.environmentIntensity = 0.35;
+scene.environmentIntensity = 0.42;
 
 // --- light rig (playbook): strong warm key + low cool hemisphere fill, no AmbientLight ---
 const sun = new THREE.DirectionalLight(0xffd99a, 3.2);
@@ -136,20 +139,51 @@ function frame(box: THREE.Box3): void {
   scene.add(sun.target);
 }
 
-// --- post: N8AO (the depth/contact-shadow cue) + output/tonemap pass ---
+// Colour grade, applied to the tonemapped/sRGB image (after OutputPass): saturation pop, a
+// gentle S-curve for contrast, a touch of warmth, and a soft vignette -- the step that turns a
+// flat tonemap wash into the punchy cartoon look.
+const GradeShader = {
+  uniforms: {
+    tDiffuse: { value: null as THREE.Texture | null },
+    saturation: { value: 1.22 },
+    contrast: { value: 0.14 },
+    warm: { value: new THREE.Vector3(1.02, 1.005, 0.98) },
+    vignette: { value: 0.16 },
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: `
+    varying vec2 vUv;
+    uniform sampler2D tDiffuse;
+    uniform float saturation; uniform float contrast; uniform vec3 warm; uniform float vignette;
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec3 col = c.rgb;
+      float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
+      col = mix(vec3(l), col, saturation);               // saturation around luma
+      col = mix(col, col * col * (3.0 - 2.0 * col), contrast); // gentle S-curve
+      col *= warm;                                        // slight warm gain
+      vec2 d = vUv - 0.5;
+      float v = smoothstep(0.9, 0.32, dot(d, d) * 2.0);
+      col *= mix(1.0, v, vignette);                       // soft vignette
+      gl_FragColor = vec4(clamp(col, 0.0, 1.0), c.a);
+    }`,
+};
+
+// --- post: N8AO (depth/contact-shadow cue) -> tonemap/sRGB -> colour grade ---
 let composer: EffectComposer;
 function setupPost(): void {
   composer = new EffectComposer(renderer);
   // N8AOPass renders the scene AND applies screen-space ambient occlusion (the contact-shadow
   // / crevice depth cue that WebGL2 can't do at runtime otherwise). It replaces the RenderPass.
   const ao = new N8AOPass(scene, camera, window.innerWidth, window.innerHeight);
-  ao.configuration.aoRadius = 2.4;
+  ao.configuration.aoRadius = 2.2;
   ao.configuration.distanceFalloff = 3.6;
-  ao.configuration.intensity = 2.6;
+  ao.configuration.intensity = 1.7;
   ao.configuration.color = new THREE.Color(0, 0, 0);
   ao.setQualityMode?.("High");
   composer.addPass(ao);
-  composer.addPass(new OutputPass()); // ACES tonemap + sRGB encode
+  composer.addPass(new OutputPass()); // tonemap + sRGB encode
+  composer.addPass(new ShaderPass(GradeShader)); // saturation/contrast/vignette grade
   composer.setSize(window.innerWidth, window.innerHeight);
 }
 
