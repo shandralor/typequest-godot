@@ -1,10 +1,8 @@
-// AUTHORED island data-as-code -- the overworld floor + props. Generated once from the
-// Godot set by tools/layout_to_island.py; from here on this file IS the source of truth
-// and is edited by hand (ClaudeCraft-style). See src/world/hexGrid.ts for the grid math.
-//
-// tiles: axial (q, r) on a pointy-top hex grid; t = KayKit hex code (hex_<t>.gltf);
-//        rot = yaw in 60-degree steps (0-5). Tiles may stack (a coast over its water).
-// props: on a cell (q, r) or at world (x, z); rot = yaw in degrees; s = scale; y = height.
+// AUTHORED island data-as-code -- floor tiles + props. Source of truth for this island;
+// edited by hand or written back by the island editor (/editor.html). Grid math lives in
+// src/world/hexGrid.ts. tiles: axial (q, r), t = KayKit hex code (hex_<t>.gltf), rot = yaw in
+// 60-degree steps (0-5); tiles may stack. props: on a cell (q, r) or at world (x, z); rot = yaw
+// in degrees; s = scale; y = height.
 import type { IslandDef } from "../../world/hexGrid";
 
 export const OVERWORLD: IslandDef = {
@@ -203,10 +201,10 @@ export const OVERWORLD: IslandDef = {
     { m: "kaykit/hexagon/flag_red.gltf", x: 6.6, z: 3.996, s: 3 },
     { m: "kaykit/hexagon/cloud_big.gltf", x: -9, z: -10.392, s: 3, y: 10 },
     { m: "kaykit/hexagon/cloud_big.gltf", x: 10.8, z: 6.235, s: 3, y: 13 },
-    { m: "kaykit/forest_nature/Rock_1_A_Color1.gltf", x: -0.073, z: 2.235, s: 1 },
-    { m: "kaykit/forest_nature/Bush_4_A_Color1.gltf", x: 3.096, z: 3.056, s: 1 },
-    { m: "kaykit/forest_nature/Bush_3_B_Color1.gltf", x: -4.547, z: 1.982, s: 1 },
-    { m: "kaykit/forest_nature/Bush_2_C_Color1.gltf", x: -4.557, z: 3.255, s: 1 },
+    { m: "kaykit/forest_nature/Rock_1_A_Color1.gltf", x: -0.073, z: 2.235 },
+    { m: "kaykit/forest_nature/Bush_4_A_Color1.gltf", x: 3.096, z: 3.056 },
+    { m: "kaykit/forest_nature/Bush_3_B_Color1.gltf", x: -4.547, z: 1.982 },
+    { m: "kaykit/forest_nature/Bush_2_C_Color1.gltf", x: -4.557, z: 3.255 },
     { m: "kaykit/hexagon/building_home_A_red.gltf", x: -2.203, z: 3.767, rot: 149.85, s: 3.2, y: 0.021 },
     { m: "kaykit/hexagon/hills_C_trees.gltf", q: -2, r: 0, s: 3 },
   ],

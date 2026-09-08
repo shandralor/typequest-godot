@@ -72,13 +72,13 @@ def main():
 
     tiles.sort()  # by row, then column: reads like a map
     lines = []
-    lines.append("// AUTHORED island data-as-code -- the overworld floor + props. Generated once from the")
-    lines.append("// Godot set by tools/layout_to_island.py; from here on this file IS the source of truth")
-    lines.append("// and is edited by hand (ClaudeCraft-style). See src/world/hexGrid.ts for the grid math.")
-    lines.append("//")
-    lines.append("// tiles: axial (q, r) on a pointy-top hex grid; t = KayKit hex code (hex_<t>.gltf);")
-    lines.append("//        rot = yaw in 60-degree steps (0-5). Tiles may stack (a coast over its water).")
-    lines.append("// props: on a cell (q, r) or at world (x, z); rot = yaw in degrees; s = scale; y = height.")
+    # header identical to src/editor/island_doc.ts serializeIslandTs, so an editor save of an
+    # untouched island is byte-identical to this converter's output
+    lines.append("// AUTHORED island data-as-code -- floor tiles + props. Source of truth for this island;")
+    lines.append("// edited by hand or written back by the island editor (/editor.html). Grid math lives in")
+    lines.append("// src/world/hexGrid.ts. tiles: axial (q, r), t = KayKit hex code (hex_<t>.gltf), rot = yaw in")
+    lines.append("// 60-degree steps (0-5); tiles may stack. props: on a cell (q, r) or at world (x, z); rot = yaw")
+    lines.append("// in degrees; s = scale; y = height.")
     lines.append('import type { IslandDef } from "../../world/hexGrid";')
     lines.append("")
     lines.append("export const OVERWORLD: IslandDef = {")
@@ -100,7 +100,8 @@ def main():
             parts.append(f"x: {fmt(p['x'])}, z: {fmt(p['z'])}")
         if "rot" in p:
             parts.append(f"rot: {fmt(p['rot'])}")
-        parts.append(f"s: {fmt(p['s'])}")
+        if abs(p["s"] - 1) > 0.0005:
+            parts.append(f"s: {fmt(p['s'])}")
         if "y" in p:
             parts.append(f"y: {fmt(p['y'])}")
         lines.append("    { " + ", ".join(parts) + " },")

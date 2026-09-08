@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TypeQuest -- Island Editor</title>
+    <link rel="stylesheet" href="/src/editor/styles.css" />
+  </head>
+  <body>
+    <div id="editor">
+      <header id="topbar">
+        <strong class="brand">TypeQuest island editor</strong>
+        <label class="name">island <input id="island-name" value="overworld" spellcheck="false" /></label>
+        <span id="dirty" class="dirty" hidden>unsaved</span>
+        <span class="spacer"></span>
+        <button id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
+        <button id="btn-redo" title="Redo (Ctrl+Y)">Redo</button>
+        <button id="btn-frame" title="Frame island (F)">Frame</button>
+        <button id="btn-reset" title="Discard the draft and reload the authored file">Reset to file</button>
+        <button id="btn-download" title="Download the island as JSON">Download JSON</button>
+        <button id="btn-playtest" title="Open the game on this island (P)">Playtest</button>
+        <button id="btn-save" class="primary" title="Write src/content/island/<name>.ts (Ctrl+S)">Save to .ts</button>
+      </header>
+      <aside id="palette">
+        <div class="tools" id="tools">
+          <button data-tool="select" class="active" title="Select / move (1)">Select</button>
+          <button data-tool="tile" title="Paint tiles (2)">Tile</button>
+          <button data-tool="prop" title="Place props (3)">Prop</button>
+          <button data-tool="erase" title="Erase (4)">Erase</button>
+        </div>
+        <div class="section">
+          <h3>Tiles</h3>
+          <input id="tile-search" placeholder="filter tiles" />
+          <div id="tile-list" class="list"></div>
+        </div>
+        <div class="section">
+          <h3>Props</h3>
+          <input id="prop-search" placeholder="filter props" />
+          <select id="prop-cat"></select>
+          <label class="check"><input type="checkbox" id="snap-props" /> snap props to cells</label>
+          <div id="prop-list" class="list"></div>
+        </div>
+      </aside>
+      <main id="stage">
+        <canvas id="view"></canvas>
+        <div id="hint">Left-drag orbit, right-drag orbit, middle-drag pan, wheel zoom. R rotate, Shift+wheel rotate, Alt+wheel scale, arrows nudge, Del delete.</div>
+      </main>
+      <aside id="inspector">
+        <h3>Selection</h3>
+        <div id="insp-body" class="muted">Nothing selected</div>
+        <h3>Island</h3>
+        <div id="stats" class="muted"></div>
+      </aside>
+      <div id="toast" hidden></div>
+    </div>
+    <script type="module" src="/src/editor/main.ts"></script>
+  </body>
+</html>

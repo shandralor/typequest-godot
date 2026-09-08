@@ -9,7 +9,7 @@
     "noEmit": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2022", "DOM"],
-    "types": ["vitest/globals"]
+    "types": ["vitest/globals", "vite/client"]
   },
   "include": ["src"]
 }
