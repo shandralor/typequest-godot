@@ -47,8 +47,8 @@ async function main(): Promise<void> {
   // an editor playtest stash shows that island instead of the authored one (look only)
   const stash = takeEditorIsland();
   if (stash) {
-    await world.loadScene(stash, false);
-    world.useSceneCamera(stash.camera ?? OVERWORLD.camera);
+    await world.loadScene(stash, "island");
+    world.useIslandCamera(stash.camera ?? OVERWORLD.camera, { zoom: 1.5, bias: 5, fov: 30, snap: true });
     world.hero.node.position.copy(world.anchor("hub"));
     world.hero.face(0, 1);
     hud.prompt("Playtest: island preview");

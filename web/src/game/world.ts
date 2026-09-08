@@ -8,10 +8,13 @@ import { placedPosition } from "../world/hexGrid";
 import type { SceneDef, CameraDef } from "../world/sceneDef";
 import { HeroRig } from "./hero";
 
-// scene camera: a fixed offset behind/above the lead, easing toward it (game_controller CAM_*)
-const CAM_OFFSET = new THREE.Vector3(0, 3.4, 7.5);
-const CAM_LOOK_Y = 1.0;
-const CAM_LERP = 4.0;
+import { WALKING, type Rig } from "./cameraRigs";
+
+const CAM_LERP = 4.0; // game_controller CAM_LERP: how fast the frame eases to a new pose
+
+const ORIGIN = new THREE.Vector3();
+const WANT_POS = new THREE.Vector3();
+const WANT_LOOK = new THREE.Vector3();
 
 export class World {
   readonly s: IslandScene;
@@ -19,6 +22,7 @@ export class World {
   def: SceneDef | null = null;
   private group: THREE.Group | null = null;
   private camMode: "fixed" | "follow" = "fixed";
+  private rig: Rig = WALKING;
   private camPos = new THREE.Vector3();
   private camLook = new THREE.Vector3();
   private fadeEl: HTMLElement;
@@ -34,8 +38,12 @@ export class World {
     await this.hero.load(modelPath);
   }
 
-  /** Replace the staged scene with `def`. */
-  async loadScene(def: SceneDef, fog: boolean): Promise<void> {
+  /**
+   * Replace the staged scene with `def`. `mood` follows the descriptor: "day" gets a bright sky
+   * and aerial haze, "dark" a near-black cave; the island passes "island" for its dark backdrop
+   * (the floating island reads against a void, like the Godot set).
+   */
+  async loadScene(def: SceneDef, mood: "day" | "dark" | "island"): Promise<void> {
     if (this.group) {
       this.s.scene.remove(this.group);
       this.group = null;
@@ -43,7 +51,9 @@ export class World {
     this.def = def;
     const built = await buildIslandGroup(this.s, def);
     this.group = built.group;
-    this.s.scene.fog = fog ? new THREE.Fog(0xa6c6e0, 60, 220) : null;
+    const sky = mood === "dark" ? 0x1b1d22 : mood === "island" ? 0x0b0e12 : 0xa6c6e0;
+    this.s.scene.background = new THREE.Color(sky);
+    this.s.scene.fog = mood === "island" ? null : new THREE.Fog(sky, mood === "dark" ? 14 : 60, mood === "dark" ? 70 : 220);
     this.s.sun.target.position.copy(built.land.getCenter(new THREE.Vector3()));
   }
 
@@ -63,41 +73,59 @@ export class World {
     return new THREE.CatmullRomCurve3(r.points.map((p) => new THREE.Vector3(p[0], p[1], p[2])), false, "centripetal", 0.5);
   }
 
-  /** The authored fixed camera of the current scene (the island), snapped. */
-  useSceneCamera(cam?: CameraDef): void {
+  /**
+   * The island view, from the set's authored camera markers. `zoom` scales the iso offset
+   * (Godot's idle view pulls back 1.5x) and `bias` shifts the focus south so the far windmill
+   * stays in frame. With `follow`, dolly in and track that point instead (travel).
+   */
+  useIslandCamera(cam: CameraDef | undefined, opts: { zoom: number; bias: number; fov: number; follow?: THREE.Vector3; snap: boolean }): void {
     this.camMode = "fixed";
-    if (cam) {
-      this.s.camera.fov = cam.fov ?? 30;
-      this.camPos.set(cam.pos[0], cam.pos[1], cam.pos[2]);
-      this.camLook.set(cam.look[0], cam.look[1], cam.look[2]);
-    } else {
-      this.s.camera.fov = 30;
-      this.camPos.set(0, 30, 34);
-      this.camLook.set(0, 0, -2);
-    }
+    const p = cam?.pos ?? [0, 30, 34];
+    const l = cam?.look ?? [0, 0, -2];
+    const iso = new THREE.Vector3(p[0] - l[0], p[1] - l[1], p[2] - l[2]).multiplyScalar(opts.zoom);
+    const focus = opts.follow ? opts.follow.clone() : new THREE.Vector3(l[0], l[1], l[2] + opts.bias);
+    this.s.camera.fov = cam?.fov ?? opts.fov;
     this.s.camera.updateProjectionMatrix();
+    const want = focus.clone().add(iso);
+    const look = opts.follow ? focus.clone().add(new THREE.Vector3(0, 0.6, 0)) : focus;
+    if (opts.snap) {
+      this.camPos.copy(want);
+      this.camLook.copy(look);
+    } else {
+      const k = 1 - Math.exp(-CAM_LERP * 0.016);
+      this.camPos.lerp(want, k);
+      this.camLook.lerp(look, k);
+    }
     this.s.camera.position.copy(this.camPos);
     this.s.camera.lookAt(this.camLook);
   }
 
-  /** Follow the hero from behind/above; `snap` jumps instead of easing (a fresh scene). */
-  useFollowCamera(snap: boolean): void {
+  /** Frame the scene with a rig (relative to the hero, or absolute when the rig is `fixed`). */
+  useRig(rig: Rig, snap: boolean): void {
     this.camMode = "follow";
-    this.s.camera.fov = 45;
+    this.rig = rig;
+    this.s.camera.fov = rig.fov;
     this.s.camera.updateProjectionMatrix();
     if (snap) {
-      this.camPos.copy(this.hero.node.position).add(CAM_OFFSET);
-      this.camLook.copy(this.hero.node.position).add(new THREE.Vector3(0, CAM_LOOK_Y, 0));
+      this.rigPose(this.camPos, this.camLook);
       this.s.camera.position.copy(this.camPos);
       this.s.camera.lookAt(this.camLook);
     }
   }
 
+  /** The rig's world pose right now. */
+  private rigPose(pos: THREE.Vector3, look: THREE.Vector3): void {
+    const base = this.rig.fixed ? ORIGIN : this.hero.node.position;
+    pos.set(base.x + this.rig.off[0], base.y + this.rig.off[1], base.z + this.rig.off[2]);
+    look.set(base.x + this.rig.look[0], base.y + this.rig.look[1], base.z + this.rig.look[2]);
+  }
+
   update(dt: number): void {
     this.hero.update(dt);
     if (this.camMode === "follow") {
-      const want = this.hero.node.position.clone().add(CAM_OFFSET);
-      const look = this.hero.node.position.clone().add(new THREE.Vector3(0, CAM_LOOK_Y, 0));
+      this.rigPose(WANT_POS, WANT_LOOK);
+      const want = WANT_POS;
+      const look = WANT_LOOK;
       const k = 1 - Math.exp(-CAM_LERP * dt);
       this.camPos.lerp(want, k);
       this.camLook.lerp(look, k);

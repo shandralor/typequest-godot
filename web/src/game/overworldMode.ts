@@ -9,6 +9,7 @@ import { getFlag } from "./flags";
 import { SiteTyper } from "./siteTyper";
 import type { World } from "./world";
 import type { Hud } from "../ui/hud";
+import { ISLAND_FOV, OW_IDLE_BIAS, OW_IDLE_ZOOM, OW_TRAVEL_ZOOM } from "./cameraRigs";
 
 export interface Locale {
   resolve(key: string): string;
@@ -40,8 +41,8 @@ export class OverworldMode {
     this.at = atAnchor;
     this.walk = null;
     this.entering = false;
-    await this.world.loadScene(OVERWORLD, false);
-    this.world.useSceneCamera(OVERWORLD.camera);
+    await this.world.loadScene(OVERWORLD, "island");
+    this.world.useIslandCamera(OVERWORLD.camera, { zoom: OW_IDLE_ZOOM, bias: OW_IDLE_BIAS, fov: ISLAND_FOV, snap: true });
     const pos = this.world.anchor(atAnchor);
     this.world.hero.node.position.copy(pos);
     this.world.hero.face(0, 1); // face the camera (it sits at +z)
@@ -121,6 +122,8 @@ export class OverworldMode {
     this.world.hero.node.position.copy(pos);
     this.world.hero.face(pos.x - prev.x, pos.z - prev.z);
     this.world.hero.setMoving(true, OW_WALK_SPEED);
+    // dolly in and track the hero along the path (the lerp makes it a smooth dolly)
+    this.world.useIslandCamera(OVERWORLD.camera, { zoom: OW_TRAVEL_ZOOM, bias: 0, fov: ISLAND_FOV, follow: pos, snap: false });
     if (w.dist >= leg.length) {
       w.leg += 1;
       w.dist = 0;

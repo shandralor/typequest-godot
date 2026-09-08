@@ -18,6 +18,7 @@ import { HeroRig } from "./hero";
 import type { World } from "./world";
 import type { Hud } from "../ui/hud";
 import type { SceneDef } from "../world/sceneDef";
+import { rigFor } from "./cameraRigs";
 
 export interface Locale {
   resolve(key: string): string;
@@ -91,14 +92,15 @@ export class ScenarioMode {
     const d = node.scene;
     const setName = this.setFor(d);
     const restage = d.continuous && setName === this.currentSet;
+    const def0 = sceneDefFor(setName);
     if (!restage) {
-      const def = sceneDefFor(setName);
+      const def = def0;
       if (!def) {
         this.hud.message(`Onbekende set '${setName}'`);
         return;
       }
       this.clearNpcs();
-      await this.world.loadScene(def, true);
+      await this.world.loadScene(def, d.mood === "dark" ? "dark" : "day");
       this.currentSet = setName;
     }
     // actors
@@ -135,7 +137,9 @@ export class ScenarioMode {
     }
     // held / staged props (the sword on the grindstone, the bow in hand)
     if (!restage) for (const p of d.props) await this.stageProp(p.asset, p.anchor);
-    this.world.useFollowCamera(fresh || !restage);
+    // framing follows the scene type, exactly as the Godot rig does
+    const landmarks = !!def0?.anchors?.some((a) => a.name === "bridge_near") && !this.travel;
+    this.world.useRig(rigFor(setName, { walking: !!this.travel, win: false, landmarks }), fresh || !restage);
     this.hud.prompt(node.narrationKey ? this.locale.resolve(node.narrationKey) : "");
     this.hud.message("");
     if (node.prerevealed) {
@@ -292,6 +296,7 @@ export class ScenarioMode {
     this.hud.hideBand();
     this.hud.highlightKey("");
     this.hud.message(this.locale.fillTokens(text, this.heroId) + "\n(druk op enter)");
+    if (this.currentSet === "forge") this.world.useRig(rigFor("forge", { walking: false, win: true, landmarks: false }), false);
     this.phase = "win";
   }
 
