@@ -10,6 +10,8 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { N8AOPass } from "n8ao";
+import { expandIsland, islandModels } from "./world/hexGrid";
+import { OVERWORLD } from "./content/island/overworld";
 
 interface LayoutNode {
   model: string;
@@ -95,20 +97,33 @@ function isSeaOrSky(model: string): boolean {
   return /hex_water|hex_coast|cloud_big/.test(model);
 }
 
+// The island comes from the authored data-as-code (src/content/island/overworld.ts) expanded
+// through the hex-grid math -- the ClaudeCraft-style authoring path. `?src=json` instead
+// rebuilds from the raw Godot transforms (public/overworld-layout.json) for an A/B check that
+// the grid expansion round-trips the original set exactly.
+async function placements(): Promise<{ model: string; matrix: THREE.Matrix4 }[]> {
+  if (location.search.includes("src=json")) {
+    const layout = (await (await fetch("/overworld-layout.json")).json()) as { nodes: LayoutNode[] };
+    return layout.nodes.map((n) => ({ model: n.model, matrix: godotMatrix(n.t) }));
+  }
+  return expandIsland(OVERWORLD);
+}
+
 async function buildOverworld(): Promise<{ full: THREE.Box3; land: THREE.Box3 }> {
-  const layout = (await (await fetch("/overworld-layout.json")).json()) as { nodes: LayoutNode[]; models: string[] };
-  await Promise.all(layout.models.map((m) => loadModel(m)));
+  const list = await placements();
+  const models = location.search.includes("src=json") ? [...new Set(list.map((p) => p.model))] : islandModels(OVERWORLD);
+  await Promise.all(models.map((m) => loadModel(m)));
   const island = new THREE.Group();
   island.name = "island";
   const land = new THREE.Box3();
-  for (const node of layout.nodes) {
-    const base = cache.get(node.model)!;
+  for (const p of list) {
+    const base = cache.get(p.model)!;
     const inst = base.clone(true);
     const wrap = new THREE.Group();
-    wrap.applyMatrix4(godotMatrix(node.t));
+    wrap.applyMatrix4(p.matrix);
     wrap.add(inst);
     island.add(wrap);
-    if (!isSeaOrSky(node.model)) land.expandByObject(wrap);
+    if (!isSeaOrSky(p.model)) land.expandByObject(wrap);
   }
   scene.add(island);
   return { full: new THREE.Box3().setFromObject(island), land };
