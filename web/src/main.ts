@@ -84,6 +84,9 @@ async function main(): Promise<void> {
   tick();
   document.body.setAttribute("data-ready", "1");
   s.renderer.setAnimationLoop(tick);
+  // screenshot harness: pause/resume the loop so a headless capture is not starved by rAF
+  (window as unknown as { __pause: () => void; __resume: () => void }).__pause = () => s.renderer.setAnimationLoop(null);
+  (window as unknown as { __pause: () => void; __resume: () => void }).__resume = () => s.renderer.setAnimationLoop(tick);
 }
 
 main().catch((err) => {
