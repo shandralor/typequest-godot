@@ -7,6 +7,16 @@ import type { IslandDef } from "../../world/hexGrid";
 
 export const OVERWORLD: IslandDef = {
   tiles: [
+    // row r=-6
+    { q: 3, r: -6, t: "water" },
+    { q: 4, r: -6, t: "water" },
+    { q: 5, r: -6, t: "water", rot: 1 },
+    { q: 6, r: -6, t: "water" },
+    { q: 7, r: -6, t: "water" },
+    { q: 8, r: -6, t: "water" },
+    { q: 9, r: -6, t: "water" },
+    { q: 10, r: -6, t: "water" },
+    { q: 11, r: -6, t: "water" },
     // row r=-5
     { q: 1, r: -5, t: "water" },
     { q: 2, r: -5, t: "water" },
@@ -18,6 +28,7 @@ export const OVERWORLD: IslandDef = {
     { q: 8, r: -5, t: "water" },
     { q: 9, r: -5, t: "water" },
     { q: 10, r: -5, t: "water" },
+    { q: 11, r: -5, t: "water" },
     // row r=-4
     { q: 1, r: -4, t: "water" },
     { q: 2, r: -4, t: "water" },
@@ -40,6 +51,7 @@ export const OVERWORLD: IslandDef = {
     { q: 7, r: -3, t: "water" },
     { q: 8, r: -3, t: "water" },
     { q: 9, r: -3, t: "water" },
+    { q: 10, r: -3, t: "water" },
     // row r=-2
     { q: -1, r: -2, t: "water" },
     { q: 0, r: -2, t: "grass" },
@@ -64,6 +76,7 @@ export const OVERWORLD: IslandDef = {
     { q: 6, r: -1, t: "water" },
     { q: 7, r: -1, t: "water" },
     { q: 8, r: -1, t: "water" },
+    { q: 9, r: -1, t: "water" },
     // row r=0
     { q: -3, r: 0, t: "road_B", rot: 2 },
     { q: -2, r: 0, t: "grass" },
@@ -90,6 +103,7 @@ export const OVERWORLD: IslandDef = {
     { q: 5, r: 1, t: "water" },
     { q: 6, r: 1, t: "water" },
     { q: 7, r: 1, t: "water" },
+    { q: 8, r: 1, t: "water" },
     // row r=2
     { q: -5, r: 2, t: "grass" },
     { q: -4, r: 2, t: "grass" },
@@ -120,6 +134,7 @@ export const OVERWORLD: IslandDef = {
     { q: 4, r: 3, t: "water" },
     { q: 5, r: 3, t: "water" },
     { q: 6, r: 3, t: "water" },
+    { q: 7, r: 3, t: "water" },
     // row r=4
     { q: -8, r: 4, t: "water" },
     { q: -7, r: 4, t: "water" },
@@ -153,6 +168,7 @@ export const OVERWORLD: IslandDef = {
     { q: 3, r: 5, t: "water" },
     { q: 4, r: 5, t: "water" },
     { q: 5, r: 5, t: "water" },
+    { q: 6, r: 5, t: "water" },
     // row r=6
     { q: -10, r: 6, t: "water" },
     { q: -9, r: 6, t: "water" },
@@ -186,6 +202,7 @@ export const OVERWORLD: IslandDef = {
     { q: 2, r: 7, t: "water" },
     { q: 3, r: 7, t: "water" },
     { q: 4, r: 7, t: "water" },
+    { q: 5, r: 7, t: "water" },
   ],
   props: [
     { m: "kaykit/hexagon/building_blacksmith_red.gltf", q: 2, r: -2, rot: 330, s: 3 },
