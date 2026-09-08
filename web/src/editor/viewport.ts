@@ -7,16 +7,17 @@ import * as THREE from "three";
 import { createIslandScene, type IslandScene } from "../render/islandScene";
 import { worldToAxial } from "../world/hexGrid";
 import { EditorCamera } from "./editor_camera";
-import { IslandView } from "./island_view";
+import { SceneView, type Selection } from "./scene_view";
 import type { Cell } from "./edit_core";
 
 export interface Hit {
   world: { x: number; z: number };
   cell: Cell;
-  /** Prop under the pointer (raycast), or null. */
-  propIndex: number | null;
+  /** The item under the pointer (raycast over props/shapes/anchors/lights/route points), or null. */
+  pick: Selection;
   shift: boolean;
   alt: boolean;
+  ctrl: boolean;
 }
 
 export interface ViewportHooks {
@@ -36,7 +37,7 @@ const TAP_PX = 5;
 
 export class Viewport {
   readonly scene: IslandScene;
-  readonly view: IslandView;
+  readonly view: SceneView;
   readonly cam = new EditorCamera();
   private readonly ray = new THREE.Raycaster();
   private readonly plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -52,7 +53,12 @@ export class Viewport {
 
   constructor(readonly canvas: HTMLCanvasElement, private readonly hooks: ViewportHooks) {
     this.scene = createIslandScene(canvas);
-    this.view = new IslandView(this.scene);
+    // editing view: no atmospheric fog (big story sets would wash out) and a far clip that
+    // covers a whole forest set from above
+    this.scene.scene.fog = null;
+    this.scene.camera.far = 3000;
+    this.scene.camera.updateProjectionMatrix();
+    this.view = new SceneView(this.scene);
     this.attach();
     new ResizeObserver(() => this.scene.resize()).observe(canvas);
   }
@@ -72,21 +78,39 @@ export class Viewport {
     requestAnimationFrame(loop);
   }
 
-  /** Ground-plane hit + cell + prop pick for a pointer event. */
-  private hitAt(e: { clientX: number; clientY: number; shiftKey: boolean; altKey: boolean }): Hit | null {
+  /** Current editor camera pose (world position + look target). */
+  pose(): { pos: THREE.Vector3; target: THREE.Vector3 } {
+    const p = this.cam.pose();
+    return { pos: p.pos.clone(), target: p.target.clone() };
+  }
+
+  /** Move the editor camera to look from `pos` at `look`. */
+  lookFrom(pos: [number, number, number], look: [number, number, number]): void {
+    const p = new THREE.Vector3(...pos);
+    const t = new THREE.Vector3(...look);
+    const d = p.clone().sub(t);
+    this.cam.target.copy(t);
+    this.cam.dist = Math.max(8, d.length());
+    this.cam.pitch = Math.max(0.12, Math.min(1.5, Math.asin(Math.max(-1, Math.min(1, d.y / (d.length() || 1))))));
+    this.cam.yaw = Math.atan2(-d.x, -d.z);
+  }
+
+  /** Ground-plane hit + cell + item pick for a pointer event. */
+  private hitAt(e: { clientX: number; clientY: number; shiftKey: boolean; altKey: boolean; ctrlKey: boolean }): Hit | null {
     const rect = this.canvas.getBoundingClientRect();
     this.ndc.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
     this.ray.setFromCamera(this.ndc, this.scene.camera);
     const hit = this.ray.ray.intersectPlane(this.plane, this.tmp);
     if (!hit) return null;
-    const inter = this.ray.intersectObjects(this.view.propsGroup.children, true);
-    const propIndex = inter.length ? this.view.propIndexOf(inter[0].object) : null;
+    const inter = this.ray.intersectObjects(this.view.pickables(), true);
+    const pick = inter.length ? this.view.pickOf(inter[0].object) : null;
     return {
       world: { x: hit.x, z: hit.z },
       cell: worldToAxial(hit.x, hit.z),
-      propIndex,
+      pick,
       shift: e.shiftKey,
       alt: e.altKey,
+      ctrl: e.ctrlKey,
     };
   }
 

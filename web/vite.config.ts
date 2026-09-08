@@ -20,18 +20,18 @@ function editorWriteBack(): Plugin {
         req.on("data", (c: Buffer) => (body += c.toString()));
         req.on("end", async () => {
           try {
-            const { name, source } = JSON.parse(body) as { name: string; source: string };
-            if (!/^[a-z][a-z0-9_]{0,40}$/.test(name) || typeof source !== "string" || source.length > 2_000_000) {
+            const { name, source, dir: dirName = "island" } = JSON.parse(body) as { name: string; source: string; dir?: string };
+            if (!/^[a-z][a-z0-9_]{0,40}$/.test(name) || !/^(island|scenes)$/.test(dirName) || typeof source !== "string" || source.length > 4_000_000) {
               res.statusCode = 400;
               res.end(JSON.stringify({ error: "bad_name_or_source" }));
               return;
             }
-            const dir = resolve(__dirname, "src/content/island");
+            const dir = resolve(__dirname, "src/content", dirName);
             await mkdir(dir, { recursive: true });
             const file = resolve(dir, `${name}.ts`);
             await writeFile(file, source, "utf8");
             res.setHeader("content-type", "application/json");
-            res.end(JSON.stringify({ ok: true, file: `src/content/island/${name}.ts` }));
+            res.end(JSON.stringify({ ok: true, file: `src/content/${dirName}/${name}.ts` }));
           } catch (err) {
             res.statusCode = 500;
             res.end(JSON.stringify({ error: String(err) }));

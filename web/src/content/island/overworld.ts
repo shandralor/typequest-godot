@@ -1,11 +1,9 @@
-// AUTHORED island data-as-code -- floor tiles + props. Source of truth for this island;
-// edited by hand or written back by the island editor (/editor.html). Grid math lives in
-// src/world/hexGrid.ts. tiles: axial (q, r), t = KayKit hex code (hex_<t>.gltf), rot = yaw in
-// 60-degree steps (0-5); tiles may stack. props: on a cell (q, r) or at world (x, z); rot = yaw
-// in degrees; s = scale; y = height.
-import type { IslandDef } from "../../world/hexGrid";
+// AUTHORED scene data-as-code -- floor tiles, props, primitive shapes, anchors, camera, routes,
+// lights. Source of truth for this set; edited by hand or written back by the scene editor
+// (/editor.html). Grid math: src/world/hexGrid.ts. Types: src/world/sceneDef.ts.
+import type { SceneDef } from "../../world/sceneDef";
 
-export const OVERWORLD: IslandDef = {
+export const OVERWORLD: SceneDef = {
   tiles: [
     // row r=-6
     { q: 3, r: -6, t: "water" },
@@ -124,8 +122,8 @@ export const OVERWORLD: IslandDef = {
     { q: -4, r: 3, t: "water" },
     { q: -3, r: 3, t: "coast_D", rot: 4 },
     { q: -3, r: 3, t: "water" },
-    { q: -2, r: 3, t: "coast_A", rot: 5 },
     { q: -2, r: 3, t: "water" },
+    { q: -2, r: 3, t: "coast_A", rot: 5 },
     { q: -1, r: 3, t: "road_M", rot: 4 },
     { q: 0, r: 3, t: "grass" },
     { q: 1, r: 3, t: "water" },
@@ -142,10 +140,10 @@ export const OVERWORLD: IslandDef = {
     { q: -5, r: 4, t: "water" },
     { q: -4, r: 4, t: "water" },
     { q: -3, r: 4, t: "water" },
-    { q: -2, r: 4, t: "coast_C", rot: 5 },
     { q: -2, r: 4, t: "water" },
-    { q: -1, r: 4, t: "coast_D" },
+    { q: -2, r: 4, t: "coast_C", rot: 5 },
     { q: -1, r: 4, t: "water" },
+    { q: -1, r: 4, t: "coast_D" },
     { q: 0, r: 4, t: "water" },
     { q: 1, r: 4, t: "water" },
     { q: 2, r: 4, t: "water" },
@@ -205,24 +203,52 @@ export const OVERWORLD: IslandDef = {
     { q: 5, r: 7, t: "water" },
   ],
   props: [
-    { m: "kaykit/hexagon/building_blacksmith_red.gltf", q: 2, r: -2, rot: 330, s: 3 },
-    { m: "kaykit/hexagon/building_archeryrange_red.gltf", q: 1, r: 1, rot: 240, s: 3 },
-    { m: "kaykit/hexagon/trees_A_large.gltf", q: -2, r: 1, rot: 120, s: 3, y: 0.152 },
-    { m: "kaykit/hexagon/trees_A_medium.gltf", q: -1, r: -1, rot: 60, s: 3 },
-    { m: "kaykit/hexagon/trees_B_medium.gltf", q: -2, r: 2, rot: 150, s: 3 },
-    { m: "kaykit/hexagon/mountain_A_grass_trees.gltf", q: 0, r: -2, rot: 30, s: 3 },
+    { m: "kaykit/hexagon/building_blacksmith_red.gltf", q: 2, r: -2, rot: 329.999, s: 3 },
+    { m: "kaykit/hexagon/building_archeryrange_red.gltf", q: 1, r: 1, rot: 240.001, s: 3 },
+    { m: "kaykit/hexagon/trees_A_large.gltf", x: -9, z: 5.196, y: 0.152, rot: 119.999, s: 3 },
+    { m: "kaykit/hexagon/trees_A_medium.gltf", q: -1, r: -1, rot: 60.001, s: 3 },
+    { m: "kaykit/hexagon/trees_B_medium.gltf", q: -2, r: 2, rot: 149.999, s: 3 },
+    { m: "kaykit/hexagon/mountain_A_grass_trees.gltf", q: 0, r: -2, rot: 30.001, s: 3 },
     { m: "kaykit/hexagon/building_windmill_red.gltf", x: 2.701, z: 15.569, rot: 127.243, s: 3 },
     { m: "kaykit/hexagon/tree_single_A.gltf", q: 2, r: 0, s: 3 },
     { m: "kaykit/hexagon/flag_red.gltf", x: -8.556, z: 1.514, s: 3 },
     { m: "kaykit/hexagon/flag_red.gltf", x: 3.6, z: -8.792, s: 3 },
     { m: "kaykit/hexagon/flag_red.gltf", x: 6.6, z: 3.996, s: 3 },
-    { m: "kaykit/hexagon/cloud_big.gltf", x: -9, z: -10.392, s: 3, y: 10 },
-    { m: "kaykit/hexagon/cloud_big.gltf", x: 10.8, z: 6.235, s: 3, y: 13 },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -9, z: -10.392, y: 10, s: 3 },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: 10.8, z: 6.235, y: 13, s: 3 },
     { m: "kaykit/forest_nature/Rock_1_A_Color1.gltf", x: -0.073, z: 2.235 },
     { m: "kaykit/forest_nature/Bush_4_A_Color1.gltf", x: 3.096, z: 3.056 },
     { m: "kaykit/forest_nature/Bush_3_B_Color1.gltf", x: -4.547, z: 1.982 },
     { m: "kaykit/forest_nature/Bush_2_C_Color1.gltf", x: -4.557, z: 3.255 },
-    { m: "kaykit/hexagon/building_home_A_red.gltf", x: -2.203, z: 3.767, rot: 149.85, s: 3.2, y: 0.021 },
+    { m: "kaykit/hexagon/building_home_A_red.gltf", x: -2.203, z: 3.767, y: 0.021, rot: 149.85, s: 3.2 },
     { m: "kaykit/hexagon/hills_C_trees.gltf", q: -2, r: 0, s: 3 },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -31.696, z: 10.113, y: 1.05, sc: [4.037, 1.82, 2.787], tags: ["reveal_crossed_bridge"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -26.066, z: 5.814, y: 0.9, sc: [3.217, 1.505, 2.472], tags: ["reveal_crossed_bridge"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -28.012, z: 14.46, y: 0.75, sc: [3.483, 1.715, 3.039], tags: ["reveal_crossed_bridge"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -11.353, z: 15.572, y: 0.75, sc: [3.039, 1.715, 3.483], tags: ["reveal_crossed_bridge"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -13.937, z: 9.903, y: 0.6, sc: [2.668, 1.4, 2.668], tags: ["reveal_crossed_bridge"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -17.582, z: 5.767, y: 1.2, sc: [3.27, 1.61, 2.853], tags: ["reveal_crossed_bridge"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -21.217, z: 1.671, y: 1.05, sc: [3.89, 1.82, 2.989], tags: ["reveal_crossed_bridge"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -20.638, z: -1.73, y: 0.9, sc: [3.338, 1.505, 2.305], tags: ["reveal_crossed_bridge"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -24.007, z: 8.466, y: 0.75, sc: [3.891, 1.715, 2.496], tags: ["reveal_crossed_bridge"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -20.393, z: 12.728, y: 0.6, rot: 180, sc: [3.2, 1.4, 2], tags: ["reveal_crossed_bridge"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -15.4, z: -6.11, y: 1.2, sc: [2.853, 1.61, 3.27], tags: ["mist"] },
+    { m: "kaykit/hexagon/cloud_big.gltf", x: -12.931, z: -10.776, y: 1.05, sc: [2.989, 1.82, 3.89], tags: ["mist"] },
+  ],
+  anchors: [
+    { name: "hub", x: 0, z: 0 },
+    { name: "site_bos", x: -8.556, z: 1.514 },
+    { name: "site_smidse", x: 4.7, z: -8.14 },
+    { name: "site_boog", x: 6.748, z: 3.896 },
+    { name: "site_home", x: -1.6, z: 2.3 },
+    { name: "site_molen", x: 2.7, z: 13.8 },
+  ],
+  camera: { pos: [0, 30, 34], look: [0, 0, -2] },
+  routes: [
+    { name: "route_bos", points: [[0, 0, 0], [-6, 0, 0], [-8.556, 0, 1.514]] },
+    { name: "route_smidse", points: [[0, 0, 0], [3, 0, -5.196], [4.7, 0, -8.14]] },
+    { name: "route_boog", points: [[0, 0, 0], [3, 0, 5.196], [6.748, 0, 5.251]] },
+    { name: "route_home", points: [[0, 0, 0], [-0.8, 0, 1.2], [-1.6, 0, 2.3]] },
+    { name: "route_molen", points: [[0, 0, 0], [3.551, 0, 5.557], [5.025, 0, 9.13], [5.05, 0.136, 12.005], [4.521, 0.469, 14.507]] },
   ],
 };

@@ -7,6 +7,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { createIslandScene, buildIslandGroup, type IslandScene } from "./render/islandScene";
 import { OVERWORLD } from "./content/island/overworld";
 import { takeEditorIsland } from "./world/editorHandoff";
+import type { CameraDef } from "./world/sceneDef";
 
 // The Godot overworld camera, read verbatim from scenes/sets/overworld.tscn
 // (camera_pos / camera_look markers + the controller's fov 30).
@@ -14,7 +15,7 @@ const OW_CAM_POS = new THREE.Vector3(0, 30, 34);
 const OW_CAM_LOOK = new THREE.Vector3(0, 0, -2);
 const OW_CAM_FOV = 30;
 
-function frame(s: IslandScene, box: THREE.Box3): void {
+function frame(s: IslandScene, box: THREE.Box3, cam?: CameraDef): void {
   const center = box.getCenter(new THREE.Vector3());
   s.camera.fov = OW_CAM_FOV;
   s.camera.updateProjectionMatrix();
@@ -22,6 +23,11 @@ function frame(s: IslandScene, box: THREE.Box3): void {
     const size = box.getSize(new THREE.Vector3());
     s.camera.position.set(center.x, center.y + Math.max(size.x, size.z) * 1.4, center.z + 0.01);
     s.camera.lookAt(center);
+  } else if (cam) {
+    s.camera.fov = cam.fov ?? OW_CAM_FOV;
+    s.camera.updateProjectionMatrix();
+    s.camera.position.set(cam.pos[0], cam.pos[1], cam.pos[2]);
+    s.camera.lookAt(cam.look[0], cam.look[1], cam.look[2]);
   } else {
     s.camera.position.copy(OW_CAM_POS);
     s.camera.lookAt(OW_CAM_LOOK);
@@ -65,7 +71,7 @@ async function main(): Promise<void> {
   const def = takeEditorIsland() ?? OVERWORLD;
   const { land, full } = await buildIslandGroup(s, def);
   const mixer = await loadHero(s);
-  frame(s, land);
+  frame(s, land, def.camera); // the authored camera (from the set) when present
   (window as unknown as { __dbg: unknown }).__dbg = {
     landMin: land.min.toArray().map((n) => +n.toFixed(2)),
     landMax: land.max.toArray().map((n) => +n.toFixed(2)),

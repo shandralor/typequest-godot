@@ -18,7 +18,7 @@ export class EditorCamera {
   private readonly minPitch = 0.12;
   private readonly maxPitch = 1.5;
   private readonly minDist = 8;
-  private readonly maxDist = 240;
+  private readonly maxDist = 900;
   private readonly poseOut = { pos: new THREE.Vector3(), target: new THREE.Vector3() };
 
   pose(): { pos: THREE.Vector3; target: THREE.Vector3 } {

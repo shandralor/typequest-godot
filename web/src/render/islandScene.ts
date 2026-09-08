@@ -12,6 +12,7 @@ import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { N8AOPass } from "n8ao";
 import { expandIsland, islandModels, type IslandDef } from "../world/hexGrid";
+import { buildLight, buildShape } from "./sceneObjects";
 
 // Colour grade on the tonemapped/sRGB image: saturation pop, gentle S-curve, warmth, vignette.
 const GradeShader = {
@@ -158,24 +159,36 @@ export function createIslandScene(canvas: HTMLCanvasElement): IslandScene {
   return { renderer, scene, camera, sun, loadModel, getModel: (p) => cache.get(p), setupPost, resize, render };
 }
 
-/** Build a static island group from an IslandDef (the game path). Returns the group + land box. */
+/** Build a static scene group from a SceneDef (the game path): tiles + props + shapes + lights. */
 export async function buildIslandGroup(
   s: IslandScene,
   def: IslandDef
 ): Promise<{ group: THREE.Group; land: THREE.Box3; full: THREE.Box3 }> {
-  await Promise.all(islandModels(def).map((m) => s.loadModel(m)));
+  await Promise.all(islandModels(def).map((m) => s.loadModel(m).catch(() => null)));
   const group = new THREE.Group();
   group.name = "island";
   const land = new THREE.Box3();
-  for (const p of expandIsland(def)) {
+  const hidden = new Set(def.props.filter((p) => p.hidden).map((p) => p));
+  def.props.forEach(() => void 0);
+  const placements = expandIsland(def);
+  const nTiles = def.tiles.length;
+  placements.forEach((p, i) => {
     const base = s.getModel(p.model);
-    if (!base) continue;
+    if (!base) return;
     const wrap = new THREE.Group();
     wrap.applyMatrix4(p.matrix);
     wrap.add(base.clone(true));
+    const prop = i >= nTiles ? def.props[i - nTiles] : null;
+    if (prop && hidden.has(prop)) wrap.visible = false;
     group.add(wrap);
     if (!isSeaOrSky(p.model)) land.expandByObject(wrap);
+  });
+  for (const sh of def.shapes ?? []) {
+    const o = buildShape(sh);
+    group.add(o);
+    land.expandByObject(o);
   }
+  for (const l of def.lights ?? []) group.add(buildLight(l));
   s.scene.add(group);
   return { group, land, full: new THREE.Box3().setFromObject(group) };
 }

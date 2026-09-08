@@ -3,19 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TypeQuest -- Island Editor</title>
+    <title>TypeQuest -- Scene Editor</title>
     <link rel="stylesheet" href="/src/editor/styles.css" />
   </head>
   <body>
     <div id="editor">
       <header id="topbar">
-        <strong class="brand">TypeQuest island editor</strong>
-        <label class="name">island <input id="island-name" value="overworld" spellcheck="false" /></label>
+        <strong class="brand">TypeQuest scene editor</strong>
+        <label class="name">scene <select id="scene-select"></select></label>
         <span id="dirty" class="dirty" hidden>unsaved</span>
         <span class="spacer"></span>
         <button id="btn-undo" title="Undo (Ctrl+Z)">Undo</button>
         <button id="btn-redo" title="Redo (Ctrl+Y)">Redo</button>
-        <button id="btn-frame" title="Frame island (F)">Frame</button>
+        <button id="btn-frame" title="Frame scene (F)">Frame</button>
+        <button id="btn-gizmos" title="Toggle anchors/routes/camera gizmos (G)">Gizmos</button>
         <button id="btn-reset" title="Discard the draft and reload the authored file">Reset to file</button>
         <button id="btn-download" title="Download the island as JSON">Download JSON</button>
         <button id="btn-playtest" title="Open the game on this island (P)">Playtest</button>
@@ -26,7 +27,16 @@
           <button data-tool="select" class="active" title="Select / move (1)">Select</button>
           <button data-tool="tile" title="Paint tiles (2)">Tile</button>
           <button data-tool="prop" title="Place props (3)">Prop</button>
-          <button data-tool="erase" title="Erase (4)">Erase</button>
+          <button data-tool="shape" title="Place a box / plane (4)">Shape</button>
+          <button data-tool="anchor" title="Place a named anchor (5)">Anchor</button>
+          <button data-tool="light" title="Place a point light (6)">Light</button>
+          <button data-tool="route" title="Draw a route: click to add points (7)">Route</button>
+          <button data-tool="erase" title="Erase (8)">Erase</button>
+        </div>
+        <div id="shape-opts" class="section" hidden>
+          <h3>Shape</h3>
+          <select id="shape-kind"><option value="box">box</option><option value="plane">plane</option></select>
+          <input type="color" id="shape-color" value="#c8b48a" />
         </div>
         <div class="section">
           <h3>Tiles</h3>
@@ -43,12 +53,14 @@
       </aside>
       <main id="stage">
         <canvas id="view"></canvas>
-        <div id="hint">Left-drag orbit, right-drag orbit, middle-drag pan, wheel zoom. R rotate, Shift+wheel rotate, Alt+wheel scale, arrows nudge, Del delete.</div>
+        <div id="hint">Orbit: left/right-drag. Pan: middle-drag. Zoom: wheel. R rotate (ghost or selection), Shift+wheel rotate, Alt+wheel scale, arrows nudge, Del delete, C camera from view, V look through camera, G gizmos, F frame, P playtest.</div>
       </main>
       <aside id="inspector">
         <h3>Selection</h3>
         <div id="insp-body" class="muted">Nothing selected</div>
-        <h3>Island</h3>
+        <h3>Camera</h3>
+        <div id="cam-body" class="muted"></div>
+        <h3>Scene</h3>
         <div id="stats" class="muted"></div>
       </aside>
       <div id="toast" hidden></div>

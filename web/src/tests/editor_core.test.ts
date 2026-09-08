@@ -58,7 +58,7 @@ describe("island document", () => {
   });
   it("serialises to TS source that lists every tile and prop", () => {
     const src = serializeIslandTs(OVERWORLD, "OVERWORLD");
-    expect(src).toContain("export const OVERWORLD: IslandDef = {");
+    expect(src).toContain("export const OVERWORLD: SceneDef = {");
     expect((src.match(/\{ q: -?\d+, r: -?\d+, t: "/g) ?? []).length).toBe(OVERWORLD.tiles.length);
     expect((src.match(/\{ m: "/g) ?? []).length).toBe(OVERWORLD.props.length);
     expect(src).toContain("// row r=");

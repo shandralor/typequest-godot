@@ -34,3 +34,11 @@ input, select { background:#0f1216; color:var(--fg); border:1px solid #3a4250; b
 .row button { flex:1; }
 button.danger { color: var(--danger); border-color: var(--danger); }
 #toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#2a3039; border:1px solid #3a4250; padding:8px 14px; border-radius:8px; }
+
+.pt { display:grid; grid-template-columns: 28px 1fr 1fr 1fr 28px; gap:4px; align-items:center; margin:3px 0; }
+.pt .field { grid-template-columns: 1fr; margin:0; }
+.pt .field label { display:none; }
+.pt.active { outline:1px solid var(--accent); border-radius:4px; }
+.pt button { padding:2px 4px; }
+input[type=color] { padding:0; height:26px; }
+input[type=checkbox] { width:auto; }

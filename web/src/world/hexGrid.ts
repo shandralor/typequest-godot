@@ -10,42 +10,14 @@
 // (same lattice the Godot set was snapped to, so the reversed island round-trips exactly.)
 // Pure module: no scene-tree / render access -- only math.
 
-import { Matrix4, Vector3 } from "three";
+import { Euler, Matrix4, Quaternion, Vector3 } from "three";
 
 export const TILE_SCALE = 3;
 export const COL_PITCH = 6; // across-flats at scale 3
 export const ROW_PITCH = 3 * Math.sqrt(3); // 5.196
 
-export interface TileDef {
-  q: number;
-  r: number;
-  /** KayKit hex code without the `hex_` prefix: water, grass, road_B, coast_A ... */
-  t: string;
-  /** yaw in 60-degree steps, 0-5 (omit = 0) */
-  rot?: number;
-}
-
-export interface PropDef {
-  /** model path under /assets */
-  m: string;
-  /** on a cell ... */
-  q?: number;
-  r?: number;
-  /** ... or at explicit world coords */
-  x?: number;
-  z?: number;
-  /** yaw in degrees (omit = 0) */
-  rot?: number;
-  /** uniform scale (omit = 1) */
-  s?: number;
-  /** height (omit = 0) */
-  y?: number;
-}
-
-export interface IslandDef {
-  tiles: TileDef[];
-  props: PropDef[];
-}
+export type { TileDef, PropDef, ShapeDef, AnchorDef, CameraDef, RouteDef, LightDef, SceneDef, IslandDef } from "./sceneDef";
+import type { Placed, PropDef, TileDef, IslandDef } from "./sceneDef";
 
 export interface Placement {
   model: string;
@@ -71,6 +43,21 @@ function yawMatrix(pos: Vector3, yawRad: number, scale: number): Matrix4 {
   return m;
 }
 
+/** World position of anything Placed: a cell centre or explicit coords, plus height. */
+export function placedPosition(p: Placed): Vector3 {
+  const v = p.q !== undefined && p.r !== undefined ? axialToWorld(p.q, p.r) : new Vector3(p.x ?? 0, 0, p.z ?? 0);
+  v.y = p.y ?? 0;
+  return v;
+}
+
+/** Full placement matrix: yaw (+ optional tilt, YXZ) and uniform or per-axis scale. */
+export function placedMatrix(p: Placed, s: number | [number, number, number] = 1): Matrix4 {
+  const d = Math.PI / 180;
+  const e = new Euler((p.tilt?.[0] ?? 0) * d, (p.rot ?? 0) * d, (p.tilt?.[1] ?? 0) * d, "YXZ");
+  const sc = Array.isArray(s) ? new Vector3(s[0], s[1], s[2]) : new Vector3(s, s, s);
+  return new Matrix4().compose(placedPosition(p), new Quaternion().setFromEuler(e), sc);
+}
+
 export function tilePlacement(t: TileDef): Placement {
   const pos = axialToWorld(t.q, t.r);
   // Godot's Y-rotation serialises row0 = (cos, 0, sin) and three's makeRotationY(yaw) has the
@@ -80,10 +67,7 @@ export function tilePlacement(t: TileDef): Placement {
 }
 
 export function propPlacement(p: PropDef): Placement {
-  const pos = p.q !== undefined && p.r !== undefined ? axialToWorld(p.q, p.r) : new Vector3(p.x ?? 0, 0, p.z ?? 0);
-  pos.y = p.y ?? 0;
-  const yaw = ((p.rot ?? 0) * Math.PI) / 180;
-  return { model: p.m, matrix: yawMatrix(pos, yaw, p.s ?? 1) };
+  return { model: p.m, matrix: placedMatrix(p, p.sc ?? p.s ?? 1) };
 }
 
 /** Expand a whole island into placements (tiles first, so props draw over the floor). */

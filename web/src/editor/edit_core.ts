@@ -3,6 +3,7 @@
 // a Vitest drives them directly.
 
 import { axialToWorld, worldToAxial, type IslandDef, type PropDef, type TileDef } from "../world/hexGrid";
+import type { Placed } from "../world/sceneDef";
 
 export interface Cell {
   q: number;
@@ -26,8 +27,8 @@ export function tilesAt(tiles: readonly TileDef[], q: number, r: number): number
   return out;
 }
 
-/** A prop's world x/z whether it is on a cell or free-placed. */
-export function propWorld(p: PropDef): { x: number; z: number } {
+/** Any Placed item's world x/z whether it is on a cell or free-placed. */
+export function propWorld(p: Placed): { x: number; z: number } {
   if (p.q !== undefined && p.r !== undefined) {
     const w = axialToWorld(p.q, p.r);
     return { x: w.x, z: w.z };
@@ -36,7 +37,7 @@ export function propWorld(p: PropDef): { x: number; z: number } {
 }
 
 /** Nearest prop anchor within `radius * max(1, scale)` of a ground point, or -1. */
-export function pickProp(props: readonly PropDef[], x: number, z: number, radius = 2.5): number {
+export function pickProp(props: readonly (Placed & { s?: number })[], x: number, z: number, radius = 2.5): number {
   let best = -1;
   let bestD2 = Infinity;
   props.forEach((p, i) => {
@@ -54,19 +55,19 @@ export function pickProp(props: readonly PropDef[], x: number, z: number, radius
 }
 
 /** Same prop, expressed on its nearest cell. */
-export function snapPropToCell(p: PropDef): PropDef {
+export function snapPropToCell<T extends Placed>(p: T): T {
   const w = propWorld(p);
   const c = worldToAxial(w.x, w.z);
-  const out: PropDef = { ...p, q: c.q, r: c.r };
+  const out: T = { ...p, q: c.q, r: c.r };
   delete out.x;
   delete out.z;
   return out;
 }
 
 /** Same prop, expressed at explicit world coords (so it can be dragged freely). */
-export function unsnapProp(p: PropDef): PropDef {
+export function unsnapProp<T extends Placed>(p: T): T {
   const w = propWorld(p);
-  const out: PropDef = { ...p, x: w.x, z: w.z };
+  const out: T = { ...p, x: w.x, z: w.z };
   delete out.q;
   delete out.r;
   return out;
