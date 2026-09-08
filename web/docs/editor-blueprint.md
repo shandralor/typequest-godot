@@ -70,3 +70,21 @@ minimap; +3-5 for product features (server sync, uploads, tutorial) -- skip thos
    an editor write-back) or emits JSON the `.ts` imports.
 2. **Engine direction.** Godot is still the source of truth per `CLAUDE.md`; an editor on the
    Three.js spike only pays off if the web build is the direction of travel. Settle that first.
+
+## Roadmap (set 2026-09-08 after the first hands-on session)
+
+The editor is built (`web/editor.html`, see `web/README.md`) and works; the blueprint above is
+now the as-built record. Two directions:
+
+1. **Scenes, not just islands.** Story sets are Godot `.tscn` with anchor markers (hub,
+   center, path_near, site_*, camera_pos/look) and `Path3D` routes, and scene descriptors
+   reference anchors by name. Grow `IslandDef` into a `SceneDef`: `anchors[]` (name, x, z, y,
+   yaw), `camera` (pos, look, fov), `routes[]` (named point lists); tiles become optional so
+   interiors (dungeon, house) are free-placed props only. Editor gains an Anchor tool, camera
+   authoring (frame-from-current-view), and route drawing. Then a new story beat can be
+   composed here and referenced from a descriptor without opening Godot.
+2. **Reusable beyond TypeQuest.** Already project-agnostic: the pure cores, viewport, view,
+   write-back endpoint, playtest handoff. Project-specific: the document shape + hex lattice
+   (`hexGrid.ts`), the KayKit catalog, the island renderer recipe. To package it standalone:
+   a grid adapter (hex / square / none), a catalog input, a renderer factory hook, a save
+   adapter. Keep new code behind those seams so extraction stays cheap.

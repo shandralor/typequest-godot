@@ -866,5 +866,9 @@ Godot `main` is untouched; this branch holds the Three.js rebuild spike (`web/`)
   math in `web/src/world/hexGrid.ts`; the island editor (`web/editor.html`, `npm run dev`)
   edits on the real renderer and writes the `.ts` back. Docs: `web/README.md`,
   `web/docs/editor-blueprint.md`, `web/docs/woc-playbook.md`.
-- NEXT: the playable loop -- walk the hero along a road to a site and open the band-1
-  type-along; then decide engine direction (Godot vs web) before making the spike canonical.
+- Editor confirmed working hands-on (Tom's edits round-tripped into the game).
+- NEXT (Tom, 2026-09-08): (a) expand the editor to SCENES -- SceneDef with anchors, camera,
+  routes; tiles optional for interiors (see web/docs/editor-blueprint.md Roadmap);
+  (b) keep it reusable: it is promising as a standalone tool for other projects.
+  Still pending: the playable loop (hero walks to a site, band-1 type-along) and the engine
+  direction decision before making the spike canonical.
