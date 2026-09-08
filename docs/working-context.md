@@ -854,3 +854,17 @@ all tests green via `bash tests/run.sh`.
 - ~34MB of binary art committed to git; Git LFS is a later option if history bloats.
 - All brief Section 6-7 open questions still stand; they live in
   `docs/MIGRATION-TO-GODOT.md` (do not re-litigate).
+
+## threejs-spike branch (2026-09-08) -- LIVE state on this branch
+
+Godot `main` is untouched; this branch holds the Three.js rebuild spike (`web/`).
+- Phase 1 DONE: logic/content/data ported to TS, FNV hashes byte-identical (tests).
+- Phase 2 DONE: overworld renders on the WoC recipe (Neutral tonemap + grade + N8AO), hero
+  idles at the hub with the authored Godot camera, roads/coast tessellate (Godot `.tscn`
+  basis is ROW-major -- see `web/tools/layout_to_island.py`).
+- Authoring DONE: islands are `IslandDef` data-as-code (`web/src/content/island/`), hex-grid
+  math in `web/src/world/hexGrid.ts`; the island editor (`web/editor.html`, `npm run dev`)
+  edits on the real renderer and writes the `.ts` back. Docs: `web/README.md`,
+  `web/docs/editor-blueprint.md`, `web/docs/woc-playbook.md`.
+- NEXT: the playable loop -- walk the hero along a road to a site and open the band-1
+  type-along; then decide engine direction (Godot vs web) before making the spike canonical.
