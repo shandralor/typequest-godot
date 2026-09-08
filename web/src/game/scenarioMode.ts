@@ -19,6 +19,7 @@ import type { World } from "./world";
 import type { Hud } from "../ui/hud";
 import type { SceneDef } from "../world/sceneDef";
 import { rigFor } from "./cameraRigs";
+import { buildShape } from "../render/sceneObjects";
 import { setupGaze, targetYaw, lerpAngle, type GazeState, type GazeTargets } from "./gaze";
 
 export interface Locale {
@@ -32,6 +33,9 @@ const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", 
 /** descriptor pose -> looping clip (the shared KayKit vocabulary) */
 const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Idle_A", aim: "Ranged_Bow_Aiming_Idle" };
 const IDLE_AFTER = 0.6; // s without a correct key before the walking hero settles to idle
+/** The archery target is not in the set -- Godot builds it in code at the "target" anchor. */
+const TARGET_MODEL = "kaykit/hexagon/target.gltf";
+const TARGET_SCALE = 8.5;
 
 function sceneDefFor(name: string): SceneDef | null {
   return AUTHORED.find((s) => s.name === name)?.def ?? null;
@@ -146,6 +150,7 @@ export class ScenarioMode {
     }
     // held / staged props (the sword on the grindstone, the bow in hand)
     if (!restage) for (const p of d.props) await this.stageProp(p.asset, p.anchor);
+    if (!restage && setName === "archery") await this.buildArcheryTarget();
     // framing follows the scene type, exactly as the Godot rig does
     const landmarks = !!def0?.anchors?.some((a) => a.name === "bridge_near") && !this.travel;
     this.world.useRig(rigFor(setName, { walking: !!this.travel, win: false, landmarks }), fresh || !restage);
@@ -233,6 +238,34 @@ export class ScenarioMode {
       this.world.s.scene.add(obj);
       this.stagedProps.push(obj);
     }
+  }
+
+  /**
+   * The bullseye the archery prose aims at, on its post. Ported from the composer's
+   * _build_archery_target: the model's origin is at its base, the disc sits a little up and
+   * forward, and a wooden post runs from the ground up behind it.
+   */
+  private async buildArcheryTarget(): Promise<void> {
+    const pos = this.world.anchor("target");
+    const base = await this.world.s.loadModel(TARGET_MODEL).catch(() => null);
+    if (base) {
+      const t = base.clone(true);
+      t.position.copy(pos);
+      t.scale.setScalar(TARGET_SCALE);
+      this.world.s.scene.add(t);
+      this.stagedProps.push(t);
+    }
+    const discY = pos.y + 0.15 * TARGET_SCALE;
+    const post = buildShape({
+      kind: "box",
+      size: [0.22, discY, 0.22],
+      color: "#734d2b",
+      x: pos.x,
+      y: discY * 0.5,
+      z: pos.z - 0.35,
+    });
+    this.world.s.scene.add(post);
+    this.stagedProps.push(post);
   }
 
   char(c: string): void {

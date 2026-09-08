@@ -5,23 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TypeQuest</title>
     <style>
-      html, body { margin: 0; height: 100%; background: #0b0e12; overflow: hidden; font: 20px/1.3 "Trebuchet MS", "Segoe UI", system-ui, sans-serif; color: #f3ead6; }
-      #app { display: block; width: 100vw; height: 100vh; }
+      html, body { margin: 0; height: 100%; background: #2a1d10; overflow: hidden; font: 20px/1.3 "Trebuchet MS", "Segoe UI", system-ui, sans-serif; color: #f3ead6; }
+      /* the 3D scene owns the top region; the typing band + keyboard live in the brown band
+         below it, exactly as the Godot build splits 680 / 400 of its 1080 window */
+      #app { display: block; width: 100vw; height: 64vh; }
       #hud { position: fixed; inset: 0; pointer-events: none; }
+      #stage-mask { position: fixed; left: 0; right: 0; top: 64vh; bottom: 0; background: #2a1d10; border-top: 3px solid #6d5236; }
       #fade { position: fixed; inset: 0; background: #000; opacity: 0; transition: opacity .45s ease; pointer-events: none; }
       #prompt { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); background: #9c7b56; color: #2a1d10; padding: 8px 26px; border-radius: 8px; border: 2px solid #6d5236; font-size: 22px; white-space: nowrap; }
-      #bottom { position: absolute; left: 0; right: 0; bottom: 14px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+      #bottom { position: absolute; left: 0; right: 0; top: 64vh; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 10px 0; box-sizing: border-box; }
       #band { width: min(78vw, 1100px); box-sizing: border-box; min-height: 52px; background: #b08a5c; border: 2px solid #6d5236; border-radius: 8px; padding: 12px 22px; font-size: 26px; line-height: 1.35; letter-spacing: .02em; color: #3a2a18; text-align: left; }
       #band .done { color: #1e7a3c; }
       #band .next { background: #fff2b3; color: #b43a1a; border-radius: 4px; padding: 0 2px; }
       #band .rest { color: #5a4530; }
-      #message { position: absolute; top: 12%; left: 50%; transform: translateX(-50%); background: rgba(20,14,8,.85); border: 2px solid #b08a5c; border-radius: 10px; padding: 18px 28px; font-size: 26px; max-width: 70vw; text-align: center; }
-      #legend { position: absolute; right: 44px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; }
+      #message { position: absolute; top: 16%; left: 50%; transform: translateX(-50%); background: rgba(20,14,8,.85); border: 2px solid #b08a5c; border-radius: 10px; padding: 18px 28px; font-size: 26px; max-width: 70vw; text-align: center; }
+      #legend { position: absolute; right: 44px; top: 32vh; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; }
       .pill { background: var(--c); color: #fff; padding: 8px 18px; border-radius: 8px; min-width: 200px; font-size: 24px; box-shadow: 0 2px 0 rgba(0,0,0,.35); text-shadow: 0 1px 0 rgba(0,0,0,.4); }
       .pill b { text-decoration: underline; }
       .pill.locked { filter: grayscale(.9) brightness(.7); }
       .pill.hit { outline: 3px solid #fff; }
-      #choices { position: absolute; right: 44px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; }
+      #choices { position: absolute; right: 44px; top: 32vh; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; }
       .banner { background: #c0392b; color: #fff; padding: 10px 20px; border-radius: 8px; min-width: 200px; font-size: 26px; text-align: center; }
       .banner.on { background: #27ae60; }
       .banner b { text-decoration: underline; }

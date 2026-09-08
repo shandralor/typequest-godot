@@ -29,8 +29,12 @@ export const TREASURE: Rig = { off: [0, 2.7, 5.8], look: [0, 0.9, -2.4], fov: 75
 export const WORK: Rig = { off: [0.5, 1.9, 4.0], look: [0.55, 0.95, 1.2], fov: 75 };
 /** same angle at the win, raised a touch; tighter fov crops the smithy's open edge */
 export const WORK_WIN: Rig = { off: [0.3, 2.1, 4.0], look: [0.3, 1.3, 0.6], fov: 46 };
-/** over-the-shoulder down the lane: hero in the foreground, target ahead */
-export const ARCHERY: Rig = { off: [2.3, 3.0, 6.2], look: [-0.3, 1.2, -7.5], fov: 46 };
+/**
+ * Over-the-shoulder down the lane: hero in the foreground, target ahead. The look sits lower
+ * than Godot's (1.2) because the web stage is a wider, shallower strip than Godot's 1920x680,
+ * so the same aim clipped the hero's legs at the bottom edge.
+ */
+export const ARCHERY: Rig = { off: [2.3, 3.0, 6.2], look: [-0.3, 0.45, -7.0], fov: 46 };
 /** every other standing beat */
 export const STANDING: Rig = { off: [0, 4.2, 9.5], look: [0, 1.0, -1.5], fov: 75 };
 
