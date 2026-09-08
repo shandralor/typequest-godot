@@ -114,27 +114,24 @@ async function buildOverworld(): Promise<{ full: THREE.Box3; land: THREE.Box3 }>
   return { full: new THREE.Box3().setFromObject(island), land };
 }
 
-// Frame the island with an iso camera roughly matching the Godot overworld view.
-// Frame tight on the LAND with a Godot-like low iso view + narrow (tele) lens.
+// The Godot overworld camera, read verbatim from scenes/sets/overworld.tscn
+// (camera_pos / camera_look markers + the controller's fov 30).
+const OW_CAM_POS = new THREE.Vector3(0, 30, 34);
+const OW_CAM_LOOK = new THREE.Vector3(0, 0, -2);
+const OW_CAM_FOV = 30;
+
 function frame(box: THREE.Box3): void {
   const center = box.getCenter(new THREE.Vector3());
-  const size = box.getSize(new THREE.Vector3());
-  camera.fov = 30;
+  camera.fov = OW_CAM_FOV;
   camera.updateProjectionMatrix();
-  const radius = Math.max(size.x, size.z) * 0.5;
-  const dist = (radius / Math.tan((camera.fov * Math.PI) / 360)) * 1.25;
   if (location.search.includes("top")) {
-    camera.position.set(center.x, center.y + dist, center.z + 0.01);
+    const dist = Math.max(box.getSize(new THREE.Vector3()).x, box.getSize(new THREE.Vector3()).z);
+    camera.position.set(center.x, center.y + dist * 1.4, center.z + 0.01);
+    camera.lookAt(center);
   } else {
-    const elev = (33 * Math.PI) / 180; // elevation angle above the island
-    const azim = (12 * Math.PI) / 180; // slight offset from dead-front (+Z)
-    camera.position.set(
-      center.x + dist * Math.cos(elev) * Math.sin(azim),
-      center.y + dist * Math.sin(elev),
-      center.z + dist * Math.cos(elev) * Math.cos(azim)
-    );
+    camera.position.copy(OW_CAM_POS);
+    camera.lookAt(OW_CAM_LOOK);
   }
-  camera.lookAt(center.x, center.y, center.z);
   sun.target.position.copy(center);
   scene.add(sun.target);
 }
@@ -194,13 +191,50 @@ window.addEventListener("resize", () => {
   composer?.setSize(window.innerWidth, window.innerHeight);
 });
 
+// --- the hero: a KayKit adventurer on the shared Rig_Medium, idling at the hub anchor ---
+// The character GLB carries the skinned mesh but NO clips; the clips live in the shared rig
+// GLB and bind to the skeleton BY BONE NAME (KayKit's shared vocabulary), so an AnimationMixer
+// on the Knight plays a clip taken from Rig_Medium_General with no retargeting.
+let mixer: THREE.AnimationMixer | null = null;
+async function loadHero(): Promise<void> {
+  const [heroGltf, rigGltf] = await Promise.all([
+    loader.loadAsync("/assets/kaykit/adventurers/Knight.glb"),
+    loader.loadAsync("/assets/kaykit/adventurers/Rig_Medium_General.glb"),
+  ]);
+  const hero = heroGltf.scene;
+  hero.name = "hero";
+  hero.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh) {
+      m.castShadow = true;
+      m.receiveShadow = true;
+      m.frustumCulled = false; // skinned parts can report a stale bind-pose bounds and vanish
+    }
+  });
+  // hub anchor = origin (Godot places the raw model there; its pivot is at the feet).
+  hero.position.set(0, 0, 0);
+  hero.rotation.y = Math.PI; // face the camera (KayKit faces +Z; camera sits at +Z)
+  scene.add(hero);
+  // seat the feet exactly on the tile top (insurance if the pivot isn't dead-on the sole)
+  const feet = new THREE.Box3().setFromObject(hero).min.y;
+  hero.position.y -= feet;
+
+  const idle = rigGltf.animations.find((a) => a.name === "Idle_A") ?? rigGltf.animations[0];
+  mixer = new THREE.AnimationMixer(hero);
+  mixer.clipAction(idle).play();
+}
+
+const clock = new THREE.Clock();
 function renderFrame(): void {
+  const dt = clock.getDelta();
+  if (mixer) mixer.update(dt);
   if (composer) composer.render();
   else renderer.render(scene, camera);
 }
 
 async function main(): Promise<void> {
   const { full, land } = await buildOverworld();
+  await loadHero();
   frame(land);
   // diagnostic: a single grass tile's world footprint (to check hex size/orientation)
   const island = scene.getObjectByName("island")!;
