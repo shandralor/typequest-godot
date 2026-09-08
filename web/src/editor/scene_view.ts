@@ -63,8 +63,9 @@ function label(text: string, color: string): THREE.Sprite {
   g.fillStyle = color;
   g.fillText(text, 128, 32);
   const tex = new THREE.CanvasTexture(c);
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
-  s.scale.set(4, 1, 1);
+  // constant on-screen size (sizeAttenuation off): readable at any distance, never huge up close
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true, sizeAttenuation: false }));
+  s.scale.set(0.14, 0.035, 1);
   s.renderOrder = 998;
   return s;
 }
@@ -195,8 +196,9 @@ export class SceneView {
       g.add(dot);
     });
     if (pts.length) {
+      // label at the route's midpoint: routes often share a start (the hub), so first-point labels pile up
       const l = label(name, "#ffd2b0");
-      l.position.copy(pts[0]).add(new THREE.Vector3(0, 1.4, 0));
+      l.position.copy(pts[Math.floor((pts.length - 1) / 2)]).add(new THREE.Vector3(0, 1.4, 0));
       g.add(l);
     }
     this.routesGroup.add(g);
