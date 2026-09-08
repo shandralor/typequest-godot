@@ -867,8 +867,12 @@ Godot `main` is untouched; this branch holds the Three.js rebuild spike (`web/`)
   edits on the real renderer and writes the `.ts` back. Docs: `web/README.md`,
   `web/docs/editor-blueprint.md`, `web/docs/woc-playbook.md`.
 - Editor confirmed working hands-on (Tom's edits round-tripped into the game).
-- NEXT (Tom, 2026-09-08): (a) expand the editor to SCENES -- SceneDef with anchors, camera,
-  routes; tiles optional for interiors (see web/docs/editor-blueprint.md Roadmap);
-  (b) keep it reusable: it is promising as a standalone tool for other projects.
-  Still pending: the playable loop (hero walks to a site, band-1 type-along) and the engine
-  direction decision before making the spike canonical.
+- Scene editor DONE (2026-09-08): all nine Godot sets migrated to SceneDef data-as-code
+  (web/src/content/scenes/*.ts) by web/tools/tscn_to_scene.py; every component (tiles, props,
+  shapes, anchors, camera, routes, lights) is editable in web/editor.html with a placement
+  ghost and a scene dropdown. Launch: ./editor.sh. Only the mill's two CSG polygons are not
+  represented yet (rebuild them as shapes).
+- NEXT: (a) the playable loop -- the game currently draws only the overworld; wire the scene
+  descriptors to load SceneDefs (forest_fork etc.) and walk the hero along routes to anchors,
+  then the band-1 type-along; (b) later, package the editor as a standalone tool (keep new
+  code behind the document / grid / catalog / renderer seams); (c) engine direction decision.
