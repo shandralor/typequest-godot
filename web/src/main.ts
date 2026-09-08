@@ -21,9 +21,11 @@ type State = "menu" | "picker" | "island" | "scenario";
 /** the picker's close, slightly-raised hero shot (game_controller PICKER rig) */
 const PICKER_RIG = { off: [0, 2.1, 6.4] as [number, number, number], look: [0, 1.15, 0] as [number, number, number], fov: 40, fixed: true };
 /** the menu pulls further back than the island view so the title floats above the map */
-const MENU_ZOOM = OW_IDLE_ZOOM * 1.5;
+const MENU_ZOOM = 1.5;
+/** the menu widens a touch so the title floats above the island (game_controller MAIN rig) */
+const MENU_FOV = 34;
 /** the picker stands the hero on a small grass pad, not the island (composer.compose_character) */
-const PICKER_SCENE = { tiles: [], props: [], shapes: [{ kind: "plane" as const, size: [9, 9], color: "#7ea653", x: 0, z: 0, name: "Ground" }] };
+const PICKER_SCENE = { tiles: [], props: [], shapes: [{ kind: "plane" as const, size: [9, 9], color: "#5f7d42", x: 0, z: 0, name: "Ground" }] };
 
 async function main(): Promise<void> {
   if (location.search.includes("reset")) resetProgress();
@@ -34,6 +36,12 @@ async function main(): Promise<void> {
   const backBtn = document.getElementById("back") as HTMLButtonElement;
 
   let state: State = "menu";
+  /** bumped on every state entry; async continuations bail when they are no longer current */
+  let stateGen = 0;
+  const enterState = (s: State): number => {
+    state = s;
+    return ++stateGen;
+  };
   let scenario: ScenarioMode | null = null;
   let heroId = getChoice("hero", Characters.DEFAULT_ID);
   let pickerIndex = Math.max(0, Characters.ALL.findIndex((c) => c.id === heroId));
@@ -57,15 +65,16 @@ async function main(): Promise<void> {
 
   // --- MENU: the island as a backdrop, pulled back so the title floats above it ---
   async function showMenu(): Promise<void> {
-    state = "menu";
+    const gen = enterState("menu");
     scenario?.exit();
     scenario = null;
     clearUi();
     await world.loadScene(OVERWORLD, "island");
+    if (gen !== stateGen) return;
     world.hero.node.position.copy(world.anchor("hub"));
     world.hero.face(0, 1);
     world.hero.setMoving(false);
-    world.useIslandCamera(OVERWORLD.camera, { zoom: MENU_ZOOM, bias: OW_IDLE_BIAS, fov: ISLAND_FOV, snap: true });
+    world.useIslandCamera(OVERWORLD.camera, { zoom: MENU_ZOOM, bias: OW_IDLE_BIAS, fov: MENU_FOV, snap: true });
     menu.show("TypeQuest", [
       { text: "Start", onPress: () => void startPressed() },
       { text: "Kies je held", onPress: () => showPicker(() => void showMenu()) },
@@ -86,7 +95,7 @@ async function main(): Promise<void> {
 
   // --- PICKER: a turntable of the roster; arrows cycle, Enter chooses ---
   function showPicker(after: () => void): void {
-    state = "picker";
+    enterState("picker");
     pickerAfter = after;
     clearUi();
     pickerIndex = Math.max(0, Characters.ALL.findIndex((c) => c.id === heroId));
@@ -94,9 +103,14 @@ async function main(): Promise<void> {
   }
 
   async function updatePicker(): Promise<void> {
-    const c = Characters.ALL[pickerIndex];
+    const gen = stateGen;
+    const index = pickerIndex;
+    const c = Characters.ALL[index];
     if (world.def !== PICKER_SCENE) await world.loadScene(PICKER_SCENE, "day");
     await world.loadHero(modelPath(c.id));
+    // bail if the player moved on: without the index check a burst of picks could leave the
+    // caption naming one hero while a later load put a different model on the pad
+    if (gen !== stateGen || state !== "picker" || index !== pickerIndex) return;
     world.hero.node.position.set(0, 0, 0);
     world.hero.face(0, 1);
     world.useRig(PICKER_RIG, true);
@@ -114,17 +128,18 @@ async function main(): Promise<void> {
 
   // --- ISLAND / SCENARIO ---
   async function enterIsland(at: string): Promise<void> {
-    state = "island";
+    const gen = enterState("island");
     scenario?.exit();
     scenario = null;
     clearUi();
     hud.keyboard(true);
     await world.loadHero(modelPath(heroId)); // the picked hero travels the island
+    if (gen !== stateGen) return;
     await island.enter(at);
   }
 
   async function startScenario(id: string): Promise<void> {
-    state = "scenario";
+    enterState("scenario");
     clearUi();
     hud.keyboard(true);
     backBtn.hidden = false;

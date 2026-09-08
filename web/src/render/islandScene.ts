@@ -18,9 +18,12 @@ import { buildLight, buildShape } from "./sceneObjects";
 const GradeShader = {
   uniforms: {
     tDiffuse: { value: null as THREE.Texture | null },
-    saturation: { value: 1.22 },
-    contrast: { value: 0.14 },
-    warm: { value: new THREE.Vector3(1.02, 1.005, 0.98) },
+    // Tuned back once the material colours were fixed: this boost was compensating for grounds
+    // that arrived washed out (double sRGB encoding). With correct colours it over-cooked them --
+    // an authored olive pad rendered vivid chartreuse.
+    saturation: { value: 1.07 },
+    contrast: { value: 0.10 },
+    warm: { value: new THREE.Vector3(1.0, 1.0, 1.0) },
     vignette: { value: 0.16 },
   },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,

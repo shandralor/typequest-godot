@@ -10,6 +10,18 @@ const RIGS = ["kaykit/adventurers/Rig_Medium_General.glb", "kaykit/adventurers/R
 /** the Walking_A clip is authored for roughly this ground speed (world units / s) */
 const WALK_REF_SPEED = 2.4;
 
+/** Free a subtree's geometry and materials. */
+function disposeTree(root: THREE.Object3D): void {
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh) return;
+    m.geometry?.dispose();
+    const mat = m.material as THREE.Material | THREE.Material[] | undefined;
+    if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
+    else mat?.dispose();
+  });
+}
+
 export class HeroRig {
   readonly node = new THREE.Group();
   private mixer: THREE.AnimationMixer | null = null;
@@ -17,32 +29,37 @@ export class HeroRig {
   private actions = new Map<string, THREE.AnimationAction>();
   private current: THREE.AnimationAction | null = null;
   private moving = false;
+  /** bumped per load; a slow load that resolves after a newer one discards itself */
+  private loadGen = 0;
+  private loadedPath = "";
 
   /** Drop the currently-shown model (and everything bound to it) so a reload replaces it. */
   private clearModel(): void {
+    this.loadedPath = "";
     this.mixer?.stopAllAction();
     this.mixer = null;
     this.actions.clear();
     this.current = null;
     for (const child of [...this.node.children]) {
       this.node.remove(child);
-      child.traverse((o) => {
-        const m = o as THREE.Mesh;
-        if (!m.isMesh) return;
-        m.geometry?.dispose();
-        const mat = m.material as THREE.Material | THREE.Material[] | undefined;
-        if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
-        else mat?.dispose();
-      });
+      disposeTree(child);
     }
   }
 
   async load(modelPath: string): Promise<void> {
     // Replacing, not adding: the picker cycles heroes and the island reloads the chosen one, so
     // without this every model stayed in the rig and they rendered stacked through each other.
+    // The generation guard covers the RACE: on a cold cache two picks overlap, both clear, then
+    // both add -- which stacked a knight+barbarian+mage chimera stuck in bind pose.
+    if (modelPath === this.loadedPath) return; // already showing this hero
+    const gen = ++this.loadGen;
     this.clearModel();
     const loader = new GLTFLoader();
     const [hero, ...rigs] = await Promise.all([loader.loadAsync("/assets/" + modelPath), ...RIGS.map((r) => loader.loadAsync("/assets/" + r))]);
+    if (gen !== this.loadGen) {
+      disposeTree(hero.scene); // a newer load won while this one was in flight
+      return;
+    }
     const model = hero.scene;
     model.traverse((o) => {
       const m = o as THREE.Mesh;
@@ -55,6 +72,7 @@ export class HeroRig {
     // pivot at the feet: seat the measured lowest point on y = 0
     model.position.y -= new THREE.Box3().setFromObject(model).min.y;
     this.node.add(model);
+    this.loadedPath = modelPath;
     this.mixer = new THREE.AnimationMixer(model);
     for (const r of rigs) for (const c of r.animations) this.clips.set(c.name, c);
     this.play("Idle_A");
