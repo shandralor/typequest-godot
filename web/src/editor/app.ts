@@ -5,7 +5,7 @@
 
 import { axialToWorld, type IslandDef, type PropDef, type TileDef } from "../world/hexGrid";
 import { OVERWORLD } from "../content/island/overworld";
-import { stashEditorIsland } from "../world/editorHandoff";
+import { stashEditorIsland, clearEditorIsland } from "../world/editorHandoff";
 import { UndoStack } from "./undo_core";
 import { cloneIsland, sanitizeIslandDef, serializeIslandJson, serializeIslandTs } from "./island_doc";
 import { islandCellBounds, propWorld, snapPropToCell, tileIndexAt, unsnapProp } from "./edit_core";
@@ -152,6 +152,9 @@ export class App {
   playtest(): void {
     stashEditorIsland(this.def);
     window.open("/", "_blank");
+    // window.open copies sessionStorage into the new tab; drop OUR copy so this tab never
+    // boots the game on a stale stash if it is later navigated to /.
+    clearEditorIsland();
   }
 
   frame(): void {

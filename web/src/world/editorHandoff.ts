@@ -12,6 +12,14 @@ export function stashEditorIsland(def: IslandDef): void {
   sessionStorage.setItem(EDITOR_ISLAND_KEY, JSON.stringify(def));
 }
 
+export function clearEditorIsland(): void {
+  try {
+    sessionStorage.removeItem(EDITOR_ISLAND_KEY);
+  } catch {
+    /* storage blocked */
+  }
+}
+
 /** Take (read + remove) a stashed island, or null. Never throws. */
 export function takeEditorIsland(): IslandDef | null {
   try {
