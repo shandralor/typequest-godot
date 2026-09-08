@@ -876,7 +876,11 @@ Godot `main` is untouched; this branch holds the Three.js rebuild spike (`web/`)
   scenario (RunState over band1, prose type-along drives the walk, first-letter choices,
   endings/setbacks set flags), HUD (prompt, band, legend, keyboard). Whole band-1 arc plays
   end to end in the browser: bos -> forest -> kruispunt -> grot -> setback -> island unlocks.
-- NEXT: (a) port the other scenarios (grind / archery / home / mill: their arcs, props, poses,
-  the crystal + bridge path); (b) polish: choice walk toward the fork before the cut, cheer
-  clip, score/XP HUD, music; (c) engine direction decision (Godot vs web) -- the web build now
-  covers band-1 with the editor; (d) later, package the editor standalone.
+- ALL FIVE scenarios play (2026-09-08): band1, grind, archery, home, mill. Full campaign
+  verified end to end in the browser: cave setback -> island unlocks -> home (choose zwaard /
+  wapen, walk + pickup grants the gear flag) -> smidse + oefenplein gated on that gear ->
+  fully_trained derived. Gate test src/tests/scenarios.test.ts checks every arc's frozen A4
+  hash, that each scene's set + anchors exist, and hero-variant typeability.
+- NEXT: (a) polish -- choice walk toward the fork before the cut, gaze at cave/bridge while
+  typing, score/XP HUD, music, the crystal + drawbridge crossing (brug node), archery crosshair
+  + arrows; (b) engine direction decision (Godot vs web); (c) later, package the editor standalone.

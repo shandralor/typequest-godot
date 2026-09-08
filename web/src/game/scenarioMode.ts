@@ -9,7 +9,8 @@ import { RunState } from "../logic/runState";
 import { TypingState } from "../logic/typing";
 import { PATH_STRAIGHT, type SceneDescriptor } from "../logic/sceneDescriptor";
 import type { Choice } from "../logic/storyGraph";
-import * as Band1 from "../content/band1/band1Arc";
+import { build as buildScenario } from "../content/scenarios";
+import { HOUSE_ITEMS } from "../content/home/homeArc";
 import { AUTHORED } from "../editor/content_index";
 import { resolve as resolveAsset } from "../axis/vocabulary/fantasyPoc";
 import { getFlag, setFlag } from "./flags";
@@ -25,7 +26,9 @@ export interface Locale {
 
 type Phase = "prose" | "choice" | "win" | "pause";
 /** descriptor.location -> set when the descriptor names no set */
-const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", dungeon: "dungeon", house: "house", forge: "forge", archery: "archery", mill: "mill" };
+const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", dungeon: "dungeon", house: "house", forge: "forge", archery_range: "archery", mill: "mill" };
+/** descriptor pose -> looping clip (the shared KayKit vocabulary) */
+const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Idle_A", aim: "Ranged_Bow_Aiming_Idle" };
 const IDLE_AFTER = 0.6; // s without a correct key before the walking hero settles to idle
 
 function sceneDefFor(name: string): SceneDef | null {
@@ -43,6 +46,11 @@ export class ScenarioMode {
   private travel: { from: THREE.Vector3; to: THREE.Vector3 } | null = null;
   private sinceKey = 0;
   private npcs: HeroRig[] = [];
+  private scenarioId = "";
+  /** the item this home beat is collecting (walk to it, grant its flag on the win) */
+  private pickup: { anchor: string; flag: string } | null = null;
+  private stagedProps: THREE.Object3D[] = [];
+  private heldProps: THREE.Object3D[] = [];
 
   constructor(
     private readonly world: World,
@@ -55,15 +63,8 @@ export class ScenarioMode {
   private flag = (name: string): boolean => getFlag(name);
 
   async start(id: string): Promise<void> {
-    if (id !== "band1") {
-      // the other scenarios (grind / archery / home / mill) are not ported yet: a beat, then home
-      this.hud.prompt("");
-      this.hud.message(`(${id}: nog niet gebouwd in de web-versie)`);
-      this.hud.hideBand();
-      this.phase = "win";
-      return;
-    }
-    this.run = new RunState(Band1.build(), this.locale);
+    this.scenarioId = id;
+    this.run = new RunState(buildScenario(id), this.locale);
     // revisit skip (forest): once the cave has been met, land straight at the crossroads
     if (getFlag("met_skeleton") && this.run.graph.hasNode("kruispunt")) this.run.currentId = "kruispunt";
     this.hud.legend(null);
@@ -78,6 +79,10 @@ export class ScenarioMode {
   private clearNpcs(): void {
     for (const n of this.npcs) this.world.s.scene.remove(n.node);
     this.npcs = [];
+    for (const p of this.stagedProps) this.world.s.scene.remove(p);
+    this.stagedProps = [];
+    for (const p of this.heldProps) this.world.hero.node.remove(p);
+    this.heldProps = [];
   }
 
   private async enterNode(fresh: boolean): Promise<void> {
@@ -98,6 +103,8 @@ export class ScenarioMode {
     }
     // actors
     this.travel = null;
+    this.pickup = null;
+    const item = HOUSE_ITEMS.find((i) => i.takeNode === node.id);
     for (const a of d.actors) {
       if (a.asset === "hero") {
         const hero = this.world.hero;
@@ -106,22 +113,28 @@ export class ScenarioMode {
           const to = this.world.anchor(d.travelTo);
           this.travel = { from, to };
           if (!restage) hero.node.position.copy(from);
-          hero.face(to.x - hero.node.position.x, to.z - hero.node.position.z);
-        } else {
-          if (!restage) hero.node.position.copy(this.world.anchor(a.anchor));
-          hero.face(0, 1); // "camera": the follow camera sits behind at +z
+        } else if (item) {
+          // home pickup: this beat walks him from where he stands to the item on the wall
+          this.pickup = { anchor: item.anchor, flag: item.flag };
+          this.travel = { from: hero.node.position.clone(), to: this.world.anchor(item.anchor) };
+        } else if (!restage) {
+          hero.node.position.copy(this.world.anchor(a.anchor));
         }
+        this.faceActor(hero, a.facing, this.travel?.to);
         hero.setMoving(false);
+        hero.play(POSE_CLIPS[a.pose] ?? "Idle_A");
       } else if (!restage) {
         const npc = new HeroRig();
         const path = resolveAsset(a.asset).replace(/^assets\//, "");
         await npc.load(path);
         npc.node.position.copy(this.world.anchor(a.anchor));
-        npc.face(0, 1);
+        this.faceActor(npc, a.facing);
         this.world.s.scene.add(npc.node);
         this.npcs.push(npc);
       }
     }
+    // held / staged props (the sword on the grindstone, the bow in hand)
+    if (!restage) for (const p of d.props) await this.stageProp(p.asset, p.anchor);
     this.world.useFollowCamera(fresh || !restage);
     this.hud.prompt(node.narrationKey ? this.locale.resolve(node.narrationKey) : "");
     this.hud.message("");
@@ -139,6 +152,49 @@ export class ScenarioMode {
 
   private heldProse(key: string): string {
     return key ? this.locale.fillTokens(this.locale.resolve(key), this.heroId) : "";
+  }
+
+  /**
+   * Point an actor the way the descriptor asks: "camera" faces the follow camera (behind, +z),
+   * "downrange"/"walk" faces the travel target, "left"/"right" turn a quarter from the camera.
+   */
+  private faceActor(rig: HeroRig, facing: string, target?: THREE.Vector3): void {
+    switch (facing) {
+      case "downrange": {
+        const t = target ?? this.world.anchor("target");
+        rig.lookAtPoint(t);
+        break;
+      }
+      case "left":
+        rig.face(-1, 0);
+        break;
+      case "right":
+        rig.face(1, 0);
+        break;
+      default:
+        if (target) rig.lookAtPoint(target);
+        else rig.face(0, 1); // "camera"
+    }
+  }
+
+  /** Put a vocabulary prop at an anchor (or in the hero's hands for "hand"). */
+  private async stageProp(assetId: string, anchor: string): Promise<void> {
+    const path = resolveAsset(assetId).replace(/^assets\//, "");
+    if (!path) return;
+    const base = await this.world.s.loadModel(path).catch(() => null);
+    if (!base) return;
+    const obj = base.clone(true);
+    if (anchor === "hand") {
+      obj.position.set(0.35, 1.0, 0.15);
+      obj.rotation.set(0, Math.PI / 2, 0);
+      this.world.hero.node.add(obj);
+      this.heldProps.push(obj);
+    } else {
+      obj.position.copy(this.world.anchor(anchor));
+      obj.position.y += 0.9;
+      this.world.s.scene.add(obj);
+      this.stagedProps.push(obj);
+    }
   }
 
   char(c: string): void {
@@ -172,7 +228,23 @@ export class ScenarioMode {
   private beginChoice(): void {
     const node = this.run!.current();
     if (!node || node.choices.length === 0) return this.resolveEnding();
-    this.candidates = node.choices.filter((ch) => ch.isAvailable(this.flag)).map((ch) => ({ word: this.locale.resolve(ch.wordKey), choice: ch }));
+    this.candidates = node.choices
+      .filter((ch) => ch.isAvailable(this.flag))
+      // at home, only offer gear not yet collected (the choice target is a take_* node)
+      .filter((ch) => {
+        const it = HOUSE_ITEMS.find((i) => i.takeNode === ch.target);
+        return !it || !getFlag(it.flag);
+      })
+      .map((ch) => ({ word: this.locale.resolve(ch.wordKey), choice: ch }));
+    if (this.candidates.length === 0) {
+      // nothing left to take -- a short "you have everything" beat, then leave
+      this.hud.hideBand();
+      this.hud.highlightKey("");
+      this.hud.message(this.locale.resolve("home.nothing") + "\n(druk op enter)");
+      this.world.hero.playOneShot("Cheering");
+      this.phase = "win";
+      return;
+    }
     this.picked = null;
     this.buffer = "";
     this.phase = "choice";
@@ -206,6 +278,13 @@ export class ScenarioMode {
   private resolveEnding(): void {
     const node = this.run!.current();
     if (node?.setsFlag) for (const f of node.setsFlag.split(" ")) if (f) setFlag(f);
+    if (this.pickup) {
+      setFlag(this.pickup.flag); // the gear is his now: the island's gear gate opens
+      this.world.hero.playOneShot("PickUp");
+      this.pickup = null;
+    } else if (node?.ending === "win") {
+      this.world.hero.playOneShot("Cheering");
+    }
     if (getFlag("sword_sharp") && getFlag("archery_done")) setFlag("fully_trained");
     const ending = this.run!.resolveEnding();
     const text = node?.winKey ? this.locale.resolve(node.winKey) : ending.type === "setback" ? "Snel terug!" : "Goed gedaan!";
