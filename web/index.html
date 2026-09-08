@@ -40,6 +40,25 @@
       .pick-name { font-size: 40px; color: #ffe9b8; text-shadow: 0 3px 0 rgba(0,0,0,.45); }
       .pick-hint { font-size: 20px; color: #d9c4a1; margin-top: 6px; }
       #back { position: absolute; left: 20px; bottom: 20px; pointer-events: auto; background: #9c7b56; color: #2a1d10; border: 2px solid #6d5236; border-radius: 8px; padding: 8px 20px; font-size: 20px; cursor: pointer; }
+      /* short viewports (laptops, 1024x600): shrink the bottom stack so the 3D scene keeps the
+         frame -- at full size the band + keyboard ate ~72% of a 600px-tall window */
+      @media (max-height: 820px) {
+        #band { font-size: 21px; padding: 9px 16px; min-height: 40px; }
+        .key { width: 34px; height: 34px; line-height: 34px; font-size: 17px; border-width: 1px; }
+        .key.space { width: 180px; }
+        #bottom { gap: 9px; bottom: 10px; }
+        #prompt { font-size: 18px; padding: 6px 18px; }
+        .pill, .banner { font-size: 19px; min-width: 150px; padding: 6px 13px; }
+      }
+      @media (max-height: 620px) {
+        #band { font-size: 17px; padding: 6px 12px; min-height: 32px; }
+        .key { width: 27px; height: 27px; line-height: 27px; font-size: 14px; border-radius: 4px; }
+        .key.space { width: 140px; }
+        #bottom { gap: 6px; bottom: 6px; }
+        #keyboard { gap: 4px; }
+        .krow { gap: 4px; }
+        #message { font-size: 20px; padding: 12px 18px; }
+      }
       [hidden] { display: none !important; }
     </style>
   </head>

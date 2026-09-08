@@ -57,7 +57,9 @@ export class World {
     const rig = mood === "island"
       ? { sun: 0xffd99a, sunI: 3.2, hemiSky: 0xdcefff, hemiGround: 0x465f39, hemiI: 0.5, env: 0.42 }
       : mood === "dark"
-        ? { sun: 0xbcc6dd, sunI: 1.1, hemiSky: 0x2a3140, hemiGround: 0x14161b, hemiI: 0.6, env: 0.18 }
+        // a cave is COOL grey, not gold: with the key dimmed the warm PMREM environment took
+        // over and tinted the rock, so keep the key doing the work and the environment near nil
+        ? { sun: 0xa9bede, sunI: 2.2, hemiSky: 0x3b4666, hemiGround: 0x0e1014, hemiI: 0.85, env: 0.05 }
         : { sun: 0xfff4e6, sunI: 2.5, hemiSky: 0xdcefff, hemiGround: 0x5a7048, hemiI: 0.75, env: 0.5 };
     this.s.sun.color.setHex(rig.sun);
     this.s.sun.intensity = rig.sunI;
@@ -65,9 +67,9 @@ export class World {
     this.s.hemi.groundColor.setHex(rig.hemiGround);
     this.s.hemi.intensity = rig.hemiI;
     this.s.scene.environmentIntensity = rig.env;
-    const sky = mood === "dark" ? 0x1b1d22 : mood === "island" ? 0x0b0e12 : 0xa6c6e0;
+    const sky = mood === "dark" ? 0x08080a : mood === "island" ? 0x0b0e12 : 0xa6c6e0;
     this.s.scene.background = new THREE.Color(sky);
-    this.s.scene.fog = mood === "island" ? null : new THREE.Fog(sky, mood === "dark" ? 14 : 60, mood === "dark" ? 70 : 220);
+    this.s.scene.fog = mood === "island" ? null : new THREE.Fog(sky, mood === "dark" ? 10 : 60, mood === "dark" ? 48 : 220);
     // Aim the sun at where the ACTION is (the anchors), not the raw bounding box: a set can hold
     // a vast backdrop plate (the mill's water is 10000 units across) that would drag the target
     // thousands of units away and leave the whole scene outside the shadow frustum.
