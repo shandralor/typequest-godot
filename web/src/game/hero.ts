@@ -18,7 +18,29 @@ export class HeroRig {
   private current: THREE.AnimationAction | null = null;
   private moving = false;
 
+  /** Drop the currently-shown model (and everything bound to it) so a reload replaces it. */
+  private clearModel(): void {
+    this.mixer?.stopAllAction();
+    this.mixer = null;
+    this.actions.clear();
+    this.current = null;
+    for (const child of [...this.node.children]) {
+      this.node.remove(child);
+      child.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        m.geometry?.dispose();
+        const mat = m.material as THREE.Material | THREE.Material[] | undefined;
+        if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
+        else mat?.dispose();
+      });
+    }
+  }
+
   async load(modelPath: string): Promise<void> {
+    // Replacing, not adding: the picker cycles heroes and the island reloads the chosen one, so
+    // without this every model stayed in the rig and they rendered stacked through each other.
+    this.clearModel();
     const loader = new GLTFLoader();
     const [hero, ...rigs] = await Promise.all([loader.loadAsync("/assets/" + modelPath), ...RIGS.map((r) => loader.loadAsync("/assets/" + r))]);
     const model = hero.scene;
