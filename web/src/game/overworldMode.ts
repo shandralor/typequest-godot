@@ -10,6 +10,7 @@ import { SiteTyper } from "./siteTyper";
 import type { World } from "./world";
 import type { Hud } from "../ui/hud";
 import { ISLAND_FOV, OW_IDLE_BIAS, OW_IDLE_ZOOM, OW_TRAVEL_ZOOM } from "./cameraRigs";
+import { lerpAngle } from "./gaze";
 
 export interface Locale {
   resolve(key: string): string;
@@ -120,7 +121,14 @@ export class OverworldMode {
     const prev = this.world.hero.node.position.clone();
     const pos = leg.curve.getPointAt(Math.min(1, Math.max(0, u)));
     this.world.hero.node.position.copy(pos);
-    this.world.hero.face(pos.x - prev.x, pos.z - prev.z);
+    // ease toward the path tangent: taking it raw snapped the hero 150 degrees on the first
+    // frame of a straight route and popped him round corners
+    const dx = pos.x - prev.x;
+    const dz = pos.z - prev.z;
+    if (Math.hypot(dx, dz) > 1e-4) {
+      const want = Math.atan2(dx, dz);
+      this.world.hero.node.rotation.y = lerpAngle(this.world.hero.node.rotation.y, want, Math.min(1, dt * 6));
+    }
     this.world.hero.setMoving(true, OW_WALK_SPEED);
     // dolly in and track the hero along the path (the lerp makes it a smooth dolly)
     this.world.useIslandCamera(OVERWORLD.camera, { zoom: OW_TRAVEL_ZOOM, bias: 0, fov: ISLAND_FOV, follow: pos, snap: false });

@@ -137,8 +137,8 @@ export const FOREST_STRAIGHT: SceneDef = {
     { m: "kaykit/forest_nature/Rock_1_A_Color1.gltf", x: 10.283, z: 6.162, rot: 183.182, s: 1.194 },
   ],
   shapes: [
-    { kind: "plane", size: [56, 140], color: "#9cb37a", x: 0, z: 0, name: "Ground" },
-    { kind: "box", size: [3, 0.05, 32], color: "#bfaa8b", x: 0, z: 0, y: 0.02, rot: 180, name: "Path" },
+    { kind: "plane", size: [56, 140], color: "#557332", x: 0, z: 0, name: "Ground" },
+    { kind: "box", size: [3, 0.05, 32], color: "#856642", x: 0, z: 0, y: 0.02, rot: 180, name: "Path" },
   ],
   anchors: [
     { name: "center", x: 0, z: 0 },

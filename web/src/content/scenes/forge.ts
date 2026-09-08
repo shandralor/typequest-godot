@@ -27,8 +27,8 @@ export const FORGE: SceneDef = {
     { m: "kaykit/dungeon/wall_window_open_scaffold.gltf", x: 3.281, z: -0.419, rot: 91.681, sc: [1.849, 1, 1.022] },
   ],
   shapes: [
-    { kind: "plane", size: [40, 40], color: "#95b581", x: 0, z: 0, sc: [0.574, 0.636, 0.457], name: "Ground" },
-    { kind: "box", size: [6, 0.08, 6], color: "#9e9995", x: 0, z: 0, y: 0.04 },
+    { kind: "plane", size: [40, 40], color: "#4c7538", x: 0, z: 0, sc: [0.574, 0.636, 0.457], name: "Ground" },
+    { kind: "box", size: [6, 0.08, 6], color: "#57524c", x: 0, z: 0, y: 0.04 },
   ],
   anchors: [
     { name: "center", x: 0.8, z: 0 },

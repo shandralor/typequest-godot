@@ -55,11 +55,11 @@ export const DUNGEON: SceneDef = {
     { m: "kaykit/dungeon/floor_dirt_small_A.gltf", x: 3.117, z: -5.885 },
   ],
   shapes: [
-    { kind: "plane", size: [14, 16], color: "#6f6f79", x: 0, z: -0.004, y: 0.007, name: "Ground" },
-    { kind: "box", size: [14, 5, 0.5], color: "#65656f", x: 0, z: -7, y: 2.5 },
-    { kind: "box", size: [0.5, 5, 16], color: "#65656f", x: -7, z: 0, y: 2.5 },
-    { kind: "box", size: [0.5, 5, 16], color: "#65656f", x: 7, z: 0, y: 2.5 },
-    { kind: "box", size: [14, 0.5, 16], color: "#505059", x: 0, z: 0, y: 5 },
+    { kind: "plane", size: [14, 16], color: "#292930", x: 0, z: -0.004, y: 0.007, name: "Ground" },
+    { kind: "box", size: [14, 5, 0.5], color: "#212129", x: 0, z: -7, y: 2.5 },
+    { kind: "box", size: [0.5, 5, 16], color: "#212129", x: -7, z: 0, y: 2.5 },
+    { kind: "box", size: [0.5, 5, 16], color: "#212129", x: 7, z: 0, y: 2.5 },
+    { kind: "box", size: [14, 0.5, 16], color: "#14141a", x: 0, z: 0, y: 5 },
   ],
   anchors: [
     { name: "center", x: 0, z: 0 },

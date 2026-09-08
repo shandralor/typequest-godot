@@ -13,7 +13,13 @@ function polygonGeometry(sh: ShapeDef): THREE.BufferGeometry {
   const pts = sh.points ?? [];
   pts.forEach(([x, y], i) => (i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y)));
   shape.closePath();
-  return new THREE.ExtrudeGeometry(shape, { depth: sh.depth ?? 1, bevelEnabled: false });
+  const depth = sh.depth ?? 1;
+  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false });
+  // Godot extrudes a CSGPolygon3D so the polygon plane is the TOP face (the mill's ground sits
+  // at its origin and the solid hangs below it); three extrudes along +z from the plane, so
+  // shift it back by the depth or everything standing on the ground floats above it.
+  geo.translate(0, 0, -depth);
+  return geo;
 }
 
 export function buildShape(sh: ShapeDef): THREE.Object3D {

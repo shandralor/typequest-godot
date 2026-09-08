@@ -51,10 +51,36 @@ export class World {
     this.def = def;
     const built = await buildIslandGroup(this.s, def);
     this.group = built.group;
+    // Light per mood. The island wants the warm golden key (its hex grass is chartreuse by
+    // design); a story set is lit near-neutral, or the green ground goes yellow -- Godot's mill
+    // reads clean green. Dark = a cool, dim cave.
+    const rig = mood === "island"
+      ? { sun: 0xffd99a, sunI: 3.2, hemiSky: 0xdcefff, hemiGround: 0x465f39, hemiI: 0.5, env: 0.42 }
+      : mood === "dark"
+        ? { sun: 0xbcc6dd, sunI: 1.1, hemiSky: 0x2a3140, hemiGround: 0x14161b, hemiI: 0.6, env: 0.18 }
+        : { sun: 0xfff4e6, sunI: 2.5, hemiSky: 0xdcefff, hemiGround: 0x5a7048, hemiI: 0.75, env: 0.5 };
+    this.s.sun.color.setHex(rig.sun);
+    this.s.sun.intensity = rig.sunI;
+    this.s.hemi.color.setHex(rig.hemiSky);
+    this.s.hemi.groundColor.setHex(rig.hemiGround);
+    this.s.hemi.intensity = rig.hemiI;
+    this.s.scene.environmentIntensity = rig.env;
     const sky = mood === "dark" ? 0x1b1d22 : mood === "island" ? 0x0b0e12 : 0xa6c6e0;
     this.s.scene.background = new THREE.Color(sky);
     this.s.scene.fog = mood === "island" ? null : new THREE.Fog(sky, mood === "dark" ? 14 : 60, mood === "dark" ? 70 : 220);
-    this.s.sun.target.position.copy(built.land.getCenter(new THREE.Vector3()));
+    // Aim the sun at where the ACTION is (the anchors), not the raw bounding box: a set can hold
+    // a vast backdrop plate (the mill's water is 10000 units across) that would drag the target
+    // thousands of units away and leave the whole scene outside the shadow frustum.
+    this.s.sun.target.position.copy(this.actedCentre(def, built.land));
+  }
+
+  /** The centre of the anchors (where actors stand); falls back to the land box. */
+  private actedCentre(def: SceneDef, land: THREE.Box3): THREE.Vector3 {
+    const anchors = def.anchors ?? [];
+    if (anchors.length === 0) return land.getCenter(new THREE.Vector3());
+    const c = new THREE.Vector3();
+    for (const a of anchors) c.add(placedPosition(a));
+    return c.divideScalar(anchors.length);
   }
 
   anchor(name: string): THREE.Vector3 {

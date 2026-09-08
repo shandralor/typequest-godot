@@ -50,8 +50,8 @@ export const ARCHERY: SceneDef = {
     { m: "kaykit/forest_nature/Tree_2_A_Color1.gltf", x: -2.766, z: 23.886, rot: 206.943, s: 1.667 },
   ],
   shapes: [
-    { kind: "plane", size: [50, 60], color: "#99b681", x: 0, z: 0, name: "Ground" },
-    { kind: "box", size: [3, 0.05, 14], color: "#bfaa8b", x: 0, z: -1, y: 0.02, rot: 180, name: "Path" },
+    { kind: "plane", size: [50, 60], color: "#527838", x: 0, z: 0, name: "Ground" },
+    { kind: "box", size: [3, 0.05, 14], color: "#856642", x: 0, z: -1, y: 0.02, rot: 180, name: "Path" },
   ],
   anchors: [
     { name: "center", x: 0, z: 4 },

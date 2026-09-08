@@ -38,14 +38,14 @@ export const HOUSE: SceneDef = {
     { m: "kaykit/fantasy_weapons_bits/dagger_A.gltf", x: 5.9, z: 1.981, y: 2.492, rot: 271.227, tilt: [0.952, 90.02], s: 2, tags: ["weapon_rogue"], hidden: true },
   ],
   shapes: [
-    { kind: "plane", size: [90, 90], color: "#99b686", x: 0, z: 0, y: 0.02, name: "outside_field" },
-    { kind: "box", size: [13, 0.2, 19], color: "#b5997c", x: 0, z: 0, y: 0.1 },
-    { kind: "box", size: [0.4, 10, 19], color: "#cebfaa", x: -6.299, z: -0.003, y: 5.003 },
-    { kind: "box", size: [0.4, 10, 19], color: "#cebfaa", x: 6.3, z: 0, y: 5 },
-    { kind: "box", size: [4.8, 10, 0.4], color: "#cebfaa", x: -3.9, z: -9.3, y: 5 },
-    { kind: "box", size: [4.8, 10, 0.4], color: "#cebfaa", x: 3.9, z: -9.3, y: 5 },
-    { kind: "box", size: [3.2, 5, 0.4], color: "#cebfaa", x: 0, z: -9.3, y: 7.5 },
-    { kind: "box", size: [13, 0.4, 19], color: "#958676", x: 0, z: 0, y: 10 },
+    { kind: "plane", size: [90, 90], color: "#52783d", x: 0, z: 0, y: 0.02, name: "outside_field" },
+    { kind: "box", size: [13, 0.2, 19], color: "#755233", x: 0, z: 0, y: 0.1 },
+    { kind: "box", size: [0.4, 10, 19], color: "#9e8566", x: -6.299, z: -0.003, y: 5.003 },
+    { kind: "box", size: [0.4, 10, 19], color: "#9e8566", x: 6.3, z: 0, y: 5 },
+    { kind: "box", size: [4.8, 10, 0.4], color: "#9e8566", x: -3.9, z: -9.3, y: 5 },
+    { kind: "box", size: [4.8, 10, 0.4], color: "#9e8566", x: 3.9, z: -9.3, y: 5 },
+    { kind: "box", size: [3.2, 5, 0.4], color: "#9e8566", x: 0, z: -9.3, y: 7.5 },
+    { kind: "box", size: [13, 0.4, 19], color: "#4c3d2e", x: 0, z: 0, y: 10 },
   ],
   anchors: [
     { name: "center", x: 0, z: 0 },
@@ -59,7 +59,7 @@ export const HOUSE: SceneDef = {
     { name: "bow_point", x: -4.3, z: -4.8 },
   ],
   lights: [
-    { kind: "omni", x: 0, y: 6, z: 3, color: "#ffefce", energy: 1.6, range: 22 },
-    { kind: "omni", x: 0, y: 6, z: -6, color: "#ffefce", energy: 1.6, range: 22 },
+    { kind: "omni", x: 0, y: 6, z: 3, color: "#ffdb9e", energy: 1.6, range: 22 },
+    { kind: "omni", x: 0, y: 6, z: -6, color: "#ffdb9e", energy: 1.6, range: 22 },
   ],
 };

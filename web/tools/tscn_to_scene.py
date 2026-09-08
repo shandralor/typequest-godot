@@ -148,12 +148,12 @@ def near_int(v, tol=0.02):
 
 
 def color_hex(s):
+    """Godot stores albedo_color as the sRGB value shown in the inspector, and three.js reads a
+    hex as sRGB too -- so pass it straight through. (Encoding it as if it were linear washed
+    every ground out: the mill's grass came through pale yellow instead of Godot's green.)"""
     f = floats(s)
     r, g, b = (max(0, min(1, c)) for c in f[:3])
-    # Godot colours are linear; the web material takes sRGB hex, so encode
-    def enc(c):
-        return 1.055 * c ** (1 / 2.4) - 0.055 if c > 0.0031308 else 12.92 * c
-    h = "#%02x%02x%02x" % tuple(int(round(enc(c) * 255)) for c in (r, g, b))
+    h = "#%02x%02x%02x" % tuple(int(round(c * 255)) for c in (r, g, b))
     a = f[3] if len(f) > 3 else 1.0
     return h, a
 
@@ -307,19 +307,6 @@ def convert(path, report):
             continue  # container
         else:
             skipped.append(f"{n['type']} {me} unsupported")
-    # Coplanar CSG polygons (the mill's land sitting exactly on its water) would z-fight, and
-    # Godot's CSG siblings are not combined either. Keep the authored order meaningful: each
-    # later polygon at the same height drops a hair, so the first one authored stays on top.
-    seen_y = {}
-    for sh in out["shapes"]:
-        if sh["kind"] != "polygon":
-            continue
-        key = round(sh["y"], 3)
-        n = seen_y.get(key, 0)
-        seen_y[key] = n + 1
-        if n:
-            sh["y"] -= 0.02 * n
-
     cam = None
     if "camera_pos" in camera and "camera_look" in camera:
         cam = {"pos": camera["camera_pos"], "look": camera["camera_look"]}

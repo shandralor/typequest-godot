@@ -93,6 +93,11 @@ export class ScenarioMode {
   private async enterNode(fresh: boolean): Promise<void> {
     const node = this.run!.current();
     if (!node || !node.scene) return this.resolveEnding();
+    // Drop the previous beat's gaze BEFORE any await: staging this scene loads models, and
+    // update() keeps running meanwhile -- a stale gaze would go on steering the hero and win
+    // over the facing set below (the crossroads gaze followed him into the cave).
+    this.gaze = { mode: "none", links: -1, rechts: -1 };
+    this.gazeTargets = {};
     const d = node.scene;
     const setName = this.setFor(d);
     const restage = d.continuous && setName === this.currentSet;

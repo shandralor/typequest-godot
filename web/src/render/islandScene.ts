@@ -52,6 +52,7 @@ export interface IslandScene {
   scene: THREE.Scene;
   camera: THREE.PerspectiveCamera;
   sun: THREE.DirectionalLight;
+  hemi: THREE.HemisphereLight;
   /** Load (and cache) a model template by its path under /assets. */
   loadModel(path: string): Promise<THREE.Object3D>;
   /** A cached template, if loaded. Clone it to place it. */
@@ -96,7 +97,8 @@ export function createIslandScene(canvas: HTMLCanvasElement): IslandScene {
   sun.shadow.radius = 2.2;
   scene.add(sun);
   scene.add(sun.target);
-  scene.add(new THREE.HemisphereLight(0xdcefff, 0x465f39, 0.5));
+  const hemi = new THREE.HemisphereLight(0xdcefff, 0x465f39, 0.5);
+  scene.add(hemi);
 
   const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 900);
 
@@ -156,7 +158,7 @@ export function createIslandScene(canvas: HTMLCanvasElement): IslandScene {
     else renderer.render(scene, camera);
   }
   resize();
-  return { renderer, scene, camera, sun, loadModel, getModel: (p) => cache.get(p), setupPost, resize, render };
+  return { renderer, scene, camera, sun, hemi, loadModel, getModel: (p) => cache.get(p), setupPost, resize, render };
 }
 
 /** Build a static scene group from a SceneDef (the game path): tiles + props + shapes + lights. */
