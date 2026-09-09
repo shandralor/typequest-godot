@@ -48,6 +48,25 @@ export class Hud {
     kb.appendChild(r);
   }
 
+  /** XP + stars, top-right (the Godot build shows the same counters). */
+  score(xp: number, stars: number): void {
+    const el = $<HTMLElement>("score");
+    el.hidden = false;
+    el.textContent = `XP ${xp}    sterren ${stars}`;
+  }
+
+  hideScore(): void {
+    $<HTMLElement>("score").hidden = true;
+  }
+
+  /** A wrong key: nudge the band so the child sees the game noticed, without punishing them. */
+  reject(): void {
+    const band = $<HTMLElement>("band");
+    band.classList.remove("reject");
+    void band.offsetWidth; // restart the animation
+    band.classList.add("reject");
+  }
+
   prompt(text: string): void {
     $<HTMLElement>("prompt").textContent = text;
     $<HTMLElement>("prompt").hidden = text === "";

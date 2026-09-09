@@ -33,6 +33,8 @@ const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", 
 /** descriptor pose -> looping clip (the shared KayKit vocabulary) */
 const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Idle_A", aim: "Ranged_Bow_Aiming_Idle" };
 const IDLE_AFTER = 0.6; // s without a correct key before the walking hero settles to idle
+/** the hero strolls this long toward the path he picked before the scene cuts */
+const CHOICE_WALK_DUR = 1.4;
 /** The archery target is not in the set -- Godot builds it in code at the "target" anchor. */
 const TARGET_MODEL = "kaykit/hexagon/target.gltf";
 const TARGET_SCALE = 8.5;
@@ -55,6 +57,8 @@ export class ScenarioMode {
   private scenarioId = "";
   /** the item this home beat is collecting (walk to it, grant its flag on the win) */
   private pickup: { anchor: string; flag: string } | null = null;
+  /** a short stroll toward the chosen path, then `done` (softens the fork cut) */
+  private walkoff: { from: THREE.Vector3; to: THREE.Vector3; t: number; done: () => void } | null = null;
   private gaze: GazeState = { mode: "none", links: -1, rechts: -1 };
   private gazeTargets: GazeTargets = {};
   private gazeYaw = 0;
@@ -284,12 +288,14 @@ export class ScenarioMode {
   private proseChar(c: string): void {
     const ok = this.prose.typeChar(c);
     this.hud.prose(this.prose.target, this.prose.cursor);
+    if (!ok) this.hud.reject();
     if (ok) {
       this.sinceKey = 0;
       if (this.travel) this.world.hero.setMoving(true, 2.0);
     }
     if (this.prose.isComplete()) {
       this.run!.scoreCurrent(this.prose.correctChars(), this.prose.accuracy(), true);
+      this.hud.score(this.score().xp, this.score().stars);
       this.world.hero.setMoving(false);
       if (this.run!.current()?.isEnding()) this.resolveEnding();
       else this.beginChoice();
@@ -327,22 +333,36 @@ export class ScenarioMode {
   private choiceChar(c: string): void {
     if (!this.picked) {
       const p = this.candidates.find((cand) => cand.word.charAt(0) === c);
-      if (!p) return;
+      if (!p) return this.hud.reject(); // no choice starts with that letter
       this.picked = p;
       this.buffer = c;
     } else {
-      if (c !== this.picked.word.charAt(this.buffer.length)) return;
+      if (c !== this.picked.word.charAt(this.buffer.length)) return this.hud.reject();
       this.buffer += c;
     }
     this.hud.choices(this.candidates.map((x) => x.word), this.picked.word, this.buffer);
     this.hud.highlightKey(this.picked.word.charAt(this.buffer.length));
     if (this.buffer === this.picked.word) {
+      const hint = this.picked.choice.hint;
       this.run!.choose(this.picked.word, this.flag);
       const tgt = this.run!.current();
       const sameSetWalk = !!tgt?.scene && this.setFor(tgt.scene) === this.currentSet && tgt.scene.continuous;
       this.hud.choices(null);
-      if (sameSetWalk) void this.enterNode(false);
-      else void this.world.fadeCut(() => this.enterNode(true));
+      this.hud.prompt("");
+      this.hud.highlightKey("");
+      // walk him a couple of steps toward the path he picked before the scene changes, so a
+      // fork never snaps (Godot _begin_choice_walk)
+      const landmark = hint === "left" ? this.gazeTargets.cave : hint === "right" ? this.gazeTargets.bridge : undefined;
+      const after = sameSetWalk ? () => void this.enterNode(false) : () => void this.world.fadeCut(() => this.enterNode(true));
+      if (landmark) {
+        this.phase = "pause";
+        const from = this.world.hero.node.position.clone();
+        const to = from.clone().lerp(new THREE.Vector3(landmark.x, from.y, landmark.z), sameSetWalk ? 1 : 0.5);
+        this.world.hero.face(to.x - from.x, to.z - from.z);
+        this.world.hero.setMoving(true, 2.2);
+        this.gaze = { mode: "none", links: -1, rechts: -1 };
+        this.walkoff = { from, to, t: 0, done: after };
+      } else after();
     }
   }
 
@@ -368,6 +388,19 @@ export class ScenarioMode {
   }
 
   update(dt: number): void {
+    if (this.walkoff) {
+      const w = this.walkoff;
+      w.t += dt;
+      const k = Math.min(1, w.t / CHOICE_WALK_DUR);
+      this.world.hero.node.position.copy(w.from).lerp(w.to, k);
+      if (k >= 1) {
+        this.walkoff = null;
+        this.world.hero.setMoving(false);
+        w.done();
+      }
+      for (const n of this.npcs) n.update(dt);
+      return;
+    }
     if (this.gaze.mode !== "none") {
       const h = this.world.hero.node.position;
       const want = targetYaw(this.gaze, this.prose.cursor, { x: h.x, z: h.z }, this.gazeTargets);
@@ -388,5 +421,15 @@ export class ScenarioMode {
     this.clearNpcs();
     this.phase = "pause";
     this.travel = null;
+    this.walkoff = null;
+  }
+
+  /** XP + stars so far this run (the HUD reads it after every scored beat). */
+  score(): { xp: number; stars: number } {
+    if (!this.run) return { xp: 0, stars: 0 };
+    const snap = this.run.progressSnapshot();
+    let stars = 0;
+    for (const v of Object.values(snap.starsByNode)) stars += v;
+    return { xp: snap.xp, stars };
   }
 }

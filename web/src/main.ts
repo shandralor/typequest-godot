@@ -60,6 +60,7 @@ async function main(): Promise<void> {
     hud.choices(null);
     hud.hideBand();
     hud.keyboard(false);
+    hud.hideScore();
     backBtn.hidden = true;
   }
 
@@ -142,6 +143,7 @@ async function main(): Promise<void> {
     enterState("scenario");
     clearUi();
     hud.keyboard(true);
+    hud.score(0, 0);
     backBtn.hidden = false;
     scenario = new ScenarioMode(world, hud, locale, heroId, () => {
       // the intro plays once, then hands off to the island
