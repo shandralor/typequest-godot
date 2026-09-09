@@ -11,7 +11,7 @@ import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { N8AOPass } from "n8ao";
-import { expandIsland, islandModels, type IslandDef } from "../world/hexGrid";
+import { expandIsland, islandModels, placedPosition, type IslandDef } from "../world/hexGrid";
 import { buildLight, buildShape } from "./sceneObjects";
 import { assetUrl } from "../assetPath";
 
@@ -163,6 +163,15 @@ export function createIslandScene(canvas: HTMLCanvasElement): IslandScene {
   }
   resize();
   return { renderer, scene, camera, sun, hemi, loadModel, getModel: (p) => cache.get(p), setupPost, resize, render };
+}
+
+/** shapes with this name form the swinging drawbridge leaf, pivoted at `bridge_near` */
+export const BRIDGE_LEAF = "bridge_leaf";
+
+/** The hinge the leaf swings about: its near edge, which the set marks with `bridge_near`. */
+function bridgeHinge(def: IslandDef): THREE.Vector3 {
+  const a = def.anchors?.find((x) => x.name === "bridge_near");
+  return a ? placedPosition(a) : new THREE.Vector3();
 }
 
 /**
@@ -324,11 +333,23 @@ export async function buildIslandGroup(
     }
   }
 
+  // The drawbridge deck is authored as a fan of primitives already tilted into the RAISED pose.
+  // They are collected under one pivot at the near hinge so the whole leaf swings as a unit --
+  // rotating eleven boxes individually about a hinge they do not share would be a nightmare.
+  const leaf = new THREE.Group();
+  leaf.name = BRIDGE_LEAF;
+  leaf.position.copy(bridgeHinge(def));
   for (const sh of def.shapes ?? []) {
     const o = buildShape(sh);
-    group.add(o);
+    if (sh.name === BRIDGE_LEAF) {
+      o.position.sub(leaf.position); // re-parent: keep the world pose, express it about the hinge
+      leaf.add(o);
+    } else {
+      group.add(o);
+    }
     land.expandByObject(o);
   }
+  if (leaf.children.length > 0) group.add(leaf);
   for (const l of def.lights ?? []) group.add(buildLight(l));
   s.scene.add(group);
   return { group, land, full: new THREE.Box3().setFromObject(group) };

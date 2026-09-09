@@ -1315,3 +1315,28 @@ scene, not the grade and not the lighting. Do not go looking for it in the rende
 - NEXT: the drawbridge still never lowers (needs a bridge model authored into forest_fork.ts;
   see the earlier entry). The mill still uses the wide STANDING rig, which QA flagged as framing
   the hero and the miller at ~60px -- worth the same treatment the cave just got.
+
+## The drawbridge lowers, and the mill is framed (2026-09-09)
+
+The last two QA items.
+
+**The drawbridge.** It was never a missing model: the bridge is authored in `forest_fork.ts` as
+ELEVEN primitive shapes (deck, two rails, eight slats) already tilted 65 degrees into the raised
+pose, which is why searching for a bridge mesh found nothing. They now carry `name: "bridge_leaf"`
+and `buildIslandGroup` collects them under a single pivot placed at the `bridge_near` anchor --
+the hinge -- so the whole leaf swings as one. `scenarioMode` rotates it back by the authored
+angle once `has_crystal` is set, and the crossing route now goes OVER the deck
+(path_near -> bridge_near -> bridge_far -> path_far at deck height), which the polyline travel
+added for the intro made a two-line change. Verified: 0 degrees raised, -65 lowered and lying
+flat across the water, and the leaf has all 11 children.
+
+**The mill.** Same fix as the cave, opposite cause: the wide shared STANDING rig left the hero
+and the miller at about 60px in a 1440px frame, marooned in an empty field, so the one NPC the
+beat is about was unreadable. It has its own `MILL` rig now (fov 46, closer) and the pair fill
+the shot in front of the windmill -- which also makes the rewritten prose ("de molenaar staat
+voor zijn molen") land, since you can now see that he does.
+
+Re-authoring note: adding the `name` field meant regenerating `forest_fork.ts` through
+`serializeIslandTs` rather than hand-editing, or the byte-identical round-trip test fails.
+
+- NEXT: nothing outstanding from the QA sweep.

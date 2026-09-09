@@ -53,6 +53,12 @@ export const ARCHERY: Rig = { off: [2.3, 3.0, 6.2], look: [-0.3, 0.45, -7.0], fo
  * now fill the shot and the hero and the skeleton read at the size the beat is about.
  */
 export const CAVE: Rig = { off: [0, 2.9, 7.6], look: [0, 1.15, -1.4], fov: 50 };
+/**
+ * The mill. Same problem as the cave for the opposite reason: the standing rig's wide lens put
+ * the hero and the miller at about 60px in a 1440px frame, marooned in an empty green field,
+ * so the one NPC the beat is about was barely identifiable. Closer and tighter.
+ */
+export const MILL: Rig = { off: [0, 3.1, 8.2], look: [0, 1.2, -2.2], fov: 46 };
 /** every other standing beat */
 export const STANDING: Rig = { off: [0, 4.2, 9.5], look: [0, 1.0, -1.5], fov: 75 };
 
@@ -72,5 +78,6 @@ export function rigFor(set: string, opts: { walking: boolean; win: boolean; land
   if (set === "forge") return opts.win ? WORK_WIN : opts.reading ? WORK_READ : WORK;
   if (set === "archery") return ARCHERY;
   if (set === "dungeon") return CAVE;
+  if (set === "mill") return MILL;
   return STANDING;
 }

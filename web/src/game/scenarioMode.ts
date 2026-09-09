@@ -22,6 +22,7 @@ import type { Hud } from "../ui/hud";
 import type { SceneDef } from "../world/sceneDef";
 import { rigFor } from "./cameraRigs";
 import { buildShape } from "../render/sceneObjects";
+import { BRIDGE_LEAF } from "../render/islandScene";
 import { Sparks, Arrow, arrowRings, magicBolt } from "../render/effects";
 import { setupGaze, targetYaw, lerpAngle, type GazeState, type GazeTargets } from "./gaze";
 
@@ -39,6 +40,8 @@ const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", 
 // `aim` is a PLACEHOLDER: the practice yard overrides it per hero class, so a mage casts and a
 // barbarian stands ready to throw instead of everyone miming a bowstring (characters.RANGED).
 const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Sawing", aim: "Ranged_Bow_Aiming_Idle" };
+/** the angle the drawbridge leaf is authored at, standing up out of the water */
+const BRIDGE_RAISED = (65 * Math.PI) / 180;
 /** the island's cloud, reused small as the haze the spellbook rides on */
 const HAZE_MODEL = "kaykit/hexagon/cloud_big.gltf";
 /** the weapon on the grinding wheel is scaled to this length, so every blade reads the same */
@@ -234,7 +237,12 @@ export class ScenarioMode {
         if (d.path === PATH_STRAIGHT && (a.pose === "walk" || this.scenarioId === "intro")) {
           const from = this.world.anchor(d.travelFrom);
           const to = this.world.anchor(d.travelTo);
-          this.travel = { points: [from, to] };
+          // crossing: go OVER the deck rather than through the water, ramping up at the near
+          // edge and down at the far one (Godot _apply_bridge_lift)
+          const deck = getFlag("has_crystal") && this.world.hasAnchor("bridge_near")
+            ? ["bridge_near", "bridge_far"].map((n) => this.world.anchor(n))
+            : [];
+          this.travel = { points: [from, ...deck, to] };
           if (!restage) hero.node.position.copy(from);
           // The intro opens ASLEEP ON THE BED, not standing beside it (Godot set_house_start):
           // he lies at bed height, folds upright with a real get-up, then the walk steps him
@@ -317,6 +325,11 @@ export class ScenarioMode {
         this.crystal = gem;
       }
     }
+    // The drawbridge stands raised until the crystal opens it (Godot lower_bridge). The leaf's
+    // shapes are authored at the raised angle, so lowering is rotating the pivot back by it.
+    const leaf = this.world.s.scene.getObjectByName(BRIDGE_LEAF);
+    if (leaf) leaf.rotation.x = getFlag("has_crystal") ? -BRIDGE_RAISED : 0;
+
     if (setName === "archery") {
       this.rings = arrowRings(this.locale.fillTokens(this.locale.resolve(node.proseKey), this.heroId), ARCH_MAX_RADIUS);
       this.fired = 0;
