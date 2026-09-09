@@ -59,7 +59,13 @@ export class OverworldMode {
 
   private renderLegend(): void {
     this.hud.legend(
-      SITES.map((s) => ({ id: s.id, word: this.locale.resolve(s.wordKey), color: SITE_COLORS[s.id] ?? "#888", locked: this.siteLocked(s) })),
+      SITES.map((s) => ({
+        id: s.id,
+        word: this.locale.resolve(s.wordKey),
+        color: SITE_COLORS[s.id] ?? "#888",
+        locked: this.siteLocked(s),
+        done: !!s.doneFlag && getFlag(s.doneFlag),
+      })),
       this.typer?.buffer ?? ""
     );
     this.hud.highlightKey(this.typer?.nextKey() ?? "");

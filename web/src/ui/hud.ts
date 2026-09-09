@@ -13,6 +13,8 @@ export interface LegendItem {
   word: string;
   color: string;
   locked: boolean;
+  /** objective finished -- still open, and still worth practising */
+  done?: boolean;
 }
 
 export class Hud {
@@ -113,7 +115,8 @@ export class Hud {
       .map((it) => {
         const hit = prefix && it.word.startsWith(prefix);
         const word = hit ? `<b>${esc(prefix)}</b>${esc(it.word.slice(prefix.length))}` : esc(it.word);
-        return `<div class="pill ${it.locked ? "locked" : ""} ${hit ? "hit" : ""}" style="--c:${it.color}">${word}${it.locked ? " <small>&#128274;</small>" : ""}</div>`;
+        const mark = it.locked ? ' <small>&#128274;</small>' : it.done ? ' <span class="done-tick">&#10003;</span>' : "";
+        return `<div class="pill ${it.locked ? "locked" : ""} ${it.done ? "done" : ""} ${hit ? "hit" : ""}" style="--c:${it.color}">${word}${mark}</div>`;
       })
       .join("");
   }
