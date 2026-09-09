@@ -59,6 +59,26 @@ const TARGET_SCALE = 8.5;
 /** how far off-centre the shortest sentence lands */
 const ARCH_MAX_RADIUS = 1.0;
 
+/**
+ * Walk a polyline by overall progress 0..1, spending time on each leg in proportion to its
+ * length so the pace stays even however the waypoints are spaced.
+ */
+export function pointOnRoute(points: THREE.Vector3[], p: number): THREE.Vector3 {
+  if (points.length === 0) return new THREE.Vector3();
+  if (points.length === 1) return points[0].clone();
+  const legs = points.slice(1).map((pt, i) => pt.distanceTo(points[i]));
+  const total = legs.reduce((a, b) => a + b, 0);
+  if (total <= 0) return points[points.length - 1].clone();
+  let want = Math.min(Math.max(p, 0), 1) * total;
+  for (let i = 0; i < legs.length; i++) {
+    if (want <= legs[i] || i === legs.length - 1) {
+      return points[i].clone().lerp(points[i + 1], legs[i] > 0 ? Math.min(1, want / legs[i]) : 1);
+    }
+    want -= legs[i];
+  }
+  return points[points.length - 1].clone();
+}
+
 function sceneDefFor(name: string): SceneDef | null {
   return AUTHORED.find((s) => s.name === name)?.def ?? null;
 }
@@ -71,7 +91,12 @@ export class ScenarioMode {
   private picked: { word: string; choice: Choice } | null = null;
   private buffer = "";
   private currentSet = "";
-  private travel: { from: THREE.Vector3; to: THREE.Vector3; dropFrom?: number } | null = null;
+  /**
+   * The hero's route for this beat as a POLYLINE, walked in step with the typing. A straight
+   * from/to could not honour the intro, whose prose sends him past the weapon rack and the key
+   * before the door -- Godot walks the same waypoints (game_controller _house_way).
+   */
+  private travel: { points: THREE.Vector3[]; dropFrom?: number } | null = null;
   /** the cloud bank the caster's book rides on */
   private haze: THREE.Object3D | null = null;
   /** the crystal on the cave floor, so the hero has something to actually pick up */
@@ -209,7 +234,7 @@ export class ScenarioMode {
         if (d.path === PATH_STRAIGHT && (a.pose === "walk" || this.scenarioId === "intro")) {
           const from = this.world.anchor(d.travelFrom);
           const to = this.world.anchor(d.travelTo);
-          this.travel = { from, to };
+          this.travel = { points: [from, to] };
           if (!restage) hero.node.position.copy(from);
           // The intro opens ASLEEP ON THE BED, not standing beside it (Godot set_house_start):
           // he lies at bed height, folds upright with a real get-up, then the walk steps him
@@ -217,7 +242,10 @@ export class ScenarioMode {
           if (!restage && this.scenarioId === "intro" && this.world.hasAnchor("bed_point")) {
             const bed = this.world.anchor("bed_point").clone();
             bed.y = HOUSE_LIE_Y;
-            this.travel = { from: bed, to, dropFrom: HOUSE_LIE_Y };
+            // past the rack and the key on his way out, because that is what the prose says
+            // he does: "loopt naar het rek aan de muur ... aan de andere kant hangt de sleutel"
+            const via = ["sword_point", "key_point"].filter((n) => this.world.hasAnchor(n)).map((n) => this.world.anchor(n));
+            this.travel = { points: [bed, ...via, to], dropFrom: HOUSE_LIE_Y };
             hero.node.position.copy(bed);
             hero.node.rotation.y = Math.PI;
             hero.play("Lie_Idle");
@@ -230,12 +258,12 @@ export class ScenarioMode {
         } else if (item) {
           // home pickup: this beat walks him from where he stands to the item on the wall
           this.pickup = { anchor: item.anchor, flag: item.flag, ranged: item.ranged };
-          this.travel = { from: hero.node.position.clone(), to: this.world.anchor(item.anchor) };
+          this.travel = { points: [hero.node.position.clone(), this.world.anchor(item.anchor)] };
         } else if (!restage) {
           hero.node.position.copy(this.world.anchor(a.anchor));
         }
         if (!this.risingFromBed) {
-          this.faceActor(hero, a.facing, this.travel?.to);
+          this.faceActor(hero, a.facing, this.travel?.points[this.travel.points.length - 1]);
           hero.setMoving(false);
           hero.play(poseClip(a.pose));
         }
@@ -729,7 +757,7 @@ export class ScenarioMode {
     if (this.travel) {
       // he does not set off until he is upright -- the get-up plays out in place on the bed
       const p = this.risingFromBed ? 0 : Math.min(1, this.prose.progress());
-      const pos = this.travel.from.clone().lerp(this.travel.to, p);
+      const pos = pointOnRoute(this.travel.points, p);
       // stepping off the bed: the drop to floor height happens over the first stretch of the
       // walk, so it reads as a step down rather than a slow glide across the room
       if (this.travel.dropFrom !== undefined) {

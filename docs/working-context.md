@@ -1240,3 +1240,32 @@ Regenerate the file with `serializeIslandTs` instead of hand-formatting it.
 
 - NEXT: unchanged from the QA sweep -- no crystal in the cave, the bridge never lowers, the
   skeleton never falls, no smith NPC, the intro walk to the rack, and the mill door.
+
+## QA remediation: crystal, skeleton, mill, intro walk (2026-09-09)
+
+Working the QA sweep's scene/text mismatches. Five of six closed.
+
+- **The cave has a crystal.** `Gem_Large` copied in from the library (its texture was already
+  here), staged on the cave floor beside the skeleton for the `has_crystal` beat, and hidden
+  with a `PickUp` one-shot when the beat is won. The prose promised one for months.
+- **The skeleton falls.** Every NPC in the dungeon plays `Death_A` clamped on `Death_A_Pose`
+  at the win -- Godot's `topple_skeleton`. Verified in-game: it is on the floor at the win.
+- **The mill tells the truth.** The windmill model's door is baked shut, the miller stands
+  outside on the path, and nothing mills or waves, so "maalt het graan tot fijn meel", "bij de
+  open deur" and "zwaait je vrolijk uit" were all inventions. Rewritten to the scene; the tip
+  he gives is the point of the beat and is unchanged. Hash re-signed `fnv1a:d8422584`.
+- **The intro walk happens.** `travel` is now a POLYLINE (`pointOnRoute`), not a straight
+  from/to, so the intro walks bed -> weapon rack -> key -> door, which is the order the prose
+  names them (Godot's `_house_way` waypoints). Time is spent per leg in proportion to LENGTH,
+  so the pace stays even however the anchors are spaced. `route.test.ts` pins that.
+  Verified: at 20% he is at the rack, at 70% at the key, at 100% at the door.
+- **The missing smith is moot** -- the blades rewrite already dropped "roept de smid".
+
+**Not done: the drawbridge never lowers.** `brug.prose` says "de brug ligt naar beneden", and
+Godot lowers a `bridge_leaf` node from an authored raised rotation once the crystal is placed
+(`scene_composer._apply_bridge_lift` also walks the hero over the deck via bridge_near/
+bridge_far). The web fork set has the two anchors but NO bridge model at all -- nothing to
+rotate. This needs a bridge authored into `forest_fork.ts` with a raised angle, the lower
+animation, and the deck-walk, which is a scene-authoring job rather than a code fix.
+
+- NEXT: the drawbridge, above.
