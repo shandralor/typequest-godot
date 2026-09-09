@@ -1292,3 +1292,26 @@ come back quietly.
 
 Lesson for the next time: three's built-in bounds helpers are not automatically right for
 instanced scatters. Measure them.
+
+## The cave frame, and a colour cast that was not real (2026-09-09)
+
+Two follow-ups the owner raised.
+
+**The cave was framed past its own ceiling.** The dungeon set has no roof -- its rubble tops out
+at about y = 7.5 -- and it was using the shared STANDING rig, whose wide 75-degree lens looked
+straight over the top into the empty background. The frame ended on a hard rock silhouette
+against a void, which read as the set being cut off. It now has its own `CAVE` rig (off
+[0, 2.9, 7.6], look [0, 1.15, -1.4], fov 50): the walls fill the shot, and the hero, the
+skeleton and the crystal all read at the size the beat is about. STANDING is shared with other
+sets so it was deliberately left alone.
+
+**The warm/gold cast over the screenshots is NOT in the game.** Chased it properly rather than
+"fixing" it: no CSS filter anywhere, computed styles identical between scenes, and the decisive
+check is that the Terug button -- a fixed `#9c7b56` = (156,123,86) -- samples as (144,120,0)
+in the affected captures and correct in others. A fixed CSS colour cannot change, and the same
+crush appears on the MENU in the same session, so it is the headless capture path, not the
+scene, not the grade and not the lighting. Do not go looking for it in the renderer.
+
+- NEXT: the drawbridge still never lowers (needs a bridge model authored into forest_fork.ts;
+  see the earlier entry). The mill still uses the wide STANDING rig, which QA flagged as framing
+  the hero and the miller at ~60px -- worth the same treatment the cave just got.

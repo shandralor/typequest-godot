@@ -46,6 +46,13 @@ export const WORK_READ: Rig = { off: [0.4, 2.6, 4.4], look: [0.6, 1.15, 1.1], fo
  * so the same aim clipped the hero's legs at the bottom edge.
  */
 export const ARCHERY: Rig = { off: [2.3, 3.0, 6.2], look: [-0.3, 0.45, -7.0], fov: 46 };
+/**
+ * The cave. The dungeon set has no ROOF -- its rubble tops out around y = 7.5 -- and the
+ * standing rig's wide 75-degree lens looked straight past it into the empty background, so the
+ * frame ended on a hard rock silhouette against a void. Lower and much tighter: the cave walls
+ * now fill the shot and the hero and the skeleton read at the size the beat is about.
+ */
+export const CAVE: Rig = { off: [0, 2.9, 7.6], look: [0, 1.15, -1.4], fov: 50 };
 /** every other standing beat */
 export const STANDING: Rig = { off: [0, 4.2, 9.5], look: [0, 1.0, -1.5], fov: 75 };
 
@@ -64,5 +71,6 @@ export function rigFor(set: string, opts: { walking: boolean; win: boolean; land
   if (opts.landmarks) return LANDMARKS;
   if (set === "forge") return opts.win ? WORK_WIN : opts.reading ? WORK_READ : WORK;
   if (set === "archery") return ARCHERY;
+  if (set === "dungeon") return CAVE;
   return STANDING;
 }
