@@ -13,6 +13,7 @@ import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import { N8AOPass } from "n8ao";
 import { expandIsland, islandModels, type IslandDef } from "../world/hexGrid";
 import { buildLight, buildShape } from "./sceneObjects";
+import { assetUrl } from "../assetPath";
 
 // Colour grade on the tonemapped/sRGB image: saturation pop, gentle S-curve, warmth, vignette.
 const GradeShader = {
@@ -113,7 +114,7 @@ export function createIslandScene(canvas: HTMLCanvasElement): IslandScene {
     if (hit) return Promise.resolve(hit);
     let p = pending.get(path);
     if (!p) {
-      p = loader.loadAsync("/assets/" + path).then((gltf) => {
+      p = loader.loadAsync(assetUrl("/assets/" + path)).then((gltf) => {
         const base = gltf.scene;
         base.traverse((o) => {
           const m = o as THREE.Mesh;

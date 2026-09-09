@@ -10,6 +10,7 @@
 // Volumes are linear here rather than Godot's dB: -9 dB ~ 0.35, silence ~ 0.
 
 import { TRACKS } from "./tracks.generated";
+import { assetUrl } from "../assetPath";
 
 const FADE = 1.5; // crossfade seconds
 const MUSIC_VOL = 0.35; // playing volume (music sits under the game)
@@ -114,7 +115,7 @@ export class MusicPlayer {
   private crossfadeTo(src: string, seek = 0): void {
     const incoming = this.active === this.a ? this.b : this.a;
     const outgoing = this.active;
-    incoming.src = src;
+    incoming.src = assetUrl(src);
     incoming.volume = 0;
     incoming.currentTime = 0;
     // play() FIRST: with preload="none" the browser fetches nothing until asked, so waiting on

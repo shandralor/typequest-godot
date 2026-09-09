@@ -5,6 +5,7 @@
 
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { assetUrl } from "../assetPath";
 
 const RIGS = ["kaykit/adventurers/Rig_Medium_General.glb", "kaykit/adventurers/Rig_Medium_MovementBasic.glb"];
 /** the Walking_A clip is authored for roughly this ground speed (world units / s) */
@@ -55,7 +56,7 @@ export class HeroRig {
     const gen = ++this.loadGen;
     this.clearModel();
     const loader = new GLTFLoader();
-    const [hero, ...rigs] = await Promise.all([loader.loadAsync("/assets/" + modelPath), ...RIGS.map((r) => loader.loadAsync("/assets/" + r))]);
+    const [hero, ...rigs] = await Promise.all([loader.loadAsync(assetUrl("/assets/" + modelPath)), ...RIGS.map((r) => loader.loadAsync(assetUrl("/assets/" + r)))]);
     if (gen !== this.loadGen) {
       disposeTree(hero.scene); // a newer load won while this one was in flight
       return;

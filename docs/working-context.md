@@ -917,3 +917,34 @@ comparison named have been closed, so nothing Godot-only remains in band 1.
   re-aims the guidance, and a full `bos` run banked 82 words / 1 avontuur / 9 sterren / 300 XP.
 - NEXT: make the spike canonical (fold `web/` forward, decide what happens to the Godot tree),
   and the deferred perf/optimization pass.
+
+## Godot stashed; the web build is main (2026-09-09)
+
+Owner: "stash godot for now, three js is the main now, keep godot for reference." Done.
+
+- **Branch**: `threejs-spike` fast-forwarded into `main` (no divergence). The pure Godot
+  tree, at its last main tip `41f7fe5`, is preserved on the **`godot-reference`** branch.
+- **Layout**: the whole Godot project moved to `godot/` (audio, axis, content, game, input,
+  logic, render, scenes, tests, tools, ui, project.godot, export_presets.cfg, icon.svg).
+  `assets/` STAYS at the repo root -- it is the shared art + music store, and both trees
+  symlink into it (`godot/assets -> ../assets`, `web/public/assets/kaykit`,
+  `web/public/audio/music`). Do not replace a symlink with a copy.
+  `godot/README.md` marks the tree reference-only and says how to port from it.
+  Godot still runs for reference: `godot --path godot`.
+- **CI rewritten** (`.github/workflows/deploy.yml`): a push to main now builds
+  `web/` (npm ci -> typecheck -> tests -> vite build) and publishes THAT to GitHub Pages.
+  The Godot web export, the Linux export and the rolling AppImage release job are gone.
+- **Pages base path**: Pages serves a project site under `/<repo>/`, but the runtime fetches
+  assets by absolute path. `vite.config.ts` now takes `base` from `TQ_BASE` (CI passes
+  `/<repo>/`), and `web/src/assetPath.ts` -- `assetUrl()` -- is the ONE place that prefixes
+  `import.meta.env.BASE_URL`. Four call sites use it: hero model loads, island scene model
+  loads, music track src, and the finger-legend nail sprites. Dev is unaffected (base "/").
+  Verified: `TQ_BASE=/typequest-godot/ npm run build`, served under that subpath, menu +
+  island + a scenario all load with no 404s.
+- Docs updated: README (layout table + web run instructions), CLAUDE.md (a "where the live
+  code is" section at the top; `godot/` marked reference-only), and the `content-check`
+  skill now points at `web/src/axis/locale/nlBe.ts` + `web/src/content/` and `npx vitest run`.
+- 97 tests pass, typecheck clean.
+- NEXT: the deferred perf/optimization pass; fold the remaining Godot-era prose in
+  `docs/godot-handoff.md` forward (it is still the best behaviour spec, but its paths are
+  now `godot/...`); confirm the Pages deploy is green after the first push.

@@ -4,8 +4,8 @@ description: >-
   Review added or changed TypeQuest game TEXT for contextual sense and consistency before it
   ships. Use this WHENEVER you add, edit, rename, or neutralize any user-facing string -- prose
   (*.prose), narration/win/hint/objective/briefing lines, choice words (word.*), site words
-  (site.*), hero/weapon nouns (hero.* / wapen.*) -- anywhere in axis/locale/nl_be.gd or
-  content/. Trigger it even when the user just says "add this line", "rename the word",
+  (site.*), hero/weapon nouns (hero.* / wapen.*) -- anywhere in web/src/axis/locale/nlBe.ts or
+  web/src/content/. Trigger it even when the user just says "add this line", "rename the word",
   "make the prose neutral", or "translate/adjust the text", not only when they say "review".
   Its whole job is to catch text that does not fit its context -- above all a word being
   GENERALIZED or reused for the wrong thing (the classic bug: "doel" means the target, so it
@@ -24,7 +24,7 @@ types "doel" to fetch a weapon on the next is being taught that a word means two
 erodes exactly what the game teaches. So the first question for every changed word is: **does
 this word already mean something else here?**
 
-Work from the actual change: `git diff -- axis/locale/nl_be.gd content/` (or the specific
+Work from the actual change: `git diff -- web/src/axis/locale/nlBe.ts web/src/content/` (or the specific
 strings the user just wrote). Review only what changed, but cross-check it against the whole
 catalog. Do the checks below, then report using the format at the end.
 
@@ -34,7 +34,7 @@ One word, one referent, across the whole game. Before accepting a new or renamed
 the catalog for that word AND for the concept it names, and confirm you are not overloading a
 word that already has a job.
 
-- `grep -n '"<word>"' axis/locale/nl_be.gd` -- is this word already used, and for what?
+- `grep -n '"<word>"' web/src/axis/locale/nlBe.ts` -- is this word already used, and for what?
 - Read the prose/lines around the existing uses. A word that appears in prose as a THING the
   child reads about (the target: "raakt het doel") cannot also be a word the child TYPES to
   mean something else (a weapon, a place). If it needs a second meaning, pick a different word.
@@ -91,11 +91,11 @@ it needs a neutral phrasing or a per-variant line.
 ## 6. Hash awareness (safety gate A4)
 
 Prose keys (`*.prose`) carry a per-locale FNV-1a safety hash in their arc
-(content/*/…_arc.gd). If you CHANGE a prose string, its hash no longer matches and
-`tests/test_content.gd` fails. That is by design: the fix is to recompute the hash over the
-new resolved template and update the arc -- never to weaken the check. Flag any prose change
+(web/src/content/*/*Arc.ts). If you CHANGE a prose string, its hash no longer matches and
+`web/src/tests/content.test.ts` fails. That is by design: the fix is to recompute the hash over
+the new resolved template and update the arc -- never to weaken the check. Flag any prose change
 that did not update its hash, and point at the arc file. (Read-aloud lines and word./site.
-words are not hashed.) After any change, `bash tests/run.sh` should still pass.
+words are not hashed.) After any change, `cd web && npx vitest run` should still pass.
 
 ## Glossary -- canonical meanings (keep this current)
 
@@ -127,4 +127,4 @@ Content check: <OK> | <N issue(s)>
 
 If everything holds, say so plainly and note what you cross-checked (e.g. "grepped the catalog
 for 'doel'/'wapen'; tokens + register + band OK; hashes updated; tests pass"). If you changed
-prose, remind that the FNV hash needs recomputing and `bash tests/run.sh` should pass.
+prose, remind that the FNV hash needs recomputing and `cd web && npx vitest run` should pass.

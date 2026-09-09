@@ -7,8 +7,10 @@
 // The sprites are white PNGs used as CSS masks, so the tint is the finger colour itself --
 // the same trick Godot's `modulate` plays on a white texture.
 
-const NAIL_FINGER = "/assets/kenney/monster/body_whiteC.png"; // tapered fingertip
-const NAIL_THUMB = "/assets/kenney/monster/body_whiteD.png"; // rounder, for the thumb
+import { assetUrl } from "../assetPath";
+
+const NAIL_FINGER = assetUrl("/assets/kenney/monster/body_whiteC.png"); // tapered fingertip
+const NAIL_THUMB = assetUrl("/assets/kenney/monster/body_whiteD.png"); // rounder, for the thumb
 
 export const NAIL_BOTTOM = 96; // y where the four fingertips bottom-align
 export const THUMB_DROP = 18; // the thumb sits lower than the fingers

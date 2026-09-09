@@ -5,22 +5,36 @@ gamebook. The child reads and **types** unfolding Flemish (Belgian Dutch, AZERTY
 prose to reveal a lightly-navigable 3D story, and types a choice word to pick forks.
 The teaching mechanism is the VOLUME of motivated, real typing -- not drills.
 
-Built with **Godot 4** on CC0 / royalty-free art and music (see credits below).
+Built with **Three.js + TypeScript** on CC0 / royalty-free art and music (see credits
+below).
 
-## Status
+## Layout
 
-Playable proof-of-concept: a hex-island overworld where the knight walks between
-adventures, two short scenarios (a forest quest and a sword-grinding song), an
-on-screen keyboard with finger guidance, a progressive reveal window, scoring, and
-background music. See `docs/godot-handoff.md` for the full implementation guide and
-`docs/working-context.md` for the current state.
+| path | what |
+| --- | --- |
+| `web/` | **the game.** Three.js + TypeScript + Vite. This is where the work happens. |
+| `assets/` | the shared art + music store (both trees read it). |
+| `godot/` | the earlier **Godot 4** implementation, kept for REFERENCE only -- see `godot/README.md`. |
+| `docs/` | the briefs, handoffs, and `working-context.md` (the live state + next step). |
 
 ## Run
 
 ```bash
-godot --path .            # play (Godot 4.7)
-bash tests/run.sh         # headless test suite
+cd web
+npm install
+npm run dev        # play          -> http://localhost:5173/
+npm run editor     # scene editor  -> http://localhost:5173/editor.html   (or ./editor.sh)
+npm run test       # unit tests
+npm run typecheck
 ```
+
+## Status
+
+Playable: a hex-island overworld the hero walks between adventures, five scenarios plus
+a wake-up intro, forks, an on-screen keyboard with per-finger guidance driven by the
+keyboard-layout axis, scoring, cumulative cross-run progress, and streaming music.
+`docs/working-context.md` has the current state; `web/docs/` has the editor blueprint
+and the rendering playbook.
 
 ## Credits
 

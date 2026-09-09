@@ -42,7 +42,11 @@ function editorWriteBack(): Plugin {
   };
 }
 
+// GitHub Pages serves a project site under /<repo>/, so the deployment prefix comes in as
+// TQ_BASE at build time and reaches the runtime as import.meta.env.BASE_URL (see assetPath.ts).
+// Unset (dev, and a domain-root deploy) means "/".
 export default defineConfig({
+  base: process.env.TQ_BASE ?? "/",
   plugins: [editorWriteBack()],
   build: {
     rollupOptions: {
