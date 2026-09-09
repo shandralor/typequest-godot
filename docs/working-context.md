@@ -1120,3 +1120,64 @@ prose promises. 124 tests pass, typecheck clean.
 - NEXT: the two base rig GLBs (1.48 MB, clips only) are still the biggest first-load item.
   Still open from the content check: `grotFight.prose` hardcodes bow/arrow/sword, and
   `site.boog` "oefenplein" is 10 letters against band-1's 9.
+
+## QA sweep: all six classes played end to end (2026-09-09)
+
+Six agents, one per class. Captures were scripted with a throwaway playwright-core harness in
+the scratchpad (each class in its OWN browser process, so they ran in parallel), then a reviewer
+agent read every screenshot against the exact prose for that beat. The brief was the owner's:
+**does what the child is asked to TYPE match what is SHOWN.**
+
+### The one root cause behind every class-fit blocker
+
+`{wapen}` is only ever applied in `intro.prose` and `grotFight.prose`. Six strings hardcode
+"zwaard", so every non-knight is told to type the knight's weapon while standing in front of
+their own: `home.sword_prose`, `home.win_sword`, `word.zwaard` (the word the child TYPES),
+`hint.smidse`, `slijpen.prose` (3x "zwaard" + "het staal") and `slijpen.win`.
+**Inherited, not a port regression** -- `godot/axis/locale/nl_be.gd` has the identical text.
+The models are already correct per class (the tag work landed): the mage walks to a staff, the
+rogue to a dagger, the barbarian to an axe, the ranger to a crossbow, and no sword is in the
+room at all. Art axis right, locale axis wrong.
+
+### Scene/text mismatches confirmed on every class
+
+- intro `"de {held} loopt naar het rek aan de muur"` -- he never walks to the rack; he rises and
+  stays on/next to the bed. (The `thuis` visit DOES walk him to the wall, so the motion exists.)
+- cave `"de {held} rent snel terug naar het licht"` -- he never retreats; on some runs he stands
+  beside the skeleton with his arms raised while the text says he flees in fear.
+- mill: `"hij ziet je bij de open deur"` (the door is shut), `"maalt het graan tot fijn meel"`
+  (no grain, no milling), `"zwaait je vrolijk uit"` (no wave). Camera also frames hero + miller
+  at ~60px in a 1440px shot.
+- `"in de grot rammelt een wit skelet"` -- the model is a dark armoured skeleton warrior with a
+  magenta cloak and glowing yellow eyes. "wit" does not read, and it is scarier than the register.
+- The house's LEFT wall carries a decorative bow + quiver and a wand for every class, plus a
+  crossed-swords crest over the door. Godot hides exactly these (`show_hero_weapon` also hides
+  the standalone bows and the sword+shield); the web port does not, so the intro points the child
+  at "het rek aan de muur" where another class's bow is the most legible object.
+- Still open from the knight run: no crystal model in the cave, the drawbridge never lowers, the
+  skeleton never falls, no smith NPC at the forge, and a fetched weapon never leaves the wall
+  into the hand.
+
+### Reported but NOT defects (checked, do not chase)
+
+- Black capture frames = the `fadeCut` scene transition caught mid-fade by the screenshotter.
+- `"aan de andere kant hangt de sleutel"` is CORRECT: the keyring is at x=-5.4 (left wall) and
+  every weapon-rack variant at x=+5.2..5.9 (right wall). Two reviewers misread it because the
+  decorative bows share the left wall with the key -- which is the bow-decor defect above, not a
+  prose defect.
+- "smidse / oefenplein never opened" in four runs was the capture harness re-picking already
+  played sites, not a game lock; the knight agent reached both.
+
+### Open CONTENT decisions (owner's call, deliberately not changed)
+
+1. The forge song is built around SHARPENING: `"slijp slijp slijp het grote zwaard"`. A staf or
+   a kruisboog cannot be sharpened, so a plain `{wapen}` swap fixes the grammar and breaks the
+   sense. Needs either per-class phrasing or a neutral rewrite of the beat.
+2. `word.zwaard` is one of TWO fetch banners at `thuis` ("zwaard" and "wapen"). For a knight both
+   words mean the same object, and picking "wapen" hands him a bow. Tokenising one without
+   redesigning the pair leaves the ambiguity.
+3. `hero.rogue` = "dief". The reviewer argued it reads to a 6-year-old as the everyday word for a
+   criminal, not a class ("de kleine dief wandelt door het bos"). Every other class names a role.
+   Worth a kid-facing rename.
+
+- NEXT: decide 1-3, then land the `{wapen}` tokenisation with re-signed hashes in one pass.
