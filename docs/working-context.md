@@ -1007,3 +1007,36 @@ scene first needs one of its clips -- cheap now that `hero.ts` has a promise cac
 - NEXT: the lazy rig packs (restores the missing animations without hurting first load); then
   the 1.48 MB of rig GLBs is the biggest remaining first-load item (they are clips only, and
   the game uses a handful of the 25 clips it downloads).
+
+## Lazy rig packs -- the missing animations are back (2026-09-09)
+
+Fixes the porting gap the optimization pass surfaced: Godot grafts FIVE KayKit rig packs, the
+web port loaded two, so four sets of clips resolved to nothing and just silently did not play.
+
+- `web/src/game/hero.ts` -- `EXTRA_RIGS` maps the clips the game uses to the pack that carries
+  them, and `ensureClips(names)` fetches a pack ON DEMAND. `play()` / `playOneShot()` now start
+  that fetch themselves when a clip is missing and play it when it lands (guarded, so a clip
+  that arrives after the player moved on does not pop in). `playOneShot` returns a promise that
+  resolves when the one-shot settles, so a beat can be paced to the animation.
+- `scenarioMode.enterNode` prefetches what the beat can play (the actors' poses, `Cheering` if
+  it can end in a win, the loose in the practice yard, the intro's bed clips) before staging,
+  so the pose is right from the first frame.
+- **Restored:** the win `Cheering` (a LOOP, as in Godot's `play_lead_loop` -- he holds the
+  celebration while the message is up, instead of nothing at all); the forge `Sawing` grind
+  pose (`POSE_CLIPS.work` was standing in with `Idle_A`); the archery `Ranged_Bow_Aiming_Idle`
+  aim and the `Ranged_Bow_Release` loose per sentence; and the intro **wake-up** -- he now
+  starts asleep on the bed at `bed_point` (HOUSE_LIE_Y 1.2, yaw 180), folds upright with
+  `Lie_StandUp`, and only then sets off, dropping to floor height over the first fifth of the
+  prose so it reads as stepping off the bed (Godot `set_house_start` / `house_stand_up`).
+- **First load is unchanged**: the menu still fetches only the two base packs. Simulation
+  arrives with the intro, Tools with the forge, CombatRanged with the practice yard. Loading
+  all five eagerly would have put 3.25 MB of animation on the critical path.
+- `web/src/tests/clips.test.ts` parses the real GLBs off disk and asserts that every clip the
+  source plays exists in a pack the game will actually load. Verified it bites: pointing a pose
+  at an undeclared clip fails the suite. `@types/node` is dev-only and referenced from that
+  test alone, so the app's sources keep a browser-only global scope.
+- 105 tests pass, typecheck clean.
+- NEXT: the 1.48 MB of base rig GLBs is now the biggest first-load item (clips only, and the
+  game plays a handful of the 26 it downloads) -- stripping them to the used clips is the next
+  real win. The per-class ranged variants (`Ranged_Magic_*`, `Ranged_1H_*`) are declared and
+  loadable but nothing selects them yet; wiring weapon class to pose is still open.

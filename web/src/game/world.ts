@@ -85,6 +85,11 @@ export class World {
     return c.divideScalar(anchors.length);
   }
 
+  /** Is this anchor authored in the current set? (asking is not a warning-worthy miss) */
+  hasAnchor(name: string): boolean {
+    return !!this.def?.anchors?.some((x) => x.name === name);
+  }
+
   anchor(name: string): THREE.Vector3 {
     const a = this.def?.anchors?.find((x) => x.name === name);
     if (!a) {

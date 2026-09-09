@@ -14,7 +14,7 @@ import { HOUSE_ITEMS } from "../content/home/homeArc";
 import { AUTHORED } from "../editor/content_index";
 import { resolve as resolveAsset } from "../axis/vocabulary/fantasyPoc";
 import { addStat, getFlag, setFlag, wordCount } from "./flags";
-import { HeroRig } from "./hero";
+import { HeroRig, ensureClips } from "./hero";
 import type { World } from "./world";
 import type { Hud } from "../ui/hud";
 import type { SceneDef } from "../world/sceneDef";
@@ -32,7 +32,13 @@ type Phase = "prose" | "choice" | "win" | "pause";
 /** descriptor.location -> set when the descriptor names no set */
 const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", dungeon: "dungeon", house: "house", forge: "forge", archery_range: "archery", mill: "mill" };
 /** descriptor pose -> looping clip (the shared KayKit vocabulary) */
-const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Idle_A", aim: "Ranged_Bow_Aiming_Idle" };
+// Godot's HERO_WORK / HERO_AIM. Both live in rig packs that load lazily (game/hero.ts), so
+// the pose is prefetched when the scene is staged rather than popping in mid-beat.
+const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Sawing", aim: "Ranged_Bow_Aiming_Idle" };
+/** the intro hero is asleep on the bed at this height, then rises and steps off (HOUSE_LIE_Y) */
+const HOUSE_LIE_Y = 1.2;
+/** he is off the bed and on the floor by this much of the prose (Godot drops over sentence 0) */
+const BED_DROP_END = 0.2;
 const IDLE_AFTER = 0.6; // s without a correct key before the walking hero settles to idle
 /** the hero strolls this long toward the path he picked before the scene cuts */
 const CHOICE_WALK_DUR = 1.4;
@@ -55,7 +61,11 @@ export class ScenarioMode {
   private picked: { word: string; choice: Choice } | null = null;
   private buffer = "";
   private currentSet = "";
-  private travel: { from: THREE.Vector3; to: THREE.Vector3 } | null = null;
+  private travel: { from: THREE.Vector3; to: THREE.Vector3; dropFrom?: number } | null = null;
+  /** the intro get-up is still folding him upright -- hold him on the bed until it settles */
+  private risingFromBed = false;
+  /** bumped on every staged beat, so a slow animation callback from a past beat is ignored */
+  private stageGen = 0;
   private sinceKey = 0;
   private npcs: HeroRig[] = [];
   private scenarioId = "";
@@ -122,6 +132,8 @@ export class ScenarioMode {
   }
 
   private async enterNode(fresh: boolean): Promise<void> {
+    this.stageGen++;
+    this.risingFromBed = false;
     const node = this.run!.current();
     if (!node || !node.scene) return this.resolveEnding();
     // Drop the previous beat's gaze BEFORE any await: staging this scene loads models, and
@@ -143,6 +155,16 @@ export class ScenarioMode {
       await this.world.loadScene(def, d.mood === "dark" ? "dark" : "day");
       this.currentSet = setName;
     }
+    // Pull in any rig pack this beat needs before posing anyone: the poses on stage, the
+    // cheer if this beat can end in a win, and the loose if this is the practice yard. Missing
+    // it is not fatal (the clip just arrives late and plays then), but prefetching means the
+    // hero is already aiming when the child starts typing.
+    const wanted = d.actors.filter((a) => a.asset === "hero").map((a) => POSE_CLIPS[a.pose] ?? "Idle_A");
+    if (node.isEnding()) wanted.push("Cheering");
+    if (setName === "archery") wanted.push("Ranged_Bow_Release");
+    if (this.scenarioId === "intro") wanted.push("Lie_Idle", "Lie_StandUp");
+    await ensureClips(wanted);
+
     // actors
     this.travel = null;
     this.pickup = null;
@@ -155,6 +177,22 @@ export class ScenarioMode {
           const to = this.world.anchor(d.travelTo);
           this.travel = { from, to };
           if (!restage) hero.node.position.copy(from);
+          // The intro opens ASLEEP ON THE BED, not standing beside it (Godot set_house_start):
+          // he lies at bed height, folds upright with a real get-up, then the walk steps him
+          // off onto the floor. The walk starts from the bed, so `from` is replaced here.
+          if (!restage && this.scenarioId === "intro" && this.world.hasAnchor("bed_point")) {
+            const bed = this.world.anchor("bed_point").clone();
+            bed.y = HOUSE_LIE_Y;
+            this.travel = { from: bed, to, dropFrom: HOUSE_LIE_Y };
+            hero.node.position.copy(bed);
+            hero.node.rotation.y = Math.PI;
+            hero.play("Lie_Idle");
+            this.risingFromBed = true;
+            const gen = this.stageGen;
+            void hero.playOneShot("Lie_StandUp", "Idle_A").then(() => {
+              if (gen === this.stageGen) this.risingFromBed = false;
+            });
+          }
         } else if (item) {
           // home pickup: this beat walks him from where he stands to the item on the wall
           this.pickup = { anchor: item.anchor, flag: item.flag };
@@ -162,9 +200,11 @@ export class ScenarioMode {
         } else if (!restage) {
           hero.node.position.copy(this.world.anchor(a.anchor));
         }
-        this.faceActor(hero, a.facing, this.travel?.to);
-        hero.setMoving(false);
-        hero.play(POSE_CLIPS[a.pose] ?? "Idle_A");
+        if (!this.risingFromBed) {
+          this.faceActor(hero, a.facing, this.travel?.to);
+          hero.setMoving(false);
+          hero.play(POSE_CLIPS[a.pose] ?? "Idle_A");
+        }
       } else if (!restage) {
         const npc = new HeroRig();
         const path = resolveAsset(a.asset).replace(/^assets\//, "");
@@ -439,7 +479,9 @@ export class ScenarioMode {
       this.world.hero.playOneShot("PickUp");
       this.pickup = null;
     } else if (node?.ending === "win") {
-      this.world.hero.playOneShot("Cheering");
+      // a LOOPED cheer, like Godot's play_lead_loop -- he holds the celebration while the win
+      // message sits on screen, rather than clapping once and dropping back to idle
+      this.world.hero.play("Cheering");
     }
     if (getFlag("sword_sharp") && getFlag("archery_done")) setFlag("fully_trained");
     const ending = this.run!.resolveEnding();
@@ -487,8 +529,14 @@ export class ScenarioMode {
       this.world.hero.node.rotation.y = this.gazeYaw;
     }
     if (this.travel) {
-      const p = Math.min(1, this.prose.progress());
+      // he does not set off until he is upright -- the get-up plays out in place on the bed
+      const p = this.risingFromBed ? 0 : Math.min(1, this.prose.progress());
       const pos = this.travel.from.clone().lerp(this.travel.to, p);
+      // stepping off the bed: the drop to floor height happens over the first stretch of the
+      // walk, so it reads as a step down rather than a slow glide across the room
+      if (this.travel.dropFrom !== undefined) {
+        pos.y = this.travel.dropFrom * (1 - Math.min(1, p / BED_DROP_END));
+      }
       this.world.hero.node.position.copy(pos);
       this.sinceKey += dt;
       if (this.sinceKey > IDLE_AFTER && this.world.hero.isMoving) this.world.hero.setMoving(false);

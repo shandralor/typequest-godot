@@ -8,7 +8,35 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { assetUrl } from "../assetPath";
 
-const RIGS = ["kaykit/adventurers/Rig_Medium_General.glb", "kaykit/adventurers/Rig_Medium_MovementBasic.glb"];
+// The two packs every scene needs (idle, walk, pickup, throw). They load with the hero.
+export const RIGS = ["kaykit/adventurers/Rig_Medium_General.glb", "kaykit/adventurers/Rig_Medium_MovementBasic.glb"];
+
+/**
+ * The rest of the KayKit clip library, loaded ONLY when a scene first asks for one of its
+ * clips. Godot grafts all five packs up front (godot/render/hero_rig.gd); on the web that
+ * would put 3.25 MB of animation on the critical path just to show the menu, so instead the
+ * pack arrives with the scene that needs it. Same shared Rig_Medium skeleton either way, so
+ * the clips bind by bone name with no retargeting.
+ *
+ * Only the clips the game actually plays are listed -- an unlisted clip simply never triggers
+ * a fetch, which is the safe direction. Add the name here when a scene starts using one.
+ */
+export const EXTRA_RIGS: Record<string, string[]> = {
+  // the win celebration, and the intro's asleep-in-bed + get-up
+  "kaykit/characters/Rig_Medium_Simulation.glb": ["Cheering", "Lie_Idle", "Lie_Down", "Lie_StandUp"],
+  // the forge: a looped horizontal saw, which reads as grinding a blade
+  "kaykit/characters/Rig_Medium_Tools.glb": ["Sawing"],
+  // the practice yard, per weapon class
+  "kaykit/characters/Rig_Medium_CombatRanged.glb": [
+    "Ranged_Bow_Aiming_Idle", "Ranged_Bow_Release",
+    "Ranged_Magic_Spellcasting", "Ranged_Magic_Shoot",
+    "Ranged_1H_Aiming", "Ranged_1H_Shoot",
+  ],
+};
+
+/** clip name -> the extra pack that carries it (built once from the table above) */
+const packForClip = new Map<string, string>();
+for (const [pack, names] of Object.entries(EXTRA_RIGS)) for (const n of names) packForClip.set(n, pack);
 /** the Walking_A clip is authored for roughly this ground speed (world units / s) */
 const WALK_REF_SPEED = 2.4;
 
@@ -39,27 +67,56 @@ function loadGltf(path: string): Promise<THREE.Object3D & { animations?: THREE.A
   return p;
 }
 
-/** The shared animation clips, parsed from the rig GLBs once for the whole app. */
+/**
+ * The clip library, shared by every rig and GROWING as extra packs arrive. One map for the
+ * whole app: a pack fetched for the forge is already there when the practice yard asks.
+ */
+const sharedClips = new Map<string, THREE.AnimationClip>();
 let clipsPromise: Promise<Map<string, THREE.AnimationClip>> | null = null;
+
+function mergeClips(root: { animations?: THREE.AnimationClip[] }): void {
+  for (const c of root.animations ?? []) if (!sharedClips.has(c.name)) sharedClips.set(c.name, c);
+}
+
 function loadClips(): Promise<Map<string, THREE.AnimationClip>> {
   clipsPromise ??= Promise.all(RIGS.map(loadGltf)).then((rigs) => {
-    const m = new Map<string, THREE.AnimationClip>();
-    for (const r of rigs) for (const c of r.animations ?? []) m.set(c.name, c);
-    return m;
+    for (const r of rigs) mergeClips(r);
+    return sharedClips;
   });
   return clipsPromise;
+}
+
+/**
+ * Make sure `names` are playable, fetching whichever extra packs carry them. Safe to call
+ * repeatedly: loadGltf caches per URL, so a second ask for the same pack is the same promise.
+ * Call it when a scene is staged so the clip is ready before the beat needs it.
+ */
+export async function ensureClips(names: string[]): Promise<void> {
+  const packs = new Set<string>();
+  for (const n of names) {
+    if (sharedClips.has(n)) continue;
+    const pack = packForClip.get(n);
+    if (pack) packs.add(pack);
+  }
+  if (packs.size === 0) return;
+  const loaded = await Promise.all([...packs].map((p) => loadGltf(p).catch(() => null)));
+  for (const r of loaded) if (r) mergeClips(r);
 }
 
 export class HeroRig {
   readonly node = new THREE.Group();
   private mixer: THREE.AnimationMixer | null = null;
-  private clips = new Map<string, THREE.AnimationClip>();
+  private clips: Map<string, THREE.AnimationClip> = sharedClips;
   private actions = new Map<string, THREE.AnimationAction>();
   private current: THREE.AnimationAction | null = null;
   private moving = false;
   /** bumped per load; a slow load that resolves after a newer one discards itself */
   private loadGen = 0;
   private loadedPath = "";
+  /** the loop we last asked for -- a clip that arrives late only plays if it is still wanted */
+  private wantedLoop = "";
+  /** resolves when the running one-shot settles, so a caller can pace a beat to the animation */
+  private oneShotDone: Promise<void> = Promise.resolve();
 
   /**
    * Drop the currently-shown model (and everything bound to it) so a reload replaces it.
@@ -109,19 +166,43 @@ export class HeroRig {
     return a;
   }
 
-  /** Cross-fade to a looping clip. */
+  /**
+   * Cross-fade to a looping clip. If the clip lives in a rig pack that has not been fetched
+   * yet, the fetch starts here and the clip plays when it lands -- unless something else was
+   * asked for meanwhile. Silently doing nothing (the old behaviour for an unloaded pack) is
+   * how the win cheer and the archery aim went missing.
+   */
   play(name: string, fade = 0.25): void {
+    this.wantedLoop = name;
     const next = this.action(name);
-    if (!next || next === this.current) return;
+    if (!next) {
+      if (packForClip.has(name)) {
+        void ensureClips([name]).then(() => {
+          if (this.wantedLoop === name) this.play(name, fade);
+        });
+      }
+      return;
+    }
+    if (next === this.current) return;
     next.reset().setLoop(THREE.LoopRepeat, Infinity).setEffectiveWeight(1).play();
     if (this.current) next.crossFadeFrom(this.current, fade, false);
     this.current = next;
   }
 
-  /** Play a one-shot (clamped at its last frame), then settle back to idle. */
-  playOneShot(name: string, then = "Idle_A"): void {
+  /**
+   * Play a one-shot (clamped at its last frame), then settle back to `then`. Returns a promise
+   * that resolves when it has settled, so a caller can pace a beat to the animation rather
+   * than to a guessed duration. Fetches the clip's pack if it is not loaded yet.
+   */
+  playOneShot(name: string, then = "Idle_A"): Promise<void> {
     const a = this.action(name);
-    if (!a) return;
+    if (!a) {
+      if (!packForClip.has(name)) return Promise.resolve();
+      this.oneShotDone = ensureClips([name]).then(() => this.playOneShot(name, then));
+      return this.oneShotDone;
+    }
+    let settled = (): void => void 0;
+    this.oneShotDone = new Promise<void>((res) => (settled = res));
     a.reset().setLoop(THREE.LoopOnce, 1);
     a.clampWhenFinished = true;
     a.play();
@@ -131,8 +212,15 @@ export class HeroRig {
       if (e.action !== a) return;
       this.mixer?.removeEventListener("finished", onDone);
       this.play(then, 0.3);
+      settled();
     };
     this.mixer?.addEventListener("finished", onDone);
+    return this.oneShotDone;
+  }
+
+  /** Resolves when the one-shot in flight has settled (already-resolved when none is). */
+  get oneShotSettled(): Promise<void> {
+    return this.oneShotDone;
   }
 
   /** Walk (with the clip paced to `speed`) or idle. */
