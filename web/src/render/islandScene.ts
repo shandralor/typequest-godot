@@ -290,6 +290,10 @@ export async function buildIslandGroup(
     } else {
       for (const placement of matrices) {
         const wrap = new THREE.Group();
+        // named by MODEL PATH, like the instanced meshes are: a cloned gltf root is called
+        // "Scene", so without this a scene lookup by model silently found nothing and any
+        // code measuring against a prop quietly did nothing at all
+        wrap.name = model;
         wrap.applyMatrix4(placement);
         wrap.add(base.clone(true));
         group.add(wrap);

@@ -26,13 +26,18 @@ export const HOUSE: Rig = { off: [0, 6.1, 11.2], look: [0, 0.2, -2.4], fov: 56, 
 /** a closer hero shot of the knight + the opening chest at the win */
 export const TREASURE: Rig = { off: [0, 2.7, 5.8], look: [0, 0.9, -2.4], fov: 75 };
 /** a near front view of the knight grinding the sword on the wheel in front */
-export const WORK: Rig = { off: [0.5, 1.9, 4.0], look: [0.55, 0.95, 1.2], fov: 75 };
+/**
+ * The grinding beat. Raised and narrowed from the ported Godot value (off y 1.9, fov 75): that
+ * framing sat level with the grinding wheel, which then occluded the hero from the chin down
+ * and hid the very weapon the song is about. QA caught it on three separate classes.
+ */
+export const WORK: Rig = { off: [0.5, 2.45, 4.25], look: [0.6, 1.05, 1.15], fov: 66 };
 /** same angle at the win, raised a touch; tighter fov crops the smithy's open edge */
 export const WORK_WIN: Rig = { off: [0.3, 2.1, 4.0], look: [0.3, 1.3, 0.6], fov: 46 };
 /**
- * The caster's forge beat has no grinding wheel to look over -- a low reading desk instead --
- * so the WORK framing (tight and low, pitched at the wheel) buried the hero behind the bench.
- * Higher and a touch further back, looking down at the book.
+ * The forge beats that have no grinding wheel to look over -- the caster's floating spellbook
+ * and the ranger's workbench. The WORK framing is tight and low and pitched at the wheel, so
+ * with the wheel gone it buried the hero behind the bench. Higher and a touch further back.
  */
 export const WORK_READ: Rig = { off: [0.4, 2.6, 4.4], look: [0.6, 1.15, 1.1], fov: 62 };
 /**

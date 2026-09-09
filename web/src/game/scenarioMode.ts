@@ -39,6 +39,8 @@ const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", 
 // `aim` is a PLACEHOLDER: the practice yard overrides it per hero class, so a mage casts and a
 // barbarian stands ready to throw instead of everyone miming a bowstring (characters.RANGED).
 const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Sawing", aim: "Ranged_Bow_Aiming_Idle" };
+/** the weapon on the grinding wheel is scaled to this length, so every blade reads the same */
+const BLADE_LEN = 1.15;
 /** how high the caster's spellbook hangs, and how far it drifts up and down while it hangs */
 const BOOK_HEIGHT = 1.02;
 const BOOK_BOB = 0.06;
@@ -275,7 +277,9 @@ export class ScenarioMode {
     }
     // framing follows the scene type, exactly as the Godot rig does
     const landmarks = !!def0?.anchors?.some((a) => a.name === "bridge_near") && !this.travel;
-    const reading = setName === "forge" && weaponGroupFor(this.heroId) === "caster";
+    // only blades work over the grinding wheel; the others need the framing that is not
+    // pitched down at one
+    const reading = setName === "forge" && weaponGroupFor(this.heroId) !== "blades";
     this.world.useRig(rigFor(setName, { walking: !!this.travel, win: false, landmarks, reading }), fresh || !restage);
     // the gaze owns a STANDING lead's yaw: at the fork he looks ahead, then at the cave when the
     // prose says "links", then at the bridge at "rechts" (walking beats keep their travel facing)
@@ -380,6 +384,7 @@ export class ScenarioMode {
     const base = await this.world.s.loadModel(path).catch(() => null);
     if (!base) return;
     const obj = base.clone(true);
+    obj.name = assetId; // findable later (a cloned gltf root is otherwise called "Scene")
     // A ranged weapon is really HELD -- it hangs off the class's hand bone so the aim and
     // release animations carry it (KayKit grips are handslot.l / handslot.r).
     if (anchor === "hand") {
@@ -399,11 +404,30 @@ export class ScenarioMode {
     obj.position.copy(this.world.anchor(anchor === "hand" ? "center" : anchor));
     obj.position.y += 0.95;
     if (assetId === "sword" || assetId === "axe" || assetId === "dagger") {
+      // canted against the wheel rather than standing upright, and seated on the MEASURED top
+      // of it -- at a guessed height the blade sank into the stone and vanished from the shot
       obj.rotation.set(0, 0.25, -1.15);
       obj.position.x -= 0.15;
+      // and forward onto the NEAR face of the wheel: sat at the wheel's own centre the blade
+      // was buried inside the stone and never appeared in the shot at all
+      // Normalise the SIZE too: sword, axe and dagger are authored at wildly different scales,
+      // and axe_C at its native size covered the hero's head. Scale so the longest edge is
+      // BLADE_LEN whatever the model, then seat it on the measured wheel.
+      const box = new THREE.Box3().setFromObject(obj);
+      const longest = Math.max(...box.getSize(new THREE.Vector3()).toArray());
+      if (longest > 0) obj.scale.setScalar(BLADE_LEN / longest);
+      const wheel = this.world.s.scene.getObjectByName("kaykit/rpgtools_bits/grindstone.gltf");
+      if (wheel) {
+        obj.position.y = new THREE.Box3().setFromObject(wheel).max.y - 0.22;
+        obj.position.z += 0.45;
+      }
     } else if (assetId === "arrows") {
-      obj.rotation.set(-Math.PI / 2, 0, Math.PI); // a bundle lying by the workbench, not propped
-      obj.scale.setScalar(1.2);
+      // a bundle LYING on the workbench. The height is measured off the bench, not guessed:
+      // never trust a model's origin (docs/woc-playbook.md).
+      obj.rotation.set(-Math.PI / 2, 0, Math.PI);
+      obj.scale.setScalar(1.3);
+      const bench = this.world.s.scene.getObjectByName("kaykit/dungeon/table_medium.gltf");
+      if (bench) obj.position.y = new THREE.Box3().setFromObject(bench).max.y + 0.02;
     } else {
       obj.rotation.set(0, 0, -0.45);
     }

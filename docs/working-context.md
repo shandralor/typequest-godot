@@ -1208,3 +1208,35 @@ sword on the wheel, sparks, and "slijp slijp slijp je zwaard scherp".
   the old grind_point and keeps the WORK camera). The remaining scene/text gaps from the QA
   sweep are unchanged: no crystal in the cave, the bridge never lowers, the skeleton never
   falls, no smith NPC, the intro walk to the rack, and the mill door.
+
+## Forge pass over all six classes (2026-09-09)
+
+Iterated every hero through the smidse and looked at each one.
+
+- **The ranger fletches at a WORKBENCH.** The grindstone is now tagged `forge_blades` alone;
+  `table_medium` is tagged `forge_ranged`, and the arrow bundle sits on its measured top. A
+  grinding wheel was no use for making arrows.
+- **The grinding camera was wrong for everyone.** The ported Godot WORK rig (off y 1.9, fov 75)
+  sat level with the wheel, which occluded the hero from the chin down and hid the very weapon
+  the song is about -- QA had flagged this on three separate classes. Raised and narrowed to
+  off y 2.45 / fov 66. `WORK_READ` covers both wheel-less beats (caster and ranger).
+- **Blades are size-normalised.** sword, axe and dagger are authored at wildly different scales
+  and `axe_C` at native size covered the hero's head, so the weapon is scaled to a fixed
+  BLADE_LEN by measurement and seated on the measured top of the wheel, pushed to its near face.
+
+**The bug under all of it:** `getObjectByName("<model path>")` never matched anything. Instanced
+meshes carry the model path as their name, but a SINGLE-placement prop is a cloned gltf root
+called "Scene", so every measurement lookup silently returned undefined and quietly did nothing
+-- which is why the book and the blade both needed hand-tuned magic numbers earlier. Cloned
+wrappers are now named by model path, and staged props by their vocabulary id, so measuring
+against a prop actually works. Prefer measuring over guessing here; the models disagree wildly.
+
+Verified per class: knight/zwaard, barbaar/bijl, verkenner/dolk all grind with their own weapon
+legible on the wheel; jager/kruisboog fletches at the bench with arrows on it; magier and heks
+read from the floating spellbook with no grindstone in the set.
+
+Note: editing an authored scene by hand breaks `scenes.test.ts` ("serialises byte-identically").
+Regenerate the file with `serializeIslandTs` instead of hand-formatting it.
+
+- NEXT: unchanged from the QA sweep -- no crystal in the cave, the bridge never lowers, the
+  skeleton never falls, no smith NPC, the intro walk to the rack, and the mill door.
