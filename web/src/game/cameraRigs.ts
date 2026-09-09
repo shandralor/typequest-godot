@@ -30,6 +30,12 @@ export const WORK: Rig = { off: [0.5, 1.9, 4.0], look: [0.55, 0.95, 1.2], fov: 7
 /** same angle at the win, raised a touch; tighter fov crops the smithy's open edge */
 export const WORK_WIN: Rig = { off: [0.3, 2.1, 4.0], look: [0.3, 1.3, 0.6], fov: 46 };
 /**
+ * The caster's forge beat has no grinding wheel to look over -- a low reading desk instead --
+ * so the WORK framing (tight and low, pitched at the wheel) buried the hero behind the bench.
+ * Higher and a touch further back, looking down at the book.
+ */
+export const WORK_READ: Rig = { off: [0.4, 2.6, 4.4], look: [0.6, 1.15, 1.1], fov: 62 };
+/**
  * Over-the-shoulder down the lane: hero in the foreground, target ahead. The look sits lower
  * than Godot's (1.2) because the web stage is a wider, shallower strip than Godot's 1920x680,
  * so the same aim clipped the hero's legs at the bottom edge.
@@ -47,11 +53,11 @@ export const OW_IDLE_BIAS = 5.0;
 export const OW_TRAVEL_ZOOM = 0.62;
 
 /** Pick the rig for a staged scene. `set` is the SceneDef name; `phase` distinguishes the win. */
-export function rigFor(set: string, opts: { walking: boolean; win: boolean; landmarks: boolean }): Rig {
+export function rigFor(set: string, opts: { walking: boolean; win: boolean; landmarks: boolean; reading?: boolean }): Rig {
   if (set === "house") return HOUSE;
   if (opts.walking) return WALKING;
   if (opts.landmarks) return LANDMARKS;
-  if (set === "forge") return opts.win ? WORK_WIN : WORK;
+  if (set === "forge") return opts.win ? WORK_WIN : opts.reading ? WORK_READ : WORK;
   if (set === "archery") return ARCHERY;
   return STANDING;
 }

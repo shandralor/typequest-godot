@@ -39,6 +39,9 @@ const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", 
 // `aim` is a PLACEHOLDER: the practice yard overrides it per hero class, so a mage casts and a
 // barbarian stands ready to throw instead of everyone miming a bowstring (characters.RANGED).
 const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Sawing", aim: "Ranged_Bow_Aiming_Idle" };
+/** how high the caster's spellbook hangs, and how far it drifts up and down while it hangs */
+const BOOK_HEIGHT = 1.02;
+const BOOK_BOB = 0.06;
 /** the intro hero is asleep on the bed at this height, then rises and steps off (HOUSE_LIE_Y) */
 const HOUSE_LIE_Y = 1.2;
 /** he is off the bed and on the floor by this much of the prose (Godot drops over sentence 0) */
@@ -65,6 +68,9 @@ export class ScenarioMode {
   private buffer = "";
   private currentSet = "";
   private travel: { from: THREE.Vector3; to: THREE.Vector3; dropFrom?: number } | null = null;
+  /** the caster's spellbook, hanging in mid-air and bobbing while the spell is read */
+  private book: THREE.Object3D | null = null;
+  private bookT = 0;
   /** the intro get-up is still folding him upright -- hold him on the bed until it settles */
   private risingFromBed = false;
   /** bumped on every staged beat, so a slow animation callback from a past beat is ignored */
@@ -118,6 +124,7 @@ export class ScenarioMode {
   }
 
   private clearEffects(): void {
+    this.book = null;
     if (this.sparks) {
       this.world.s.scene.remove(this.sparks.group);
       this.sparks.dispose();
@@ -161,7 +168,10 @@ export class ScenarioMode {
       }
       this.clearNpcs();
       // the chosen hero's weapon is the one that hangs on the house rack (Godot show_hero_weapon)
-      await this.world.loadScene(def, d.mood === "dark" ? "dark" : "day", new Set([`weapon_${this.heroId}`]));
+      // the set is dressed for this hero: their weapon on the house rack, and at the forge the
+      // grinding wheel or the reading desk depending on what their beat is about
+      await this.world.loadScene(def, d.mood === "dark" ? "dark" : "day",
+        new Set([`weapon_${this.heroId}`, `forge_${weaponGroupFor(this.heroId)}`]));
       this.currentSet = setName;
     }
     // Pull in any rig pack this beat needs before posing anyone: the poses on stage, the
@@ -246,6 +256,9 @@ export class ScenarioMode {
       // here, like the archery target.
       const group = weaponGroupFor(this.heroId);
       await this.stageProp(WORK_PROPS[group] || meleeFor(this.heroId), "grind_point");
+      // A caster's book is not put down anywhere -- it HANGS in the air in front of her,
+      // tilted so the open pages face the child, with the spell guttering underneath it.
+      if (group === "caster") this.floatBook();
     }
     if (setName === "forge" && weaponGroupFor(this.heroId) === "blades") {
       // the shower sits on the wheel in front of him and heats up as the song is typed --
@@ -262,7 +275,8 @@ export class ScenarioMode {
     }
     // framing follows the scene type, exactly as the Godot rig does
     const landmarks = !!def0?.anchors?.some((a) => a.name === "bridge_near") && !this.travel;
-    this.world.useRig(rigFor(setName, { walking: !!this.travel, win: false, landmarks }), fresh || !restage);
+    const reading = setName === "forge" && weaponGroupFor(this.heroId) === "caster";
+    this.world.useRig(rigFor(setName, { walking: !!this.travel, win: false, landmarks, reading }), fresh || !restage);
     // the gaze owns a STANDING lead's yaw: at the fork he looks ahead, then at the cave when the
     // prose says "links", then at the bridge at "rechts" (walking beats keep their travel facing)
     const anchorAt = (n: string): { x: number; z: number } | undefined => {
@@ -330,6 +344,27 @@ export class ScenarioMode {
   }
 
   /** Put a vocabulary prop at an anchor (or in the hero's hands for "hand"). */
+  /**
+   * Hang the caster's spellbook in the air in front of her, tilted toward the child so the open
+   * pages read, with the spell sparking underneath. The book is the LAST staged prop, so it is
+   * lifted off the ground here rather than in stageProp, which places things on the floor.
+   */
+  private floatBook(): void {
+    const book = this.stagedProps[this.stagedProps.length - 1];
+    if (!book) return;
+    const at = this.world.anchor("grind_point");
+    // toward the camera as well as up: at head height and flush with her it masked her face
+    book.position.set(at.x, at.y + BOOK_HEIGHT, at.z + 0.35);
+    // upright pages, then tipped back 45 degrees so they face the camera like a lectern
+    book.rotation.set(-Math.PI / 4, Math.PI, 0);
+    book.scale.setScalar(0.8);
+    this.book = book;
+    this.bookT = 0;
+    // the same spark shower the grindstone throws, guttering under the book instead
+    this.sparks = new Sparks(new THREE.Vector3(at.x, at.y + BOOK_HEIGHT - 0.45, at.z));
+    this.world.s.scene.add(this.sparks.group);
+  }
+
   /** Which model flies to the target for this class ("" when it is the code-built magic orb). */
   private projectileModel(): string {
     if (!this.ranged) return "";
@@ -366,6 +401,9 @@ export class ScenarioMode {
     if (assetId === "sword" || assetId === "axe" || assetId === "dagger") {
       obj.rotation.set(0, 0.25, -1.15);
       obj.position.x -= 0.15;
+    } else if (assetId === "arrows") {
+      obj.rotation.set(-Math.PI / 2, 0, Math.PI); // a bundle lying by the workbench, not propped
+      obj.scale.setScalar(1.2);
     } else {
       obj.rotation.set(0, 0, -0.45);
     }
@@ -579,6 +617,11 @@ export class ScenarioMode {
       }
       for (const n of this.npcs) n.update(dt);
       return;
+    }
+    if (this.book) {
+      this.bookT += dt;
+      this.book.position.y = this.world.anchor("grind_point").y + BOOK_HEIGHT + Math.sin(this.bookT * 1.6) * BOOK_BOB;
+      this.book.rotation.y = Math.PI + Math.sin(this.bookT * 0.7) * 0.06;
     }
     if (this.sparks) {
       this.sparks.emitting = this.phase === "prose";

@@ -1181,3 +1181,30 @@ room at all. Art axis right, locale axis wrong.
    Worth a kid-facing rename.
 
 - NEXT: decide 1-3, then land the `{wapen}` tokenisation with re-signed hashes in one pass.
+
+## The caster's forge beat: a floating spellbook (2026-09-09)
+
+Follow-up to the three-group forge. The caster beat still played on the grinding set, so a
+witch "read a spellbook" behind a grindstone wheel that filled the frame -- the same
+text-does-not-match-picture defect the whole pass is about.
+
+- The grindstone is TAGGED `forge_blades` / `forge_ranged`, so it is simply absent for a
+  caster. This reuses the prop-variant mechanism built for the house weapon rack: the mode
+  passes `forge_<group>` alongside `weapon_<heroId>` as the active tags.
+- A pedestal was tried and dropped in favour of the owner's better idea: the book HANGS in the
+  air in front of her, tipped 45 degrees so the open pages face the child, bobbing gently, with
+  the forge's spark shower guttering underneath it as the spell is read.
+  `scenarioMode.floatBook()` + `BOOK_HEIGHT` / `BOOK_BOB`.
+- `WORK_READ` in cameraRigs frames it: the WORK rig sits low and pitched at the wheel, which
+  buried the hero behind the bench once the wheel was gone.
+- Sizing took two passes and both were caught by LOOKING, not by tests: scaled 1.9 the book was
+  a magenta wall, and at head height it masked her face. It now sits at chest height, pushed
+  0.35 toward the camera, at 0.8 scale.
+
+Blades regression-checked in the same build: knight still gets `Sawing`, the grindstone, his
+sword on the wheel, sparks, and "slijp slijp slijp je zwaard scherp".
+
+- NEXT: the ranger's fletching beat has had no visual pass yet (it stages an arrow bundle on
+  the old grind_point and keeps the WORK camera). The remaining scene/text gaps from the QA
+  sweep are unchanged: no crystal in the cave, the bridge never lowers, the skeleton never
+  falls, no smith NPC, the intro walk to the rack, and the mill door.
