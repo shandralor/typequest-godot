@@ -11,6 +11,7 @@ import { takeEditorIsland } from "./world/editorHandoff";
 import { World } from "./game/world";
 import { Hud } from "./ui/hud";
 import { Menu, stepHero } from "./ui/menu";
+import { MusicPlayer } from "./audio/musicPlayer";
 import { OverworldMode } from "./game/overworldMode";
 import { ScenarioMode } from "./game/scenarioMode";
 import { getChoice, setChoice, getFlag, setFlag, resetProgress } from "./game/flags";
@@ -33,11 +34,13 @@ async function main(): Promise<void> {
   const world = new World(canvas, document.getElementById("fade")!);
   const hud = new Hud();
   const menu = new Menu();
+  const music = new MusicPlayer();
   const backBtn = document.getElementById("back") as HTMLButtonElement;
 
   let state: State = "menu";
   /** bumped on every state entry; async continuations bail when they are no longer current */
   let stateGen = 0;
+  let muted = false;
   const enterState = (s: State): number => {
     state = s;
     return ++stateGen;
@@ -67,6 +70,7 @@ async function main(): Promise<void> {
   // --- MENU: the island as a backdrop, pulled back so the title floats above it ---
   async function showMenu(): Promise<void> {
     const gen = enterState("menu");
+    music.playContext("menu");
     scenario?.exit();
     scenario = null;
     clearUi();
@@ -97,6 +101,7 @@ async function main(): Promise<void> {
   // --- PICKER: a turntable of the roster; arrows cycle, Enter chooses ---
   function showPicker(after: () => void): void {
     enterState("picker");
+    music.playContext("menu");
     pickerAfter = after;
     clearUi();
     pickerIndex = Math.max(0, Characters.ALL.findIndex((c) => c.id === heroId));
@@ -130,6 +135,7 @@ async function main(): Promise<void> {
   // --- ISLAND / SCENARIO ---
   async function enterIsland(at: string): Promise<void> {
     const gen = enterState("island");
+    music.playContext("overworld");
     scenario?.exit();
     scenario = null;
     clearUi();
@@ -141,6 +147,7 @@ async function main(): Promise<void> {
 
   async function startScenario(id: string): Promise<void> {
     enterState("scenario");
+    music.playContext("adventure");
     clearUi();
     hud.keyboard(true);
     hud.score(0, 0);
@@ -172,8 +179,21 @@ async function main(): Promise<void> {
     await showMenu();
   }
 
+  // browsers refuse to play audio before the user interacts, so the first key or click starts
+  // whichever context is already pending
+  const unlockMusic = (): void => music.unlock();
+  window.addEventListener("keydown", unlockMusic, { once: true });
+  window.addEventListener("pointerdown", unlockMusic, { once: true });
+
   window.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "m" && !e.repeat) {
+      muted = !muted;
+      music.setMuted(muted);
+      hud.message(muted ? "Muziek uit (m)" : "Muziek aan (m)");
+      window.setTimeout(() => hud.message(""), 1400);
+      return;
+    }
     if (state === "picker") {
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         e.preventDefault();
@@ -247,6 +267,7 @@ async function main(): Promise<void> {
     camInfo: () => ({ fov: world.s.camera.fov, pos: world.s.camera.position.toArray().map((n: number) => +n.toFixed(2)) }),
   };
   w.__THREE = THREE;
+  w.__music = music;
   w.__pause = () => world.s.renderer.setAnimationLoop(null);
   w.__resume = () => world.s.renderer.setAnimationLoop(tick);
 }
