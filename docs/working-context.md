@@ -1040,3 +1040,49 @@ web port loaded two, so four sets of clips resolved to nothing and just silently
   game plays a handful of the 26 it downloads) -- stripping them to the used clips is the next
   real win. The per-class ranged variants (`Ranged_Magic_*`, `Ranged_1H_*`) are declared and
   loadable but nothing selects them yet; wiring weapon class to pose is still open.
+
+## Per-class ranged variants + a content check on the practice yard (2026-09-09)
+
+The `characters.RANGED` table was already ported but nothing read it, so every class mimed a
+bowstring at the oefenplein. Now wired (Godot C-mini):
+
+| class | weapon (hand) | aim | fire | flies |
+| --- | --- | --- | --- | --- |
+| knight | bow (left) | Ranged_Bow_Aiming_Idle | Ranged_Bow_Release | arrow |
+| ranger | crossbow (right) | Ranged_1H_Aiming | Ranged_1H_Shoot | bolt |
+| mage / witch | wand (right) | Ranged_Magic_Spellcasting | Ranged_Magic_Shoot | a code-built glowing orb |
+| barbarian / rogue | axe / dagger (right) | Idle_A | Throw | the weapon itself, tumbling |
+
+- `scenarioMode` resolves the loadout when the archery set is staged, prefetches its two clips
+  (they live in the lazily-loaded CombatRanged pack), swaps the descriptor's authored "bow in
+  hand" for the class's weapon and grip, and looses the class's `fire` clip per sentence.
+  `effects.magicBolt()` is the wand's projectile; `Arrow` gained a `spin` option for the
+  tumbling axe/dagger.
+- **Godot's `spin` flag is deliberately NOT applied.** It compensates for how Godot's
+  BoneAttachment3D orients a child, which is not how three.js orients a bone child -- porting
+  it on faith flipped the knight's already-approved bow. Correct a grip only after looking.
+- All four styles verified in the browser (witch shares the mage row, rogue the barbarian one),
+  and the knight's staging is byte-for-byte the look that was already signed off.
+
+**Content check on the practice-yard text -- 1 issue, fixed.** `boog.prose` read "het schot
+vliegt snel recht door de lucht", and "schot" is a SHOT: true for the bow, crossbow and wand,
+wrong for the barbarian and rogue who THROW. Now "het vliegt snel en recht door de lucht",
+which is true for all six. That is a deliberate authored change, so the A4 hash was re-signed
+as the sign-off: `fnv1a:15ae56be` -> `fnv1a:2cb6ed08` in `archery/archeryArc.ts`.
+Cross-checked clean: `boog.narration` / `boog.win` / `hint.boog` / `word.boog` / `site.boog`
+are all weapon-neutral; "doel" still means only the target and "wapen" only the ranged weapon;
+`{held}` everywhere with no hardcoded class and no gendered pronoun; band-1 holds (<= 10 words
+a sentence, <= 9 letters a word, lowercase a-z + space + period, AZERTY with no Shift).
+
+**The safety gate was only covering one arc of six.** `content.test.ts` validated band-1 alone,
+so the approved hashes on grind, archery, home, mill and intro were never checked. It now loops
+`scenarios.LIST`, so a new scenario is covered the day it is added. All six pass.
+
+**Flagged, NOT changed (outside this scope, owner's call):**
+- `grotFight.prose` hardcodes "spant de sterke boog", "een pijl" and "trekt het scherpe zwaard".
+  That mislabels every non-knight -- a heks does not span a bow or draw a sword. Needs the same
+  neutralising treatment plus a re-signed hash.
+- `site.boog` = "oefenplein" is 10 letters against band-1's `maxWordLen` 9. Site words are typed
+  by the child but are not run through the validator, so nothing catches it.
+- 110 tests pass, typecheck clean.
+- NEXT: the two base rig GLBs (1.48 MB, clips only) are still the biggest first-load item.

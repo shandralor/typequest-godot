@@ -16,6 +16,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RIGS, EXTRA_RIGS } from "../game/hero";
+import { RANGED } from "../content/characters";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -51,6 +52,11 @@ function clipsPlayedInSource(): string[] {
     // the pose table: { idle: "Idle_A", work: "Sawing", ... }
     const poses = src.match(/POSE_CLIPS[^=]*=\s*\{([^}]*)\}/);
     if (poses) for (const q of poses[1].matchAll(/"([^"]+)"/g)) names.add(q[1]);
+  }
+  // the per-class ranged loadouts name their clips in DATA, not in a play("...") call
+  for (const kit of Object.values(RANGED)) {
+    names.add(kit.aim);
+    names.add(kit.fire);
   }
   return [...names];
 }

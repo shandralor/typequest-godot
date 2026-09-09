@@ -13,6 +13,7 @@ import { build as buildScenario } from "../content/scenarios";
 import { HOUSE_ITEMS } from "../content/home/homeArc";
 import { AUTHORED } from "../editor/content_index";
 import { resolve as resolveAsset } from "../axis/vocabulary/fantasyPoc";
+import { rangedFor, type RangedLoadout } from "../content/characters";
 import { addStat, getFlag, setFlag, wordCount } from "./flags";
 import { HeroRig, ensureClips } from "./hero";
 import type { World } from "./world";
@@ -20,7 +21,7 @@ import type { Hud } from "../ui/hud";
 import type { SceneDef } from "../world/sceneDef";
 import { rigFor } from "./cameraRigs";
 import { buildShape } from "../render/sceneObjects";
-import { Sparks, Arrow, arrowRings } from "../render/effects";
+import { Sparks, Arrow, arrowRings, magicBolt } from "../render/effects";
 import { setupGaze, targetYaw, lerpAngle, type GazeState, type GazeTargets } from "./gaze";
 
 export interface Locale {
@@ -34,6 +35,8 @@ const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", 
 /** descriptor pose -> looping clip (the shared KayKit vocabulary) */
 // Godot's HERO_WORK / HERO_AIM. Both live in rig packs that load lazily (game/hero.ts), so
 // the pose is prefetched when the scene is staged rather than popping in mid-beat.
+// `aim` is a PLACEHOLDER: the practice yard overrides it per hero class, so a mage casts and a
+// barbarian stands ready to throw instead of everyone miming a bowstring (characters.RANGED).
 const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Sawing", aim: "Ranged_Bow_Aiming_Idle" };
 /** the intro hero is asleep on the bed at this height, then rises and steps off (HOUSE_LIE_Y) */
 const HOUSE_LIE_Y = 1.2;
@@ -45,8 +48,7 @@ const CHOICE_WALK_DUR = 1.4;
 /** The archery target is not in the set -- Godot builds it in code at the "target" anchor. */
 const TARGET_MODEL = "kaykit/hexagon/target.gltf";
 const TARGET_SCALE = 8.5;
-/** the vocabulary arrow model, and how far off-centre the shortest sentence lands */
-const ARROW_MODEL = "kaykit/adventurers/arrow_bow.gltf";
+/** how far off-centre the shortest sentence lands */
 const ARCH_MAX_RADIUS = 1.0;
 
 function sceneDefFor(name: string): SceneDef | null {
@@ -84,6 +86,8 @@ export class ScenarioMode {
   private targetFace = new THREE.Vector3();
   private stagedProps: THREE.Object3D[] = [];
   private heldProps: THREE.Object3D[] = [];
+  /** the chosen hero's ranged loadout, while the practice-yard set is up (C-mini) */
+  private ranged: RangedLoadout | null = null;
 
   constructor(
     private readonly world: World,
@@ -159,9 +163,13 @@ export class ScenarioMode {
     // cheer if this beat can end in a win, and the loose if this is the practice yard. Missing
     // it is not fatal (the clip just arrives late and plays then), but prefetching means the
     // hero is already aiming when the child starts typing.
-    const wanted = d.actors.filter((a) => a.asset === "hero").map((a) => POSE_CLIPS[a.pose] ?? "Idle_A");
+    // the practice yard arms the hero per class, which decides both his pose and his clips
+    this.ranged = setName === "archery" ? rangedFor(this.heroId) : null;
+    const wanted = d.actors
+      .filter((a) => a.asset === "hero")
+      .map((a) => (a.pose === "aim" && this.ranged ? this.ranged.aim : POSE_CLIPS[a.pose] ?? "Idle_A"));
     if (node.isEnding()) wanted.push("Cheering");
-    if (setName === "archery") wanted.push("Ranged_Bow_Release");
+    if (this.ranged) wanted.push(this.ranged.aim, this.ranged.fire);
     if (this.scenarioId === "intro") wanted.push("Lie_Idle", "Lie_StandUp");
     await ensureClips(wanted);
 
@@ -203,7 +211,7 @@ export class ScenarioMode {
         if (!this.risingFromBed) {
           this.faceActor(hero, a.facing, this.travel?.to);
           hero.setMoving(false);
-          hero.play(POSE_CLIPS[a.pose] ?? "Idle_A");
+          hero.play(a.pose === "aim" && this.ranged ? this.ranged.aim : POSE_CLIPS[a.pose] ?? "Idle_A");
         }
       } else if (!restage) {
         const npc = new HeroRig();
@@ -216,7 +224,15 @@ export class ScenarioMode {
       }
     }
     // held / staged props (the sword on the grindstone, the bow in hand)
-    if (!restage) for (const p of d.props) await this.stageProp(p.asset, p.anchor);
+    // The descriptor authors "bow in hand" because that is the knight's kit; every other class
+    // brings its own (a crossbow, a wand, a thrown axe or dagger), so the practice yard swaps
+    // the asset AND the grip here rather than making the content carry six variants.
+    if (!restage) {
+      for (const p of d.props) {
+        const held = p.anchor === "hand" && this.ranged;
+        await this.stageProp(held ? this.ranged!.weapon : p.asset, p.anchor, held ? this.ranged! : null);
+      }
+    }
     if (!restage && setName === "archery") await this.buildArcheryTarget();
     if (setName === "forge") {
       // the shower sits on the wheel in front of him and heats up as the song is typed
@@ -227,7 +243,8 @@ export class ScenarioMode {
     if (setName === "archery") {
       this.rings = arrowRings(this.locale.fillTokens(this.locale.resolve(node.proseKey), this.heroId), ARCH_MAX_RADIUS);
       this.fired = 0;
-      await this.world.s.loadModel(ARROW_MODEL).catch(() => null);
+      const flying = this.projectileModel();
+      if (flying) await this.world.s.loadModel(flying).catch(() => null);
     }
     // framing follows the scene type, exactly as the Godot rig does
     const landmarks = !!def0?.anchors?.some((a) => a.name === "bridge_near") && !this.travel;
@@ -299,7 +316,16 @@ export class ScenarioMode {
   }
 
   /** Put a vocabulary prop at an anchor (or in the hero's hands for "hand"). */
-  private async stageProp(assetId: string, anchor: string): Promise<void> {
+  /** Which model flies to the target for this class ("" when it is the code-built magic orb). */
+  private projectileModel(): string {
+    if (!this.ranged) return "";
+    const kind = this.ranged.projectile;
+    if (kind === "magic") return "";
+    // "" means the weapon itself is what gets thrown (the axe, the dagger)
+    return resolveAsset(kind === "" ? this.ranged.weapon : kind).replace(/^assets\//, "");
+  }
+
+  private async stageProp(assetId: string, anchor: string, held: RangedLoadout | null = null): Promise<void> {
     const path = resolveAsset(assetId).replace(/^assets\//, "");
     if (!path) return;
     const base = await this.world.s.loadModel(path).catch(() => null);
@@ -307,9 +333,16 @@ export class ScenarioMode {
     const obj = base.clone(true);
     // A ranged weapon is really HELD -- it hangs off the class's hand bone so the aim and
     // release animations carry it (KayKit grips are handslot.l / handslot.r).
-    if (anchor === "hand" && this.world.hero.attachToHand(obj, "handslot.l")) {
-      this.heldProps.push(obj);
-      return;
+    if (anchor === "hand") {
+      // Per-class grip: the bow goes in the LEFT hand, everything else in the right.
+      // NOTE: the loadout's `spin` flag is deliberately NOT applied. It compensates for how
+      // Godot's BoneAttachment3D orients a child, which is not how three.js orients a bone
+      // child -- copying it flipped the knight's already-approved bow. Correct a weapon here
+      // only after looking at it, never by porting the Godot value on faith.
+      if (this.world.hero.attachToHand(obj, held?.hand ?? "handslot.l")) {
+        this.heldProps.push(obj);
+        return;
+      }
     }
     // The sword rests ON the grindstone rather than in the hand: held, it disappears behind the
     // wheel from this camera. Canted over so it lies against the stone instead of standing
@@ -388,23 +421,32 @@ export class ScenarioMode {
     }
   }
 
-  /** One arrow per finished sentence (Godot _archery_check_fire). */
+  /** One shot per finished sentence (Godot _archery_check_fire), in the class's own style. */
   private checkFire(): void {
     while (this.fired < this.rings.length && this.prose.cursor >= this.rings[this.fired].span[1]) {
       const ring = this.rings[this.fired];
-      const base = this.world.s.getModel(ARROW_MODEL);
-      if (base) {
+      const shot = this.buildProjectile();
+      if (shot) {
         const o = ring.offset.clone();
         if (o.length() > 1) o.setLength(1);
         const land = this.targetFace.clone().add(new THREE.Vector3(o.x, o.y, -0.5));
         const from = this.world.hero.node.position.clone().add(new THREE.Vector3(0.35, 1.2, 0));
-        const arrow = new Arrow(base.clone(true), from, land);
+        // a thrown blade tumbles end over end; an arrow, bolt or orb flies true
+        const thrown = this.ranged?.projectile === "";
+        const arrow = new Arrow(shot, from, land, thrown ? { spin: 26, scale: 1 } : undefined);
         this.world.s.scene.add(arrow.obj);
         this.arrows.push(arrow);
       }
-      this.world.hero.playOneShot("Ranged_Bow_Release", "Ranged_Bow_Aiming_Idle");
+      if (this.ranged) this.world.hero.playOneShot(this.ranged.fire, this.ranged.aim);
       this.fired += 1;
     }
+  }
+
+  /** The thing that flies: a vocabulary model, the thrown weapon itself, or a magic orb. */
+  private buildProjectile(): THREE.Object3D | null {
+    if (this.ranged?.projectile === "magic") return magicBolt();
+    const path = this.projectileModel();
+    return path ? this.world.s.getModel(path)?.clone(true) ?? null : null;
   }
 
   private beginChoice(): void {

@@ -41,7 +41,7 @@ export const CATALOG: Record<string, string> = {
   "slijpen.narration": "Zing het slijplied en typ elk woord.",
   "slijpen.win": "Goed gedaan! Je zwaard is scherp.",
   // archery session
-  "boog.prose": "de {held} maakt zich klaar. de {held} mikt goed op het doel. het schot vliegt snel recht door de lucht. de {held} raakt het doel precies in het midden.",
+  "boog.prose": "de {held} maakt zich klaar. de {held} mikt goed op het doel. het vliegt snel en recht door de lucht. de {held} raakt het doel precies in het midden.",
   "boog.narration": "Mik goed en typ elk woord.",
   "boog.win": "Raak! Recht in de roos.",
   // molen

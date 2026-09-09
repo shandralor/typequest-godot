@@ -157,6 +157,17 @@ export function arrowRings(prose: string, maxRadius = 1.0): { span: [number, num
 }
 
 /** One arrow in flight, easing into the target face and sticking there. */
+/**
+ * The glowing bolt a wand throws (Godot _make_projectile's "magic" branch): a small unshaded
+ * emissive orb, because there is no wand-projectile model in the pack.
+ */
+export function magicBolt(): THREE.Mesh {
+  return new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 12, 8),
+    new THREE.MeshBasicMaterial({ color: 0xb27aff }) // unshaded, so it reads as light not stone
+  );
+}
+
 export class Arrow {
   readonly obj: THREE.Object3D;
   private t = 0;
@@ -164,13 +175,16 @@ export class Arrow {
   private readonly from = new THREE.Vector3();
   private readonly to = new THREE.Vector3();
   private landed = false;
+  /** a thrown axe/dagger tumbles on its way out; an arrow flies straight and does not */
+  private readonly spin: number;
 
-  constructor(model: THREE.Object3D, from: THREE.Vector3, to: THREE.Vector3) {
+  constructor(model: THREE.Object3D, from: THREE.Vector3, to: THREE.Vector3, opts: { spin?: number; scale?: number } = {}) {
     this.obj = model;
+    this.spin = opts.spin ?? 0;
     this.from.copy(from);
     this.to.copy(to);
     this.obj.position.copy(from);
-    this.obj.scale.setScalar(2.4);
+    this.obj.scale.setScalar(opts.scale ?? 2.4);
     this.obj.lookAt(to);
   }
 
@@ -180,6 +194,7 @@ export class Arrow {
     this.t += dt;
     const k = Math.min(1, this.t / this.dur);
     this.obj.position.copy(this.from).lerp(this.to, k * k); // ease-in, like the Godot tween
+    if (this.spin) this.obj.rotateZ(this.spin * dt);
     if (k >= 1) {
       this.landed = true;
       // a dead-centre shot flies end-on to the camera and would read as an empty bullseye:
