@@ -4,8 +4,10 @@ name: Build and Deploy
 # Pages. The Godot tree under godot/ is reference-only since 2026-09-09 -- it is no longer
 # built, exported or released here; see docs/working-context.md.
 #
-# Pages serves a project site under /<repo>/, so the build gets that prefix as TQ_BASE and
-# the runtime resolves every asset through it (web/src/assetPath.ts).
+# Pages serves this repo on the CUSTOM DOMAIN typequest.teckhawk.be, at its ROOT -- so the
+# build needs no path prefix and TQ_BASE stays unset (base "/"). If the site is ever moved
+# back to the shandralor.github.io/<repo>/ subpath, set TQ_BASE to /<repo>/ on the Build
+# step; the runtime already resolves every asset through it (web/src/assetPath.ts).
 
 on:
   push:
@@ -50,8 +52,6 @@ jobs:
         run: npm run test
 
       - name: Build
-        env:
-          TQ_BASE: /${{ github.event.repository.name }}/
         run: |
           set -euo pipefail
           npm run build

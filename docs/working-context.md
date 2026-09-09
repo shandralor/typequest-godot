@@ -934,13 +934,14 @@ Owner: "stash godot for now, three js is the main now, keep godot for reference.
 - **CI rewritten** (`.github/workflows/deploy.yml`): a push to main now builds
   `web/` (npm ci -> typecheck -> tests -> vite build) and publishes THAT to GitHub Pages.
   The Godot web export, the Linux export and the rolling AppImage release job are gone.
-- **Pages base path**: Pages serves a project site under `/<repo>/`, but the runtime fetches
-  assets by absolute path. `vite.config.ts` now takes `base` from `TQ_BASE` (CI passes
-  `/<repo>/`), and `web/src/assetPath.ts` -- `assetUrl()` -- is the ONE place that prefixes
+- **Pages base path**: the site is served on the CUSTOM DOMAIN
+  **https://typequest.teckhawk.be/**, at its ROOT -- NOT the `github.io/<repo>/` subpath.
+  So the build needs no prefix and CI leaves `TQ_BASE` unset (base "/"). (The first push
+  set it to `/<repo>/` and briefly broke the live page; corrected the same session.)
+  The indirection is kept for the day it moves: `vite.config.ts` takes `base` from
+  `TQ_BASE`, and `web/src/assetPath.ts` -- `assetUrl()` -- is the ONE place that prefixes
   `import.meta.env.BASE_URL`. Four call sites use it: hero model loads, island scene model
-  loads, music track src, and the finger-legend nail sprites. Dev is unaffected (base "/").
-  Verified: `TQ_BASE=/typequest-godot/ npm run build`, served under that subpath, menu +
-  island + a scenario all load with no 404s.
+  loads, music track src, and the finger-legend nail sprites.
 - Docs updated: README (layout table + web run instructions), CLAUDE.md (a "where the live
   code is" section at the top; `godot/` marked reference-only), and the `content-check`
   skill now points at `web/src/axis/locale/nlBe.ts` + `web/src/content/` and `npx vitest run`.
