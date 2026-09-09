@@ -1340,3 +1340,40 @@ Re-authoring note: adding the `name` field meant regenerating `forest_fork.ts` t
 `serializeIslandTs` rather than hand-editing, or the byte-identical round-trip test fails.
 
 - NEXT: nothing outstanding from the QA sweep.
+
+## Owner playtest: a total blocker, and four unported behaviours (2026-09-09)
+
+Owner played as the barbaar and found the gear fetch unwinnable. Root cause and four more.
+
+**BLOCKER -- the gear fetch could not be completed by ANY class.** `RunState.choose` compared
+the typed word against `locale.resolve(wordKey)`, which for the gear fetch is the literal
+`"{wapen}"`; the banner shows the FILLED word. Nothing matched, the fork looped, no flags were
+set, and the forge and practice yard stayed shut. Not per-class -- the raw key is `"{wapen}"`
+for all six, the knight included. `RunState` now carries `heroId` and matches the filled word.
+Underneath it: the exported `nlBe` OBJECT omitted `fillTokens` while the module exported it, so
+anything handed the object (the pure layer, tests, the validator) silently resolved tokens to
+literals. `main.ts` happened to reach for the module export, which is why it only bit when the
+pure layer needed it. `forkWords.test.ts` now walks every fork in every arc for every hero.
+
+**The island hint printed `{wapen}` raw** -- overworld hints never filled tokens; the mode is
+now told which hero it is.
+
+**The skeleton toppled on the SCARE beat** (my regression from the QA pass): the topple was
+gated on "dungeon + win", but the first cave visit is a win-type ending the hero flees. Gated
+on the armed fight now.
+
+**The intro swapped person mid-passage** -- "de barbaar loopt ... JE maakt een ommetje". Third
+person throughout, using "een {wapen}", which also dodges the de/het trap. Re-signed:
+intro `abed98f8`, home.sword `d06303cc`.
+
+**Multi-leg walks looked janky** because the facing was set once, at the FINAL destination, so
+the hero crabbed sideways through every turn. He now faces along the current leg, eased.
+
+**Two behaviours Godot has that the port never had** (not regressions -- gaps):
+- the miller AMBLES a loop round his mill. The route is authored in `mill.ts` as `miller_path`
+  and was simply never walked (Godot `_tick_miller`). Ported: `pacer` + `PACE_SPEED` 1.4.
+- the cave scare has the hero RUN back toward the light. The prose has always said "rent snel
+  terug naar het licht" and neither build moved him; he now travels centre -> path_near as the
+  beat is typed, so the fright reads.
+
+- NEXT: re-run the six-class QA sweep against this build.

@@ -40,6 +40,8 @@ const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", 
 // `aim` is a PLACEHOLDER: the practice yard overrides it per hero class, so a mage casts and a
 // barbarian stands ready to throw instead of everyone miming a bowstring (characters.RANGED).
 const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Sawing", aim: "Ranged_Bow_Aiming_Idle" };
+/** how fast an ambling NPC walks its loop, in world units a second (Godot MILLER_WALK_SPEED) */
+const PACE_SPEED = 1.4;
 /** the angle the drawbridge leaf is authored at, standing up out of the water */
 const BRIDGE_RAISED = (65 * Math.PI) / 180;
 /** the island's cloud, reused small as the haze the spellbook rides on */
@@ -100,6 +102,8 @@ export class ScenarioMode {
    * before the door -- Godot walks the same waypoints (game_controller _house_way).
    */
   private travel: { points: THREE.Vector3[]; dropFrom?: number } | null = null;
+  /** an NPC ambling a closed authored loop while the child types (the miller round his mill) */
+  private pacer: { npc: HeroRig; curve: THREE.CatmullRomCurve3; length: number; t: number } | null = null;
   /** the cloud bank the caster's book rides on */
   private haze: THREE.Object3D | null = null;
   /** the crystal on the cave floor, so the hero has something to actually pick up */
@@ -176,6 +180,7 @@ export class ScenarioMode {
   }
 
   private clearNpcs(): void {
+    this.pacer = null;
     this.clearEffects();
     for (const n of this.npcs) this.world.s.scene.remove(n.node);
     this.npcs = [];
@@ -269,6 +274,12 @@ export class ScenarioMode {
           // home pickup: this beat walks him from where he stands to the item on the wall
           this.pickup = { anchor: item.anchor, flag: item.flag, ranged: item.ranged };
           this.travel = { points: [hero.node.position.clone(), this.world.anchor(item.anchor)] };
+        } else if (setName === "dungeon" && node.setsFlag?.includes("met_skeleton") && this.world.hasAnchor("path_near")) {
+          // The scare: "de {held} rent snel terug naar het licht." He has to actually RUN for
+          // it, back toward the mouth of the cave, or the beat says one thing and shows a hero
+          // standing calmly beside the thing that is meant to be frightening him.
+          this.travel = { points: [this.world.anchor(a.anchor), this.world.anchor("path_near")] };
+          if (!restage) hero.node.position.copy(this.travel.points[0]);
         } else if (!restage) {
           hero.node.position.copy(this.world.anchor(a.anchor));
         }
@@ -285,6 +296,14 @@ export class ScenarioMode {
         this.faceActor(npc, a.facing);
         this.world.s.scene.add(npc.node);
         this.npcs.push(npc);
+        // The miller AMBLES a loop round his mill while the beat is typed -- the route is
+        // already authored as "miller_path"; the port simply never walked it, so he stood
+        // frozen while the prose talked about him (Godot _tick_miller).
+        const route = a.asset === "molenaar" ? this.world.route("miller_path") : null;
+        if (route) {
+          this.pacer = { npc, curve: route, length: route.getLength(), t: 0 };
+          npc.setMoving(true, PACE_SPEED);
+        }
       }
     }
     // held / staged props (the sword on the grindstone, the bow in hand)
@@ -796,7 +815,22 @@ export class ScenarioMode {
       this.sinceKey += dt;
       if (this.sinceKey > IDLE_AFTER && this.world.hero.isMoving) this.world.hero.setMoving(false);
     }
+    this.pace(dt);
     for (const n of this.npcs) n.update(dt);
+  }
+
+  /** Walk the ambling NPC one step round its loop, facing the way it is going. */
+  private pace(dt: number): void {
+    const p = this.pacer;
+    if (!p || p.length <= 0) return;
+    p.t = (p.t + PACE_SPEED * dt) % p.length;
+    const at = p.curve.getPointAt(p.t / p.length);
+    const prev = p.npc.node.position;
+    const dx = at.x - prev.x;
+    const dz = at.z - prev.z;
+    p.npc.node.position.set(at.x, prev.y, at.z); // stay grounded; ignore Y drift in the points
+    // skip the wrap-around jump, which would spin him on the spot
+    if (dx * dx + dz * dz > 1e-6 && dx * dx + dz * dz < 1) p.npc.face(dx, dz);
   }
 
   exit(): void {
