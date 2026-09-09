@@ -24,8 +24,9 @@ export const RIGS = ["kaykit/adventurers/Rig_Medium_General.glb", "kaykit/advent
 export const EXTRA_RIGS: Record<string, string[]> = {
   // the win celebration, and the intro's asleep-in-bed + get-up
   "kaykit/characters/Rig_Medium_Simulation.glb": ["Cheering", "Lie_Idle", "Lie_Down", "Lie_StandUp"],
-  // the forge: a looped horizontal saw, which reads as grinding a blade
-  "kaykit/characters/Rig_Medium_Tools.glb": ["Sawing"],
+  // the forge: a looped horizontal saw for grinding a blade, and a generic work loop for the
+  // beats that are not grinding at all (fletching arrows, studying over the spellbook)
+  "kaykit/characters/Rig_Medium_Tools.glb": ["Sawing", "Working_A"],
   // the practice yard, per weapon class
   "kaykit/characters/Rig_Medium_CombatRanged.glb": [
     "Ranged_Bow_Aiming_Idle", "Ranged_Bow_Release",

@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RIGS, EXTRA_RIGS } from "../game/hero";
-import { RANGED } from "../content/characters";
+import { RANGED, WORK_CLIPS } from "../content/characters";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -53,11 +53,15 @@ function clipsPlayedInSource(): string[] {
     const poses = src.match(/POSE_CLIPS[^=]*=\s*\{([^}]*)\}/);
     if (poses) for (const q of poses[1].matchAll(/"([^"]+)"/g)) names.add(q[1]);
   }
-  // the per-class ranged loadouts name their clips in DATA, not in a play("...") call
+  // clips named in DATA rather than in a play("...") call: the per-class ranged loadouts, and
+  // the per-group forge work loop. WORK_CLIPS was added later and was NOT covered here, so
+  // "Working_A" shipped undeclared and silently fell back to Idle_A -- exactly the failure this
+  // file exists to prevent. Any new clip table belongs in this list.
   for (const kit of Object.values(RANGED)) {
     names.add(kit.aim);
     names.add(kit.fire);
   }
+  for (const clip of Object.values(WORK_CLIPS)) names.add(clip);
   return [...names];
 }
 

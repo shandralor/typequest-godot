@@ -39,9 +39,19 @@ export const CATALOG: Record<string, string> = {
   "brug.lower": "De kristal laat de brug zakken!",
   "demo.end": "Knap gedaan! Je hebt de demo uitgespeeld. Nieuwe avonturen komen binnenkort!",
   // grinding session (the slijplied)
-  "slijpen.prose": "slijp slijp slijp het grote zwaard. draai het wiel heel snel rond. vonken vliegen door de lucht. de {held} houdt het staal goed vast. het wiel draait rond en rond. kijk de vonken dansen fel. nog een keer en dan nog een. het zwaard wordt heel erg scherp. bijna klaar roept de smid. de laatste vonken spatten hoog. nu is het zwaard weer scherp. de {held} lacht heel blij.",
-  "slijpen.narration": "Zing het slijplied en typ elk woord.",
-  "slijpen.win": "Goed gedaan! Je zwaard is scherp.",
+  // The forge beat comes in three flavours, because a staf and a kruisboog cannot be sharpened
+  // (characters.weaponGroupFor): blades grind, the ranger fletches, casters study. Each is its
+  // own node with its own safety hash -- the sentences differ in structure, so the {wapen}
+  // template trick that carries the hero nouns cannot carry these.
+  "slijpen.blades.prose": "slijp slijp slijp je {wapen} scherp. draai het wiel heel snel rond. vonken vliegen door de lucht. de {held} houdt het staal goed vast. het wiel draait rond en rond. kijk de vonken dansen fel. nog een keer en dan nog een. je {wapen} wordt heel erg scherp. bijna klaar nog even doorgaan. de laatste vonken spatten hoog. nu is je {wapen} weer scherp. de {held} lacht heel blij.",
+  "slijpen.blades.narration": "Zing het slijplied en typ elk woord.",
+  "slijpen.blades.win": "Goed gedaan! Je {wapen} is scherp.",
+  "slijpen.ranged.prose": "de {held} maakt nieuwe pijlen. snijd het hout heel recht. leg de pijlen op een rij. tel ze samen een voor een. de koker raakt langzaam vol. nu is je {wapen} weer klaar. de {held} lacht heel blij.",
+  "slijpen.ranged.narration": "Maak je pijlen en typ elk woord.",
+  "slijpen.ranged.win": "Goed gedaan! Je pijlen zijn klaar.",
+  "slijpen.caster.prose": "de {held} slaat het boek open. lees de woorden hardop voor. het licht danst om je {wapen}. de letters gloeien warm en fel. nog een keer en dan nog een. nu is je {wapen} weer sterk. de {held} lacht heel blij.",
+  "slijpen.caster.narration": "Lees de spreuk en typ elk woord.",
+  "slijpen.caster.win": "Goed gedaan! Je {wapen} gloeit weer.",
   // archery session
   "boog.prose": "de {held} maakt zich klaar. de {held} mikt goed op het doel. het vliegt snel en recht door de lucht. de {held} raakt het doel precies in het midden.",
   "boog.narration": "Mik goed en typ elk woord.",
@@ -61,15 +71,18 @@ export const CATALOG: Record<string, string> = {
   // home -- a return visit
   "home.prose": "de {held} is weer thuis. de {held} pakt iets van de muur.",
   "home.sword_prose": "de {held} pakt je {wapen} van de plank.",
-  "home.bow_prose": "de {held} pakt het wapen van de muur.",
+  // the ranged weapon is the child's CHOICE, not the class's: boog or kruisboog
+  "home.bow_prose": "de {held} pakt de boog van de muur. de koker met pijlen gaat mee.",
+  "home.crossbow_prose": "de {held} pakt de kruisboog van de muur. de koker met pijlen gaat mee.",
   "home.narration": "Typ de woorden.",
   "home.win": "Tot de volgende keer!",
   "home.win_sword": "Je hebt je {wapen} gehaald!",
-  "home.win_bow": "Je hebt je wapen gehaald!",
+  "home.win_bow": "Je hebt je boog gehaald!",
+  "home.win_crossbow": "Je hebt je kruisboog gehaald!",
   "home.nothing": "Je hebt alles al gehaald!",
   // site-prerequisite hints
   "hint.smidse": "Haal eerst je {wapen} thuis!",
-  "hint.boog": "Haal eerst je wapen thuis!",
+  "hint.boog": "Haal eerst een boog thuis!",
   // objectives
   "objective.wapens": "Haal je wapens thuis op!",
   "objective.molen": "Ga naar de molen voor een tip!",
@@ -80,7 +93,8 @@ export const CATALOG: Record<string, string> = {
   "word.brug": "brug",
   "word.kist": "kist",
   "word.zwaard": "{wapen}",
-  "word.boog": "wapen",
+  "word.boog": "boog",
+  "word.kruisboog": "kruisboog",
   // overworld site words
   "site.bos": "bos",
   "site.smidse": "smidse",

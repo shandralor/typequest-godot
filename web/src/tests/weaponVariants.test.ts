@@ -5,7 +5,11 @@
 
 import { describe, expect, it } from "vitest";
 import { HOUSE } from "../content/scenes/house";
-import { ALL } from "../content/characters";
+import { ALL, meleeFor, weaponGroupFor, WORK_PROPS } from "../content/characters";
+import { build } from "../content/scenarios";
+import { startFor } from "../content/grind/grindArc";
+import { resolve as resolveAsset } from "../axis/vocabulary/fantasyPoc";
+import { nlBe, fillTokens } from "../axis/locale/nlBe";
 
 const variants = HOUSE.props.filter((p) => (p.tags?.length ?? 0) > 0);
 
@@ -48,6 +52,59 @@ describe("per-class weapon on the house rack", () => {
     for (const p of variants) {
       for (const t of p.tags!) {
         expect(ids.has(t.replace("weapon_", "")), `unknown hero in tag '${t}'`).toBe(true);
+      }
+    }
+  });
+});
+
+// A staf and a kruisboog cannot be sharpened, so the forge beat forks three ways. Every hero
+// must land on a beat that exists AND that talks about the weapon they actually carry.
+describe("the forge beat fits the weapon", () => {
+  const graph = build("grind");
+
+  it("sends every hero to a forge node that exists", () => {
+    for (const c of ALL) {
+      const id = startFor(weaponGroupFor(c.id));
+      expect(graph.hasNode(id), `${c.id} -> ${id}`).toBe(true);
+    }
+  });
+
+  it("stages a forge prop that resolves in the vocabulary", () => {
+    for (const c of ALL) {
+      const id = WORK_PROPS[weaponGroupFor(c.id)] || meleeFor(c.id);
+      expect(resolveAsset(id), `${c.id} forge prop '${id}'`).not.toBe("");
+    }
+  });
+
+  it("stages a primary weapon that resolves in the vocabulary", () => {
+    for (const c of ALL) {
+      expect(resolveAsset(meleeFor(c.id)), `${c.id} melee '${meleeFor(c.id)}'`).not.toBe("");
+    }
+  });
+
+  it("never tells a caster or a ranger to sharpen anything", () => {
+    for (const c of ALL) {
+      const node = graph.getNodeById(startFor(weaponGroupFor(c.id)))!;
+      const prose = fillTokens(nlBe.resolve(node.proseKey), c.id);
+      if (weaponGroupFor(c.id) !== "blades") {
+        expect(prose, `${c.id}: sharpening prose`).not.toMatch(/slijp|scherp|staal/);
+      } else {
+        expect(prose, `${c.id}: blades should grind`).toMatch(/slijp/);
+      }
+    }
+  });
+
+  it("names the hero's own weapon in the beat they get", () => {
+    const noun: Record<string, string> = {
+      knight: "zwaard", barbarian: "bijl", rogue: "dolk", ranger: "kruisboog", mage: "staf", witch: "staf",
+    };
+    for (const c of ALL) {
+      const node = graph.getNodeById(startFor(weaponGroupFor(c.id)))!;
+      const prose = fillTokens(nlBe.resolve(node.proseKey), c.id);
+      expect(prose, `${c.id}`).toContain(noun[c.id]);
+      // and no other class's weapon sneaks in
+      for (const [other, w] of Object.entries(noun)) {
+        if (w !== noun[c.id]) expect(prose, `${c.id} mentions ${other}'s ${w}`).not.toContain(w);
       }
     }
   });

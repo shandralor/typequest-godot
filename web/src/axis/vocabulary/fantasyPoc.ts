@@ -20,6 +20,9 @@ export const ASSETS: Record<string, string> = {
   // per-class ranged weapons + projectiles (C-mini)
   crossbow: "assets/kaykit/adventurers/crossbow_1handed.gltf",
   wand: "assets/kaykit/adventurers/wand.gltf",
+  staff: "assets/kaykit/adventurers/staff.gltf",
+  spellbook: "assets/kaykit/adventurers/spellbook_open.gltf",
+  arrows: "assets/kaykit/adventurers/arrow_bow_bundle.gltf",
   axe: "assets/kaykit/fantasy_weapons_bits/axe_C.gltf",
   dagger: "assets/kaykit/fantasy_weapons_bits/dagger_A.gltf",
   arrow: "assets/kaykit/adventurers/arrow_bow.gltf",

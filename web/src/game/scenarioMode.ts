@@ -13,8 +13,9 @@ import { build as buildScenario } from "../content/scenarios";
 import { HOUSE_ITEMS } from "../content/home/homeArc";
 import { AUTHORED } from "../editor/content_index";
 import { resolve as resolveAsset } from "../axis/vocabulary/fantasyPoc";
-import { rangedFor, type RangedLoadout } from "../content/characters";
-import { addStat, getFlag, setFlag, wordCount } from "./flags";
+import { rangedFor, meleeFor, weaponGroupFor, WORK_CLIPS, WORK_PROPS, type RangedLoadout } from "../content/characters";
+import { startFor as forgeStartFor } from "../content/grind/grindArc";
+import { addStat, getChoice, setChoice, getFlag, setFlag, wordCount } from "./flags";
 import { HeroRig, ensureClips } from "./hero";
 import type { World } from "./world";
 import type { Hud } from "../ui/hud";
@@ -72,7 +73,7 @@ export class ScenarioMode {
   private npcs: HeroRig[] = [];
   private scenarioId = "";
   /** the item this home beat is collecting (walk to it, grant its flag on the win) */
-  private pickup: { anchor: string; flag: string } | null = null;
+  private pickup: { anchor: string; flag: string; ranged?: string } | null = null;
   /** a short stroll toward the chosen path, then `done` (softens the fork cut) */
   private walkoff: { from: THREE.Vector3; to: THREE.Vector3; t: number; done: () => void } | null = null;
   private gaze: GazeState = { mode: "none", links: -1, rechts: -1 };
@@ -104,6 +105,9 @@ export class ScenarioMode {
     this.run = new RunState(buildScenario(id), this.locale);
     // revisit skip (forest): once the cave has been met, land straight at the crossroads
     if (getFlag("met_skeleton") && this.run.graph.hasNode("kruispunt")) this.run.currentId = "kruispunt";
+    // the forge beat depends on what the hero carries: blades grind, the ranger fletches,
+    // casters study -- three authored nodes, one per group (characters.weaponGroupFor)
+    if (id === "grind") this.run.currentId = forgeStartFor(weaponGroupFor(this.heroId));
     this.hud.legend(null);
     this.hud.keyboard(true);
     await this.enterNode(true);
@@ -165,10 +169,11 @@ export class ScenarioMode {
     // it is not fatal (the clip just arrives late and plays then), but prefetching means the
     // hero is already aiming when the child starts typing.
     // the practice yard arms the hero per class, which decides both his pose and his clips
-    this.ranged = setName === "archery" ? rangedFor(this.heroId) : null;
-    const wanted = d.actors
-      .filter((a) => a.asset === "hero")
-      .map((a) => (a.pose === "aim" && this.ranged ? this.ranged.aim : POSE_CLIPS[a.pose] ?? "Idle_A"));
+    this.ranged = setName === "archery" ? rangedFor(this.heroId, getChoice("ranged", "")) : null;
+    const workClip = WORK_CLIPS[weaponGroupFor(this.heroId)];
+    const poseClip = (pose: string): string =>
+      pose === "aim" && this.ranged ? this.ranged.aim : pose === "work" ? workClip : POSE_CLIPS[pose] ?? "Idle_A";
+    const wanted = d.actors.filter((a) => a.asset === "hero").map((a) => poseClip(a.pose));
     if (node.isEnding()) wanted.push("Cheering");
     if (this.ranged) wanted.push(this.ranged.aim, this.ranged.fire);
     if (this.scenarioId === "intro") wanted.push("Lie_Idle", "Lie_StandUp");
@@ -204,7 +209,7 @@ export class ScenarioMode {
           }
         } else if (item) {
           // home pickup: this beat walks him from where he stands to the item on the wall
-          this.pickup = { anchor: item.anchor, flag: item.flag };
+          this.pickup = { anchor: item.anchor, flag: item.flag, ranged: item.ranged };
           this.travel = { from: hero.node.position.clone(), to: this.world.anchor(item.anchor) };
         } else if (!restage) {
           hero.node.position.copy(this.world.anchor(a.anchor));
@@ -212,7 +217,7 @@ export class ScenarioMode {
         if (!this.risingFromBed) {
           this.faceActor(hero, a.facing, this.travel?.to);
           hero.setMoving(false);
-          hero.play(a.pose === "aim" && this.ranged ? this.ranged.aim : POSE_CLIPS[a.pose] ?? "Idle_A");
+          hero.play(poseClip(a.pose));
         }
       } else if (!restage) {
         const npc = new HeroRig();
@@ -235,8 +240,16 @@ export class ScenarioMode {
       }
     }
     if (!restage && setName === "archery") await this.buildArcheryTarget();
-    if (setName === "forge") {
-      // the shower sits on the wheel in front of him and heats up as the song is typed
+    if (setName === "forge" && !restage) {
+      // what the beat is ABOUT lies in front of him -- his own weapon, a bundle of arrows or
+      // the open spellbook. The descriptor cannot name it (it has no hero), so it is staged
+      // here, like the archery target.
+      const group = weaponGroupFor(this.heroId);
+      await this.stageProp(WORK_PROPS[group] || meleeFor(this.heroId), "grind_point");
+    }
+    if (setName === "forge" && weaponGroupFor(this.heroId) === "blades") {
+      // the shower sits on the wheel in front of him and heats up as the song is typed --
+      // only the grinding beat throws sparks; fletching and studying do not
       const at = this.world.anchor("grind_point").clone().add(new THREE.Vector3(0, 0.7, 0));
       this.sparks = new Sparks(at);
       this.world.s.scene.add(this.sparks.group);
@@ -350,7 +363,7 @@ export class ScenarioMode {
     // bolt upright, and angled to the hero's left where he is working it.
     obj.position.copy(this.world.anchor(anchor === "hand" ? "center" : anchor));
     obj.position.y += 0.95;
-    if (assetId === "sword") {
+    if (assetId === "sword" || assetId === "axe" || assetId === "dagger") {
       obj.rotation.set(0, 0.25, -1.15);
       obj.position.x -= 0.15;
     } else {
@@ -462,7 +475,11 @@ export class ScenarioMode {
       })
       // fillTokens as well as resolve: the melee fetch word IS the class's weapon noun,
       // so an unresolved "{wapen}" would otherwise be what the child is asked to type
-      .map((ch) => ({ word: this.locale.fillTokens(this.locale.resolve(ch.wordKey), this.heroId), choice: ch }));
+      .map((ch) => ({ word: this.locale.fillTokens(this.locale.resolve(ch.wordKey), this.heroId), choice: ch }))
+      // never show the same word twice: the ranger's primary weapon IS a kruisboog, so the
+      // kruisboog branch of the ranged choice would otherwise duplicate their own banner and
+      // the child would have two identical words to pick between
+      .filter((c, i, all) => all.findIndex((o) => o.word === c.word) === i);
     if (this.candidates.length === 0) {
       // nothing left to take -- a short "you have everything" beat, then leave
       this.hud.hideBand();
@@ -521,6 +538,8 @@ export class ScenarioMode {
     if (node?.setsFlag) for (const f of node.setsFlag.split(" ")) if (f) setFlag(f);
     if (this.pickup) {
       setFlag(this.pickup.flag); // the gear is his now: the island's gear gate opens
+      // and WHICH ranged weapon he took, so the practice yard arms him with it
+      if (this.pickup.ranged) setChoice("ranged", this.pickup.ranged);
       this.world.hero.playOneShot("PickUp");
       this.pickup = null;
     } else if (node?.ending === "win") {
