@@ -265,17 +265,25 @@ export class ScenarioMode {
     const base = await this.world.s.loadModel(path).catch(() => null);
     if (!base) return;
     const obj = base.clone(true);
-    if (anchor === "hand") {
-      obj.position.set(0.35, 1.0, 0.15);
-      obj.rotation.set(0, Math.PI / 2, 0);
-      this.world.hero.node.add(obj);
+    // A ranged weapon is really HELD -- it hangs off the class's hand bone so the aim and
+    // release animations carry it (KayKit grips are handslot.l / handslot.r).
+    if (anchor === "hand" && this.world.hero.attachToHand(obj, "handslot.l")) {
       this.heldProps.push(obj);
-    } else {
-      obj.position.copy(this.world.anchor(anchor));
-      obj.position.y += 0.9;
-      this.world.s.scene.add(obj);
-      this.stagedProps.push(obj);
+      return;
     }
+    // The sword rests ON the grindstone rather than in the hand: held, it disappears behind the
+    // wheel from this camera. Canted over so it lies against the stone instead of standing
+    // bolt upright, and angled to the hero's left where he is working it.
+    obj.position.copy(this.world.anchor(anchor === "hand" ? "center" : anchor));
+    obj.position.y += 0.95;
+    if (assetId === "sword") {
+      obj.rotation.set(0, 0.25, -1.15);
+      obj.position.x -= 0.15;
+    } else {
+      obj.rotation.set(0, 0, -0.45);
+    }
+    this.world.s.scene.add(obj);
+    this.stagedProps.push(obj);
   }
 
   /**

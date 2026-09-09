@@ -130,6 +130,26 @@ export class HeroRig {
     return this.moving;
   }
 
+  /**
+   * Attach a prop to a rig bone so it is really HELD and the animation carries it (KayKit grips
+   * are handslot.r / handslot.l). Returns false when the bone is missing, so the caller can
+   * fall back to standing the prop on the ground.
+   */
+  attachToHand(obj: THREE.Object3D, boneName = "handslot.r", offset = new THREE.Vector3()): boolean {
+    // the glTF import strips punctuation from bone names, so "handslot.r" arrives as
+    // "handslotr" -- compare on letters and digits only
+    const key = (n: string): string => n.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const want = key(boneName);
+    let slot: THREE.Object3D | null = null;
+    this.node.traverse((o) => {
+      if (!slot && key(o.name) === want) slot = o;
+    });
+    if (!slot) return false;
+    obj.position.copy(offset);
+    (slot as THREE.Object3D).add(obj);
+    return true;
+  }
+
   /** Face a ground direction. KayKit's forward is +Z, so yaw = atan2(dx, dz) (Godot: atan2(dir.x, dir.z)). */
   face(dx: number, dz: number): void {
     if (Math.hypot(dx, dz) < 1e-4) return;
