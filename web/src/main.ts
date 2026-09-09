@@ -193,14 +193,17 @@ async function main(): Promise<void> {
   window.addEventListener("pointerdown", unlockMusic, { once: true });
 
   window.addEventListener("keydown", (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === "m" && !e.repeat) {
+    // Mute is CTRL+m, never a bare "m": m is a letter on the home row (right pinky on AZERTY),
+    // so a bare shortcut swallowed it and the child could not type any word containing an m.
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "m" && !e.repeat) {
+      e.preventDefault();
       muted = !muted;
       music.setMuted(muted);
-      hud.message(muted ? "Muziek uit (m)" : "Muziek aan (m)");
+      hud.message(muted ? "Muziek uit (ctrl+m)" : "Muziek aan (ctrl+m)");
       window.setTimeout(() => hud.message(""), 1400);
       return;
     }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (state === "picker") {
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         e.preventDefault();

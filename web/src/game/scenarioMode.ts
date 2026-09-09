@@ -156,7 +156,8 @@ export class ScenarioMode {
         return;
       }
       this.clearNpcs();
-      await this.world.loadScene(def, d.mood === "dark" ? "dark" : "day");
+      // the chosen hero's weapon is the one that hangs on the house rack (Godot show_hero_weapon)
+      await this.world.loadScene(def, d.mood === "dark" ? "dark" : "day", new Set([`weapon_${this.heroId}`]));
       this.currentSet = setName;
     }
     // Pull in any rig pack this beat needs before posing anyone: the poses on stage, the

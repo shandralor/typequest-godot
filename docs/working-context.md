@@ -1086,3 +1086,37 @@ so the approved hashes on grind, archery, home, mill and intro were never checke
   by the child but are not run through the validator, so nothing catches it.
 - 110 tests pass, typecheck clean.
 - NEXT: the two base rig GLBs (1.48 MB, clips only) are still the biggest first-load item.
+
+## Three fixes: the m key, the reveal window, the wall weapon (2026-09-09)
+
+All three reported by the owner playing the live build.
+
+1. **Typing "m" toggled the music instead of typing.** The mute shortcut was a bare `m`, and m
+   is a LETTER (AZERTY home row, right pinky), so the handler swallowed it and no word
+   containing an m could be typed. Mute is now **ctrl+m**, checked before the bare-modifier
+   guard in `main.ts`. Verified with real keydown events, not the test harness (the harness
+   calls `scenario.char` directly and bypasses the listener that had the bug -- which is why
+   no test caught it).
+2. **The whole paragraph was visible at once.** `logic/reveal_window.gd` was never ported --
+   it is the B5 reveal window. Now `web/src/logic/revealWindow.ts` (faithful port: 40 chars of
+   look-behind snapped to a word boundary, the current word plus 4 more ahead) and `hud.prose`
+   renders through it. The band is a stable couple of lines instead of a growing wall of text:
+   the intro's 176-character passage now shows ~26 characters at the start. Purely presentational
+   -- typing still compares and scores against the FULL prose, exactly as Godot does.
+3. **Every hero saw a crossbow on the house rack.** `house.ts` authors one weapon per class
+   tagged `weapon_<id>`, but the `tags` field was declared in `SceneDef` and read by NOTHING,
+   and the crossbow happened to be the one variant not marked hidden. `buildIslandGroup` now
+   takes an `activeTags` set: a TAGGED prop is drawn only when one of its tags is active, and
+   for a tagged prop the tags are authoritative -- the authored `hidden` flag does not apply,
+   since the set marks every variant hidden so the editor is not a pile of stacked weapons.
+   `scenarioMode` passes `weapon_<heroId>` (Godot `scene_composer.show_hero_weapon`).
+   Verified: barbarian -> axe with "hier hangt je bijl", ranger -> crossbow with "kruisboog".
+   The prose was already correct via the `{wapen}` token; only the prop was wrong.
+
+New tests: `revealWindow.test.ts` (9) pins the window boundaries, and `weaponVariants.test.ts`
+(5) asserts exactly one weapon hangs for every hero in the roster and that it is the one the
+prose promises. 124 tests pass, typecheck clean.
+
+- NEXT: the two base rig GLBs (1.48 MB, clips only) are still the biggest first-load item.
+  Still open from the content check: `grotFight.prose` hardcodes bow/arrow/sword, and
+  `site.boog` "oefenplein" is 10 letters against band-1's 9.

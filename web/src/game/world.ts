@@ -43,13 +43,13 @@ export class World {
    * and aerial haze, "dark" a near-black cave; the island passes "island" for its dark backdrop
    * (the floating island reads against a void, like the Godot set).
    */
-  async loadScene(def: SceneDef, mood: "day" | "dark" | "island"): Promise<void> {
+  async loadScene(def: SceneDef, mood: "day" | "dark" | "island", activeTags: ReadonlySet<string> = new Set()): Promise<void> {
     if (this.group) {
       this.s.scene.remove(this.group);
       this.group = null;
     }
     this.def = def;
-    const built = await buildIslandGroup(this.s, def);
+    const built = await buildIslandGroup(this.s, def, activeTags);
     this.group = built.group;
     // Light per mood. The island wants the warm golden key (its hex grass is chartreuse by
     // design); a story set is lit near-neutral, or the green ground goes yellow -- Godot's mill

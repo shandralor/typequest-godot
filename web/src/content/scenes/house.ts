@@ -34,7 +34,7 @@ export const HOUSE: SceneDef = {
     { m: "kaykit/adventurers/sword_1handed.gltf", x: 5.9, z: 1.981, y: 2.492, rot: 271.227, tilt: [0.952, 90.02], s: 2, tags: ["weapon_knight"], hidden: true },
     { m: "kaykit/fantasy_weapons_bits/axe_C.gltf", x: 5.9, z: 2.073, y: 2.492, rot: 271.064, tilt: [-1.131, 174.528], s: 2, tags: ["weapon_barbarian"], hidden: true },
     { m: "kaykit/fantasy_weapons_bits/staff_A.gltf", x: 5.406, z: 2.151, y: 2.1, rot: 269.176, tilt: [-15.766, 7.304], s: 2, tags: ["weapon_mage", "weapon_witch"], hidden: true },
-    { m: "kaykit/adventurers/crossbow_1handed.gltf", x: 5.229, z: 2.137, y: 2.308, rot: 89.266, tilt: [-73.945, -178.942], s: 2, tags: ["weapon_ranger"] },
+    { m: "kaykit/adventurers/crossbow_1handed.gltf", x: 5.229, z: 2.137, y: 2.308, rot: 89.266, tilt: [-73.945, -178.942], s: 2, tags: ["weapon_ranger"], hidden: true },
     { m: "kaykit/fantasy_weapons_bits/dagger_A.gltf", x: 5.9, z: 1.981, y: 2.492, rot: 271.227, tilt: [0.952, 90.02], s: 2, tags: ["weapon_rogue"], hidden: true },
   ],
   shapes: [

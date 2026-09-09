@@ -206,16 +206,34 @@ export function templateParts(base: THREE.Object3D): TemplatePart[] | null {
   return skinned || parts.length === 0 ? null : parts;
 }
 
+/**
+ * A prop can carry `tags` to mark it as one VARIANT of a slot -- the house wall racks one
+ * weapon per hero class, tagged weapon_knight / weapon_barbarian / ... A tagged prop is drawn
+ * only when one of its tags is active, so the wall shows the chosen hero's weapon and nothing
+ * else (Godot scene_composer.show_hero_weapon). An untagged prop is always drawn.
+ */
+function isVariant(tags: string[] | undefined): boolean {
+  return !!tags && tags.length > 0;
+}
+
 /** Build a static scene group from a SceneDef (the game path): tiles + props + shapes + lights. */
 export async function buildIslandGroup(
   s: IslandScene,
-  def: IslandDef
+  def: IslandDef,
+  activeTags: ReadonlySet<string> = new Set()
 ): Promise<{ group: THREE.Group; land: THREE.Box3; full: THREE.Box3 }> {
   await Promise.all(islandModels(def).map((m) => s.loadModel(m).catch(() => null)));
   const group = new THREE.Group();
   group.name = "island";
   const land = new THREE.Box3();
-  const hidden = new Set(def.props.filter((p) => p.hidden).map((p) => p));
+  // For a TAGGED prop the tags decide and the authored `hidden` flag does not apply: the set
+  // authors every variant of the slot hidden (so the editor is not a pile of stacked weapons)
+  // and the game turns exactly one back on. Untagged props obey `hidden` as before.
+  const hidden = new Set(
+    def.props
+      .filter((p) => (isVariant(p.tags) ? !p.tags!.some((t) => activeTags.has(t)) : p.hidden))
+      .map((p) => p)
+  );
   const placements = expandIsland(def);
   const nTiles = def.tiles.length;
 

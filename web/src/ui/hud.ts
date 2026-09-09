@@ -7,6 +7,7 @@
 // to QWERTY re-letters the keyboard and re-aims the finger guidance with no logic change.
 
 import { guidanceForChar, keyboardRows } from "../game/keyboardSettings";
+import { visibleEnd, windowStart } from "../logic/revealWindow";
 import { FingerHand } from "./fingerHand";
 
 /** finger id -> colour (ui/keyboard_guide.gd FINGER_COLORS, carried verbatim) */
@@ -98,15 +99,20 @@ export class Hud {
     $<HTMLElement>("prompt").hidden = text === "";
   }
 
-  /** The type-along band: done chars, the next char, the rest. */
+  /**
+   * The type-along band, through the REVEAL WINDOW (B5): a little already-typed text behind the
+   * cursor, the next character, and only a few words of runway ahead. The child never faces the
+   * whole passage at once, and the panel stays a stable couple of lines instead of growing.
+   */
   prose(target: string, cursor: number): void {
-    const chars = [...target];
-    const done = chars.slice(0, cursor).join("");
-    const next = chars[cursor] ?? "";
-    const rest = chars.slice(cursor + 1).join("");
+    const start = windowStart(target, cursor);
+    const end = visibleEnd(target, cursor);
+    const done = target.slice(start, cursor);
+    const next = target[cursor] ?? "";
+    const runway = target.slice(cursor + 1, Math.max(cursor + 1, end));
     const band = $<HTMLElement>("band");
     band.hidden = false;
-    band.innerHTML = `<span class="done">${esc(done)}</span><span class="next">${esc(next)}</span><span class="rest">${esc(rest)}</span>`;
+    band.innerHTML = `<span class="done">${esc(done)}</span><span class="next">${esc(next)}</span><span class="rest">${esc(runway)}</span>`;
     this.highlightKey(next);
   }
 
