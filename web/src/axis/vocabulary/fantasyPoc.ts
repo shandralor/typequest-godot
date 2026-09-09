@@ -23,6 +23,7 @@ export const ASSETS: Record<string, string> = {
   staff: "assets/kaykit/adventurers/staff.gltf",
   spellbook: "assets/kaykit/adventurers/spellbook_open.gltf",
   arrows: "assets/kaykit/adventurers/arrow_bow_bundle.gltf",
+  crystal: "assets/kaykit/resource_bits/Gem_Large.gltf",
   axe: "assets/kaykit/fantasy_weapons_bits/axe_C.gltf",
   dagger: "assets/kaykit/fantasy_weapons_bits/dagger_A.gltf",
   arrow: "assets/kaykit/adventurers/arrow_bow.gltf",

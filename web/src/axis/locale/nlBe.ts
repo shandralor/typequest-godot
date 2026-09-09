@@ -57,7 +57,10 @@ export const CATALOG: Record<string, string> = {
   "boog.narration": "Mik goed en typ elk woord.",
   "boog.win": "Raak! Recht in de roos.",
   // molen
-  "mill.prose": "de molenaar maalt het graan tot fijn meel. hij ziet je bij de open deur. de oude man weet veel over het bos. de oude brug opent met een kristal. het skelet in de grot bewaakt het. versla het en pak het kristal. de molenaar zwaait je vrolijk uit.",
+  // Rewritten to what is actually ON SCREEN: the windmill model's door is baked shut, the miller
+  // stands outside on the path, and nothing mills or waves. The tip he gives is the point of the
+  // beat and is unchanged.
+  "mill.prose": "de molenaar staat voor zijn molen. hij ziet je op het pad. de oude man weet veel over het bos. de oude brug opent met een kristal. het skelet in de grot bewaakt het. versla het en pak het kristal. de molenaar wenst je veel geluk.",
   "mill.narration": "De molenaar heeft een tip voor je.",
   "mill.win": "Nu weet je hoe je de brug opent!",
   // grotFight -- the armed return

@@ -39,6 +39,8 @@ const LOCATION_SETS: Record<string, string> = { forest_path: "forest_straight", 
 // `aim` is a PLACEHOLDER: the practice yard overrides it per hero class, so a mage casts and a
 // barbarian stands ready to throw instead of everyone miming a bowstring (characters.RANGED).
 const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Sawing", aim: "Ranged_Bow_Aiming_Idle" };
+/** the island's cloud, reused small as the haze the spellbook rides on */
+const HAZE_MODEL = "kaykit/hexagon/cloud_big.gltf";
 /** the weapon on the grinding wheel is scaled to this length, so every blade reads the same */
 const BLADE_LEN = 1.15;
 /** how high the caster's spellbook hangs, and how far it drifts up and down while it hangs */
@@ -70,6 +72,10 @@ export class ScenarioMode {
   private buffer = "";
   private currentSet = "";
   private travel: { from: THREE.Vector3; to: THREE.Vector3; dropFrom?: number } | null = null;
+  /** the cloud bank the caster's book rides on */
+  private haze: THREE.Object3D | null = null;
+  /** the crystal on the cave floor, so the hero has something to actually pick up */
+  private crystal: THREE.Object3D | null = null;
   /** the caster's spellbook, hanging in mid-air and bobbing while the spell is read */
   private book: THREE.Object3D | null = null;
   private bookT = 0;
@@ -127,6 +133,8 @@ export class ScenarioMode {
 
   private clearEffects(): void {
     this.book = null;
+    this.haze = null;
+    this.crystal = null;
     if (this.sparks) {
       this.world.s.scene.remove(this.sparks.group);
       this.sparks.dispose();
@@ -269,6 +277,18 @@ export class ScenarioMode {
       this.sparks = new Sparks(at);
       this.world.s.scene.add(this.sparks.group);
     }
+    // "daar ligt een glanzend kristal" -- so there has to BE one. It lies on the cave floor
+    // beside the skeleton and the hero picks it up at the win.
+    if (setName === "dungeon" && node.setsFlag?.includes("has_crystal") && !restage) {
+      await this.stageProp("crystal", "far_right");
+      const gem = this.stagedProps[this.stagedProps.length - 1];
+      if (gem) {
+        gem.position.y = 0.12;
+        gem.position.x -= 0.9;
+        gem.scale.setScalar(0.8);
+        this.crystal = gem;
+      }
+    }
     if (setName === "archery") {
       this.rings = arrowRings(this.locale.fillTokens(this.locale.resolve(node.proseKey), this.heroId), ARCH_MAX_RADIUS);
       this.fired = 0;
@@ -359,14 +379,47 @@ export class ScenarioMode {
     const at = this.world.anchor("grind_point");
     // toward the camera as well as up: at head height and flush with her it masked her face
     book.position.set(at.x, at.y + BOOK_HEIGHT, at.z + 0.35);
-    // upright pages, then tipped back 45 degrees so they face the camera like a lectern
-    book.rotation.set(-Math.PI / 4, Math.PI, 0);
+    // Tipped 45 degrees with the BOTTOM edge toward her, so the open pages face the reader --
+    // tilted the other way the top leaned in and she was staring at the back of the book.
+    book.rotation.set(Math.PI / 4, Math.PI, 0);
     book.scale.setScalar(0.8);
     this.book = book;
     this.bookT = 0;
-    // the same spark shower the grindstone throws, guttering under the book instead
-    this.sparks = new Sparks(new THREE.Vector3(at.x, at.y + BOOK_HEIGHT - 0.45, at.z));
-    this.world.s.scene.add(this.sparks.group);
+    void this.hazeUnder(book.position.clone());
+  }
+
+  /**
+   * A little bank of haze under the floating book, so it reads as being CARRIED on the cloud
+   * rather than just hanging there. Reuses the island's cloud model at small scale -- a
+   * particle wisp would not match the chunky low-poly art anywhere else in the game.
+   * The materials are cloned before going transparent: they are shared with the island's real
+   * clouds, and editing them in place would turn the whole sky see-through.
+   */
+  private async hazeUnder(at: THREE.Vector3): Promise<void> {
+    const base = await this.world.s.loadModel(HAZE_MODEL).catch(() => null);
+    if (!base || !this.book) return;
+    const group = new THREE.Group();
+    for (let i = 0; i < 3; i++) {
+      const puff = base.clone(true);
+      puff.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        const mat = (Array.isArray(m.material) ? m.material[0] : m.material).clone() as THREE.MeshStandardMaterial;
+        mat.transparent = true;
+        mat.opacity = 0.42;
+        mat.depthWrite = false; // otherwise the puffs punch holes in each other
+        m.material = mat;
+        m.castShadow = false;
+      });
+      const a = (i / 3) * Math.PI * 2;
+      puff.position.set(Math.cos(a) * 0.22, -0.06 * i, Math.sin(a) * 0.16);
+      puff.scale.setScalar(0.11 + i * 0.015);
+      group.add(puff);
+    }
+    group.position.set(at.x, at.y - 0.34, at.z);
+    this.world.s.scene.add(group);
+    this.stagedProps.push(group);
+    this.haze = group;
   }
 
   /** Which model flies to the target for this class ("" when it is the code-built magic orb). */
@@ -605,9 +658,19 @@ export class ScenarioMode {
       this.world.hero.playOneShot("PickUp");
       this.pickup = null;
     } else if (node?.ending === "win") {
-      // a LOOPED cheer, like Godot's play_lead_loop -- he holds the celebration while the win
-      // message sits on screen, rather than clapping once and dropping back to idle
-      this.world.hero.play("Cheering");
+      // The prose says the skeleton falls and the crystal is taken, so both have to HAPPEN.
+      // Godot topples the skeleton (topple_skeleton) and plays a pickup on the lead.
+      const beaten = this.npcs.length > 0 && this.currentSet === "dungeon";
+      if (beaten) for (const n of this.npcs) n.playOneShot("Death_A", "Death_A_Pose");
+      if (this.crystal) {
+        this.crystal.visible = false; // he picks it up -- it should not still be lying there
+        this.crystal = null;
+        this.world.hero.playOneShot("PickUp", "Cheering");
+      } else {
+        // a LOOPED cheer, like Godot's play_lead_loop -- he holds the celebration while the
+        // win message sits on screen, rather than clapping once and dropping back to idle
+        this.world.hero.play("Cheering");
+      }
     }
     if (getFlag("sword_sharp") && getFlag("archery_done")) setFlag("fully_trained");
     const ending = this.run!.resolveEnding();
@@ -646,6 +709,10 @@ export class ScenarioMode {
       this.bookT += dt;
       this.book.position.y = this.world.anchor("grind_point").y + BOOK_HEIGHT + Math.sin(this.bookT * 1.6) * BOOK_BOB;
       this.book.rotation.y = Math.PI + Math.sin(this.bookT * 0.7) * 0.06;
+      if (this.haze) {
+        this.haze.position.y = this.book.position.y - 0.34;
+        this.haze.rotation.y = this.bookT * 0.25; // turns slowly the other way, so it breathes
+      }
     }
     if (this.sparks) {
       this.sparks.emitting = this.phase === "prose";

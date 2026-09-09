@@ -22,7 +22,7 @@ export function build(): StoryGraph {
   node.ending = "win";
   node.winKey = "mill.win";
   node.setsFlag = "molen_tip"; // heard the miller's bridge tip (a hook for later)
-  node.safety = { "nl-BE": { hash: "fnv1a:017cea28", date: "2026-07-20", criteria_version: "v0-stub" } };
+  node.safety = { "nl-BE": { hash: "fnv1a:d8422584", date: "2026-09-09", criteria_version: "v0-stub" } };
   node.scene = scene();
   g.addNode(node);
   return g;
