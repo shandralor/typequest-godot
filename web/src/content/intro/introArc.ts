@@ -21,7 +21,7 @@ export function build(): StoryGraph {
   node.narrationKey = "intro.narration";
   node.ending = "win";
   node.winKey = "intro.win";
-  node.safety = { "nl-BE": { hash: "fnv1a:e9cc91dc", date: "2026-07-19", criteria_version: "v0-stub" } };
+  node.safety = { "nl-BE": { hash: "fnv1a:abed98f8", date: "2026-07-19", criteria_version: "v0-stub" } };
   node.scene = scene();
   g.addNode(node);
   return g;

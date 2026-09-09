@@ -145,6 +145,7 @@ export class ScenarioMode {
   async start(id: string): Promise<void> {
     this.scenarioId = id;
     this.run = new RunState(buildScenario(id), this.locale);
+    this.run.heroId = this.heroId; // choice words carry {wapen}; the match needs it filled
     // revisit skip (forest): once the cave has been met, land straight at the crossroads
     if (getFlag("met_skeleton") && this.run.graph.hasNode("kruispunt")) this.run.currentId = "kruispunt";
     // the forge beat depends on what the hero carries: blades grind, the ranger fletches,
@@ -254,6 +255,7 @@ export class ScenarioMode {
             // he does: "loopt naar het rek aan de muur ... aan de andere kant hangt de sleutel"
             const via = ["sword_point", "key_point"].filter((n) => this.world.hasAnchor(n)).map((n) => this.world.anchor(n));
             this.travel = { points: [bed, ...via, to], dropFrom: HOUSE_LIE_Y };
+            this.gazeYaw = hero.node.rotation.y; // so the first turn eases instead of snapping
             hero.node.position.copy(bed);
             hero.node.rotation.y = Math.PI;
             hero.play("Lie_Idle");
@@ -700,8 +702,10 @@ export class ScenarioMode {
       this.pickup = null;
     } else if (node?.ending === "win") {
       // The prose says the skeleton falls and the crystal is taken, so both have to HAPPEN.
-      // Godot topples the skeleton (topple_skeleton) and plays a pickup on the lead.
-      const beaten = this.npcs.length > 0 && this.currentSet === "dungeon";
+      // Godot topples the skeleton (topple_skeleton) and plays a pickup on the lead. ONLY on
+      // the armed fight: the first cave visit is a scare the hero flees, and toppling the
+      // skeleton there both spoils the fright and contradicts "rent snel terug naar het licht".
+      const beaten = this.npcs.length > 0 && this.currentSet === "dungeon" && !!node?.setsFlag?.includes("has_crystal");
       if (beaten) for (const n of this.npcs) n.playOneShot("Death_A", "Death_A_Pose");
       if (this.crystal) {
         this.crystal.visible = false; // he picks it up -- it should not still be lying there
@@ -771,6 +775,18 @@ export class ScenarioMode {
       // he does not set off until he is upright -- the get-up plays out in place on the bed
       const p = this.risingFromBed ? 0 : Math.min(1, this.prose.progress());
       const pos = pointOnRoute(this.travel.points, p);
+      // Face along the CURRENT leg. The facing was set once, at the final destination, so on a
+      // multi-leg route he crabbed sideways through every turn -- which is what read as jank.
+      // Only while actually moving, or a paused hero spins to face a stale direction.
+      if (this.travel.points.length > 2 && !this.risingFromBed) {
+        const ahead = pointOnRoute(this.travel.points, Math.min(1, p + 0.02));
+        const dx = ahead.x - pos.x;
+        const dz = ahead.z - pos.z;
+        if (dx * dx + dz * dz > 1e-6) {
+          this.gazeYaw = lerpAngle(this.gazeYaw, Math.atan2(dx, dz), Math.min(1, dt * 6));
+          this.world.hero.node.rotation.y = this.gazeYaw;
+        }
+      }
       // stepping off the bed: the drop to floor height happens over the first stretch of the
       // walk, so it reads as a step down rather than a slow glide across the room
       if (this.travel.dropFrom !== undefined) {

@@ -6,6 +6,8 @@ import { score as scoreUnit } from "./scoring";
 
 export interface Locale {
   resolve(key: string): string;
+  /** optional: fill the per-hero prose tokens ({held}, {wapen}) -- see axis/locale */
+  fillTokens?(text: string, heroId: string): string;
 }
 
 export interface ChooseResult {
@@ -31,6 +33,13 @@ export class RunState {
   graph: StoryGraph;
   locale: Locale;
   currentId: string;
+  /**
+   * Whose run this is. A choice WORD can carry a per-hero token -- the gear fetch at home asks
+   * for "{wapen}", which is "bijl" for a barbaar and "dolk" for a verkenner -- so the word the
+   * child types has to be compared against the FILLED word, not the raw key. Without this the
+   * match never succeeds and the fork loops forever.
+   */
+  heroId = "";
 
   xp = 0;
   starsByNode: Map<string, number> = new Map();
@@ -59,7 +68,7 @@ export class RunState {
     const node = this.current();
     if (node !== null) {
       for (const ch of node.choices) {
-        if (this.locale.resolve(ch.wordKey) !== typedWord) continue;
+        if (this.wordFor(ch.wordKey) !== typedWord) continue;
         if (getFlag && !ch.isAvailable(getFlag)) continue;
         const tgt = getFlag ? ch.resolvedTarget(getFlag) : ch.target;
         this.currentId = tgt;
@@ -67,6 +76,12 @@ export class RunState {
       }
     }
     return { ok: false, target: "", hint: "" };
+  }
+
+  /** The choice word as the child sees it: resolved, then per-hero tokens filled. */
+  wordFor(wordKey: string): string {
+    const raw = this.locale.resolve(wordKey);
+    return this.heroId && this.locale.fillTokens ? this.locale.fillTokens(raw, this.heroId) : raw;
   }
 
   resolveEnding(): { type: "none" | "setback" | "win" | "neutral"; to?: string } {

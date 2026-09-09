@@ -134,6 +134,7 @@ async function main(): Promise<void> {
     heroId = c.id;
     setChoice("hero", c.id);
     setChoice("hero_chosen", "1");
+    island.heroId = c.id; // the island's gear hints name this hero's weapon
     menu.picker(null);
     pickerAfter();
   }
@@ -170,6 +171,7 @@ async function main(): Promise<void> {
   const island = new OverworldMode(world, hud, locale, (site) => {
     void world.fadeCut(() => startScenario(site.scenario));
   });
+  island.heroId = heroId;
   backBtn.onclick = () => void world.fadeCut(() => enterIsland(island.at));
 
   // an editor playtest stash shows that island instead of the authored one (look only)

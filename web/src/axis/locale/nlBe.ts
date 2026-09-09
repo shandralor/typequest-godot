@@ -68,12 +68,15 @@ export const CATALOG: Record<string, string> = {
   "grotFight.narration": "Wees dapper! Nu ben je sterk genoeg.",
   "grotFight.win": "Je verslaat het skelet! Het kristal is van jou.",
   // intro
-  "intro.prose": "het is morgen. de {held} loopt naar het rek aan de muur. hier hangt je {wapen}. aan de andere kant hangt de sleutel. deze komt later nog van pas. je maakt een ommetje in het bos.",
+  // Third person THROUGHOUT: it read "de barbaar loopt ... hier hangt JE bijl ... JE maakt een
+  // ommetje", swapping person mid-passage. "een {wapen}" also dodges the de/het trap, since
+  // only "zwaard" is a het-word.
+  "intro.prose": "het is morgen. de {held} loopt naar het rek aan de muur. daar hangt een {wapen}. aan de andere kant hangt de sleutel. deze komt later nog van pas. de {held} maakt een ommetje in het bos.",
   "intro.narration": "Typ de woorden.",
   "intro.win": "Jouw {held} maakt een ommetje in het bos!",
   // home -- a return visit
   "home.prose": "de {held} is weer thuis. de {held} pakt iets van de muur.",
-  "home.sword_prose": "de {held} pakt je {wapen} van de plank.",
+  "home.sword_prose": "de {held} pakt een {wapen} van de plank.",
   // the ranged weapon is the child's CHOICE, not the class's: boog or kruisboog
   "home.bow_prose": "de {held} pakt de boog van de muur. de koker met pijlen gaat mee.",
   "home.crossbow_prose": "de {held} pakt de kruisboog van de muur. de koker met pijlen gaat mee.",
@@ -143,10 +146,15 @@ export function heroProseVariants(text: string): string[] {
 }
 
 // The Locale shape RunState + the validator consume.
+// The bundled locale. fillTokens belongs here as much as resolve does: main.ts happened to
+// reach for the module export instead, so this object silently lacked it and anything handed
+// `nlBe` (tests, the validator, the pure layer) resolved "{wapen}" to a literal.
 export const nlBe = {
   LOCALE_ID,
   resolve,
   hasKey,
   keys,
+  fillTokens,
+  heroIds,
   heroProseVariants,
 };

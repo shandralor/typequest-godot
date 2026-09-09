@@ -14,6 +14,7 @@ import { lerpAngle } from "./gaze";
 
 export interface Locale {
   resolve(key: string): string;
+  fillTokens(text: string, heroId: string): string;
 }
 
 const OW_WALK_SPEED = 4.5;
@@ -32,7 +33,15 @@ export class OverworldMode {
   private entering = false;
   private hintTimer: number | null = null;
 
+  /** whose island this is -- the gear hints name the hero's OWN weapon, via {wapen} */
+  heroId = "";
+
   constructor(private readonly world: World, private readonly hud: Hud, private readonly locale: Locale, private readonly onArrive: (site: Site) => void) {}
+
+  /** resolve a key AND fill its per-hero tokens; a raw "{wapen}" reaching the child is a bug */
+  private text(key: string): string {
+    return this.locale.fillTokens(this.locale.resolve(key), this.heroId);
+  }
 
   siteLocked(s: Site): boolean {
     return s.scenario === "" || (!!s.unlockFlag && !getFlag(s.unlockFlag));
@@ -87,8 +96,8 @@ export class OverworldMode {
     this.renderLegend();
     if (!done) return;
     const site = done.site;
-    if (this.siteLocked(site)) return this.showHint(this.locale.resolve("overworld.locked"));
-    if (site.requiresFlag && !getFlag(site.requiresFlag)) return this.showHint(this.locale.resolve(site.hintKey ?? "overworld.locked"));
+    if (this.siteLocked(site)) return this.showHint(this.text("overworld.locked"));
+    if (site.requiresFlag && !getFlag(site.requiresFlag)) return this.showHint(this.text(site.hintKey ?? "overworld.locked"));
     this.beginTravel(site);
   }
 
