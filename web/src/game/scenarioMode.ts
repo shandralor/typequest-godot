@@ -20,6 +20,7 @@ import type { Hud } from "../ui/hud";
 import type { SceneDef } from "../world/sceneDef";
 import { rigFor } from "./cameraRigs";
 import { buildShape } from "../render/sceneObjects";
+import { Sparks, Arrow, arrowRings } from "../render/effects";
 import { setupGaze, targetYaw, lerpAngle, type GazeState, type GazeTargets } from "./gaze";
 
 export interface Locale {
@@ -38,6 +39,9 @@ const CHOICE_WALK_DUR = 1.4;
 /** The archery target is not in the set -- Godot builds it in code at the "target" anchor. */
 const TARGET_MODEL = "kaykit/hexagon/target.gltf";
 const TARGET_SCALE = 8.5;
+/** the vocabulary arrow model, and how far off-centre the shortest sentence lands */
+const ARROW_MODEL = "kaykit/adventurers/arrow_bow.gltf";
+const ARCH_MAX_RADIUS = 1.0;
 
 function sceneDefFor(name: string): SceneDef | null {
   return AUTHORED.find((s) => s.name === name)?.def ?? null;
@@ -62,6 +66,12 @@ export class ScenarioMode {
   private gaze: GazeState = { mode: "none", links: -1, rechts: -1 };
   private gazeTargets: GazeTargets = {};
   private gazeYaw = 0;
+  private sparks: Sparks | null = null;
+  /** archery: where each sentence's arrow lands, and how many have flown */
+  private rings: { span: [number, number]; offset: THREE.Vector2 }[] = [];
+  private fired = 0;
+  private arrows: Arrow[] = [];
+  private targetFace = new THREE.Vector3();
   private stagedProps: THREE.Object3D[] = [];
   private heldProps: THREE.Object3D[] = [];
 
@@ -89,7 +99,20 @@ export class ScenarioMode {
     return d.setName || LOCATION_SETS[d.location] || d.location;
   }
 
+  private clearEffects(): void {
+    if (this.sparks) {
+      this.world.s.scene.remove(this.sparks.group);
+      this.sparks.dispose();
+      this.sparks = null;
+    }
+    for (const a of this.arrows) this.world.s.scene.remove(a.obj);
+    this.arrows = [];
+    this.rings = [];
+    this.fired = 0;
+  }
+
   private clearNpcs(): void {
+    this.clearEffects();
     for (const n of this.npcs) this.world.s.scene.remove(n.node);
     this.npcs = [];
     for (const p of this.stagedProps) this.world.s.scene.remove(p);
@@ -155,6 +178,17 @@ export class ScenarioMode {
     // held / staged props (the sword on the grindstone, the bow in hand)
     if (!restage) for (const p of d.props) await this.stageProp(p.asset, p.anchor);
     if (!restage && setName === "archery") await this.buildArcheryTarget();
+    if (setName === "forge") {
+      // the shower sits on the wheel in front of him and heats up as the song is typed
+      const at = this.world.anchor("grind_point").clone().add(new THREE.Vector3(0, 0.7, 0));
+      this.sparks = new Sparks(at);
+      this.world.s.scene.add(this.sparks.group);
+    }
+    if (setName === "archery") {
+      this.rings = arrowRings(this.locale.fillTokens(this.locale.resolve(node.proseKey), this.heroId), ARCH_MAX_RADIUS);
+      this.fired = 0;
+      await this.world.s.loadModel(ARROW_MODEL).catch(() => null);
+    }
     // framing follows the scene type, exactly as the Godot rig does
     const landmarks = !!def0?.anchors?.some((a) => a.name === "bridge_near") && !this.travel;
     this.world.useRig(rigFor(setName, { walking: !!this.travel, win: false, landmarks }), fresh || !restage);
@@ -260,6 +294,8 @@ export class ScenarioMode {
       this.stagedProps.push(t);
     }
     const discY = pos.y + 0.15 * TARGET_SCALE;
+    // just in front of the disc, toward the shooter -- where the arrows land
+    this.targetFace.set(pos.x, discY, pos.z + 0.04 * TARGET_SCALE + 0.25);
     const post = buildShape({
       kind: "box",
       size: [0.22, discY, 0.22],
@@ -289,6 +325,7 @@ export class ScenarioMode {
     const ok = this.prose.typeChar(c);
     this.hud.prose(this.prose.target, this.prose.cursor);
     if (!ok) this.hud.reject();
+    if (this.currentSet === "archery") this.checkFire();
     if (ok) {
       this.sinceKey = 0;
       if (this.travel) this.world.hero.setMoving(true, 2.0);
@@ -299,6 +336,25 @@ export class ScenarioMode {
       this.world.hero.setMoving(false);
       if (this.run!.current()?.isEnding()) this.resolveEnding();
       else this.beginChoice();
+    }
+  }
+
+  /** One arrow per finished sentence (Godot _archery_check_fire). */
+  private checkFire(): void {
+    while (this.fired < this.rings.length && this.prose.cursor >= this.rings[this.fired].span[1]) {
+      const ring = this.rings[this.fired];
+      const base = this.world.s.getModel(ARROW_MODEL);
+      if (base) {
+        const o = ring.offset.clone();
+        if (o.length() > 1) o.setLength(1);
+        const land = this.targetFace.clone().add(new THREE.Vector3(o.x, o.y, -0.5));
+        const from = this.world.hero.node.position.clone().add(new THREE.Vector3(0.35, 1.2, 0));
+        const arrow = new Arrow(base.clone(true), from, land);
+        this.world.s.scene.add(arrow.obj);
+        this.arrows.push(arrow);
+      }
+      this.world.hero.playOneShot("Ranged_Bow_Release", "Ranged_Bow_Aiming_Idle");
+      this.fired += 1;
     }
   }
 
@@ -401,6 +457,12 @@ export class ScenarioMode {
       for (const n of this.npcs) n.update(dt);
       return;
     }
+    if (this.sparks) {
+      this.sparks.emitting = this.phase === "prose";
+      this.sparks.progress = this.prose.progress();
+      this.sparks.update(dt);
+    }
+    for (const a of this.arrows) a.update(dt);
     if (this.gaze.mode !== "none") {
       const h = this.world.hero.node.position;
       const want = targetYaw(this.gaze, this.prose.cursor, { x: h.x, z: h.z }, this.gazeTargets);
@@ -419,6 +481,7 @@ export class ScenarioMode {
 
   exit(): void {
     this.clearNpcs();
+    this.clearEffects();
     this.phase = "pause";
     this.travel = null;
     this.walkoff = null;
