@@ -49,7 +49,7 @@ export const CATALOG: Record<string, string> = {
   "mill.narration": "De molenaar heeft een tip voor je.",
   "mill.win": "Nu weet je hoe je de brug opent!",
   // grotFight -- the armed return
-  "grotFight.prose": "de {held} spant de sterke boog. een pijl vliegt door de lucht. het skelet wankelt even. de {held} trekt het scherpe zwaard. het zwaard klieft de botten. daar ligt een glanzend kristal. de {held} pakt het kristal snel op.",
+  "grotFight.prose": "de {held} pakt het {wapen} stevig vast. het skelet komt met grote stappen dichtbij. de {held} valt het skelet dapper aan. het skelet wankelt even. nog een keer en het valt om. daar ligt een glanzend kristal. de {held} pakt het kristal snel op.",
   "grotFight.narration": "Wees dapper! Nu ben je sterk genoeg.",
   "grotFight.win": "Je verslaat het skelet! Het kristal is van jou.",
   // intro

@@ -68,7 +68,7 @@ export function build(): StoryGraph {
   grotFight.ending = "win";
   grotFight.winKey = "grotFight.win";
   grotFight.setsFlag = "has_crystal";
-  grotFight.safety = nlBeSafety("fnv1a:b665e070");
+  grotFight.safety = nlBeSafety("fnv1a:c5065cec");
   grotFight.scene = Scenes.grot();
   g.addNode(grotFight);
 
