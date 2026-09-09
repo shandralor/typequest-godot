@@ -33,6 +33,62 @@ function allProse(): { where: string; text: string }[] {
   return out;
 }
 
+/** every word the child is asked to TYPE at a fork, resolved per hero */
+function allChoiceWords(): { where: string; text: string }[] {
+  const out: { where: string; text: string }[] = [];
+  for (const s of LIST) {
+    const graph = build(s.id);
+    for (const [id, node] of graph.nodes) {
+      for (const ch of node.choices ?? []) {
+        for (const hero of heroIds()) {
+          out.push({ where: `${s.id}/${id}/${ch.wordKey}/${hero}`, text: fillTokens(nlBe.resolve(ch.wordKey), hero) });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+describe("the words at a fork are typeable", () => {
+  const words = allChoiceWords();
+
+  it("has fork words to check", () => {
+    expect(words.length).toBeGreaterThan(0);
+  });
+
+  it("leaves no unresolved {token} in a word the child must type", () => {
+    for (const { where, text } of words) {
+      expect(text.includes("{"), `${where}: unresolved token "${text}"`).toBe(false);
+    }
+  });
+
+  it("asks for no character the on-screen keyboard cannot produce", () => {
+    for (const { where, text } of words) {
+      const bad = [...text].filter((ch) => !/[a-z .]/.test(ch));
+      expect(bad, `${where}: untypeable ${JSON.stringify(bad)}`).toEqual([]);
+    }
+  });
+
+  it("keeps every fork word inside the band-1 word length", () => {
+    for (const { where, text } of words) {
+      for (const w of text.split(" ").filter(Boolean)) {
+        expect(w.length, `${where}: "${w}" is ${w.length} letters`).toBeLessThanOrEqual(9);
+      }
+    }
+  });
+
+  it("never offers two forks the same word at one node", () => {
+    const byNode = new Map<string, string[]>();
+    for (const { where, text } of words) {
+      const node = where.split("/").slice(0, 2).join("/") + "/" + where.split("/")[3];
+      byNode.set(node, [...(byNode.get(node) ?? []), text]);
+    }
+    for (const [node, list] of byNode) {
+      expect(new Set(list).size, `${node}: duplicate fork words ${JSON.stringify(list)}`).toBe(list.length);
+    }
+  });
+});
+
 describe("the band shows what the child types", () => {
   const prose = allProse();
 

@@ -14,9 +14,11 @@ export const CATALOG: Record<string, string> = {
   "hero.barbarian": "barbaar",
   "hero.mage": "magier",
   "hero.ranger": "jager",
-  "hero.rogue": "dief",
+  "hero.rogue": "verkenner",
   "hero.witch": "heks",
-  // primary weapon per hero (the {wapen} token)
+  // Primary weapon per hero (the {wapen} token). GRAMMAR TRAP: only "zwaard" is a het-word --
+  // bijl, staf, kruisboog and dolk are all de-words. So never write "het {wapen}" or "de {wapen}";
+  // write "je {wapen}", which is correct for both genders (and matches the game's register).
   "wapen.knight": "zwaard",
   "wapen.barbarian": "bijl",
   "wapen.mage": "staf",
@@ -49,7 +51,7 @@ export const CATALOG: Record<string, string> = {
   "mill.narration": "De molenaar heeft een tip voor je.",
   "mill.win": "Nu weet je hoe je de brug opent!",
   // grotFight -- the armed return
-  "grotFight.prose": "de {held} pakt het {wapen} stevig vast. het skelet komt met grote stappen dichtbij. de {held} valt het skelet dapper aan. het skelet wankelt even. nog een keer en het valt om. daar ligt een glanzend kristal. de {held} pakt het kristal snel op.",
+  "grotFight.prose": "de {held} maakt zich klaar voor de strijd. het skelet komt met grote stappen dichtbij. de {held} valt het skelet dapper aan. het skelet wankelt even. nog een keer en het valt om. daar ligt een glanzend kristal. de {held} pakt het kristal snel op.",
   "grotFight.narration": "Wees dapper! Nu ben je sterk genoeg.",
   "grotFight.win": "Je verslaat het skelet! Het kristal is van jou.",
   // intro
@@ -58,15 +60,15 @@ export const CATALOG: Record<string, string> = {
   "intro.win": "Jouw {held} maakt een ommetje in het bos!",
   // home -- a return visit
   "home.prose": "de {held} is weer thuis. de {held} pakt iets van de muur.",
-  "home.sword_prose": "de {held} pakt het zwaard van de plank.",
+  "home.sword_prose": "de {held} pakt je {wapen} van de plank.",
   "home.bow_prose": "de {held} pakt het wapen van de muur.",
   "home.narration": "Typ de woorden.",
   "home.win": "Tot de volgende keer!",
-  "home.win_sword": "Je hebt je zwaard gehaald!",
+  "home.win_sword": "Je hebt je {wapen} gehaald!",
   "home.win_bow": "Je hebt je wapen gehaald!",
   "home.nothing": "Je hebt alles al gehaald!",
   // site-prerequisite hints
-  "hint.smidse": "Haal eerst je zwaard thuis!",
+  "hint.smidse": "Haal eerst je {wapen} thuis!",
   "hint.boog": "Haal eerst je wapen thuis!",
   // objectives
   "objective.wapens": "Haal je wapens thuis op!",
@@ -77,7 +79,7 @@ export const CATALOG: Record<string, string> = {
   "word.grot": "grot",
   "word.brug": "brug",
   "word.kist": "kist",
-  "word.zwaard": "zwaard",
+  "word.zwaard": "{wapen}",
   "word.boog": "wapen",
   // overworld site words
   "site.bos": "bos",

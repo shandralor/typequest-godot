@@ -36,7 +36,7 @@ export function build(): StoryGraph {
   zwaard.narrationKey = "home.narration";
   zwaard.ending = "win";
   zwaard.winKey = "home.win_sword";
-  zwaard.safety = safety("fnv1a:b3d74729");
+  zwaard.safety = safety("fnv1a:6c66816b");
   zwaard.scene = houseScene();
   g.addNode(zwaard);
 

@@ -460,7 +460,9 @@ export class ScenarioMode {
         const it = HOUSE_ITEMS.find((i) => i.takeNode === ch.target);
         return !it || !getFlag(it.flag);
       })
-      .map((ch) => ({ word: this.locale.resolve(ch.wordKey), choice: ch }));
+      // fillTokens as well as resolve: the melee fetch word IS the class's weapon noun,
+      // so an unresolved "{wapen}" would otherwise be what the child is asked to type
+      .map((ch) => ({ word: this.locale.fillTokens(this.locale.resolve(ch.wordKey), this.heroId), choice: ch }));
     if (this.candidates.length === 0) {
       // nothing left to take -- a short "you have everything" beat, then leave
       this.hud.hideBand();
