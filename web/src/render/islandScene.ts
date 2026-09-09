@@ -216,6 +216,30 @@ function isVariant(tags: string[] | undefined): boolean {
   return !!tags && tags.length > 0;
 }
 
+/**
+ * Give an InstancedMesh culling bounds that actually contain every instance.
+ *
+ * three's own computeBoundingSphere() came out TOO SMALL and off-centre here -- measured on the
+ * forest fork, every instanced set was short by 5-10 units with its centre out by up to 16 --
+ * so three frustum-culled them early and lumps of scenery popped out at the edge of the screen.
+ * The cave mouth losing half its rock face is what that looks like in play.
+ *
+ * Union the geometry's box under each instance matrix, and derive the sphere from that. It is
+ * conservative, which is the safe direction: worst case something off-screen is still drawn.
+ */
+export function fitInstanceBounds(mesh: THREE.InstancedMesh, placements: THREE.Matrix4[], local: THREE.Matrix4): void {
+  const geo = mesh.geometry;
+  if (!geo.boundingBox) geo.computeBoundingBox();
+  const unit = geo.boundingBox;
+  if (!unit) return;
+  const box = new THREE.Box3();
+  const scratch = new THREE.Box3();
+  const m = new THREE.Matrix4();
+  for (const p of placements) box.union(scratch.copy(unit).applyMatrix4(m.multiplyMatrices(p, local)));
+  mesh.boundingBox = box;
+  mesh.boundingSphere = box.getBoundingSphere(new THREE.Sphere());
+}
+
 /** Build a static scene group from a SceneDef (the game path): tiles + props + shapes + lights. */
 export async function buildIslandGroup(
   s: IslandScene,
@@ -277,9 +301,7 @@ export async function buildIslandGroup(
         const m = new THREE.Matrix4();
         matrices.forEach((placement, i) => mesh.setMatrixAt(i, m.multiplyMatrices(placement, part.local)));
         mesh.instanceMatrix.needsUpdate = true;
-        // culling reads these, and three only fills them for a plain Mesh
-        mesh.computeBoundingBox();
-        mesh.computeBoundingSphere();
+        fitInstanceBounds(mesh, matrices, part.local);
         group.add(mesh);
       }
       if (!sea) {

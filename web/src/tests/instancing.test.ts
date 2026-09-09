@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
-import { templateParts } from "../render/islandScene";
+import { templateParts, fitInstanceBounds } from "../render/islandScene";
 
 function makeTemplate(): THREE.Object3D {
   const root = new THREE.Group();
@@ -70,3 +70,56 @@ describe("instanced placement", () => {
     expect(templateParts(new THREE.Group())).toBeNull();
   });
 });
+
+// Culling bounds. three's own computeBoundingSphere() came out too small and off-centre for
+// these instanced sets, so scenery was frustum-culled while still on screen -- the cave mouth
+// lost half its rock face. The bounds must CONTAIN every instance; being too big is harmless.
+describe("instanced culling bounds", () => {
+  const geo = new THREE.BoxGeometry(1, 2, 1);
+  const local = new THREE.Matrix4().makeTranslation(0.3, 0, -0.2);
+
+  /** the placements a wide scatter produces -- the case three got wrong */
+  const scatter = (n: number): THREE.Matrix4[] =>
+    Array.from({ length: n }, (_, i) =>
+      new THREE.Matrix4().compose(
+        new THREE.Vector3(Math.cos(i) * 40, (i % 3) * 2, Math.sin(i * 1.7) * 60),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(0, i, 0)),
+        new THREE.Vector3(1 + (i % 4) * 0.5, 1, 1)
+      )
+    );
+
+  it("contains every instance, however widely they are scattered", () => {
+    const placements = scatter(50);
+    const mesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial(), placements.length);
+    const m = new THREE.Matrix4();
+    placements.forEach((p, i) => mesh.setMatrixAt(i, m.multiplyMatrices(p, local)));
+    fitInstanceBounds(mesh, placements, local);
+
+    const sphere = mesh.boundingSphere!;
+    expect(sphere).toBeTruthy();
+    const unit = geo.boundingBox ?? (geo.computeBoundingBox(), geo.boundingBox!);
+    for (const [i, p] of placements.entries()) {
+      const box = unit.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(p, local));
+      for (const corner of cornersOf(box)) {
+        expect(sphere.containsPoint(corner), `instance ${i} corner outside the culling sphere`).toBe(true);
+        expect(mesh.boundingBox!.containsPoint(corner), `instance ${i} corner outside the culling box`).toBe(true);
+      }
+    }
+  });
+
+  it("handles a single instance", () => {
+    const placements = [new THREE.Matrix4().makeTranslation(5, 0, -3)];
+    const mesh = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial(), 1);
+    mesh.setMatrixAt(0, placements[0]);
+    fitInstanceBounds(mesh, placements, new THREE.Matrix4());
+    expect(mesh.boundingSphere!.containsPoint(new THREE.Vector3(5, 1, -3))).toBe(true);
+  });
+});
+
+function cornersOf(b: THREE.Box3): THREE.Vector3[] {
+  const out: THREE.Vector3[] = [];
+  for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {
+    out.push(new THREE.Vector3(x, y, z));
+  }
+  return out;
+}

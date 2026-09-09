@@ -1269,3 +1269,26 @@ rotate. This needs a bridge authored into `forest_fork.ts` with a raised angle, 
 animation, and the deck-walk, which is a scene-authoring job rather than a code fix.
 
 - NEXT: the drawbridge, above.
+
+## Instanced scenery was being culled while still on screen (2026-09-09)
+
+Owner spotted the cave mouth at the forest fork "half gone on the outside". It was my
+instancing, and it affected every set with repeated scenery.
+
+`THREE.InstancedMesh.computeBoundingSphere()` produced bounds that were TOO SMALL and
+off-centre for these scatters -- measured on the fork, every instanced set was short by 5-10
+units with its centre out by up to 16. three then frustum-culled the whole InstancedMesh while
+part of it was still in view, so lumps of rock and trees popped out at the edge of the frame.
+Because an instanced set is culled as ONE unit, losing it loses everything at once, which is
+why it read as half the cave disappearing rather than a few stones.
+
+`fitInstanceBounds()` now unions the geometry box under each instance matrix and derives the
+sphere from that -- conservative, so the worst case is drawing something just off-screen.
+Verified against an instancing-disabled build: the fork now renders identically.
+
+`instancing.test.ts` asserts every instance corner lies inside the culling bounds for a wide
+scatter, and it FAILS when swapped back to three's own computation, so the regression cannot
+come back quietly.
+
+Lesson for the next time: three's built-in bounds helpers are not automatically right for
+instanced scatters. Measure them.
