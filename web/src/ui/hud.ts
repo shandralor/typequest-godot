@@ -1,8 +1,26 @@
 // The playing HUD as DOM: a top prompt bar, the type-along band (typed / next / rest), a
 // message panel, the island's site legend (with the typed-prefix highlight) and an on-screen
-// keyboard that lights the next key. Pure presentation; the modes drive it.
+// keyboard that lights the next key in ITS FINGER'S colour, flanked by the two finger legends
+// (ui/keyboard_guide.gd + ui/finger_hand.gd). Pure presentation; the modes drive it.
+//
+// The key rows come from the active keyboard-layout axis, not a hardcoded board, so switching
+// to QWERTY re-letters the keyboard and re-aims the finger guidance with no logic change.
 
-const ROWS = ["qwertyuiop", "asdfghjkl", "zxcvbnm"];
+import { guidanceForChar, keyboardRows } from "../game/keyboardSettings";
+import { FingerHand } from "./fingerHand";
+
+/** finger id -> colour (ui/keyboard_guide.gd FINGER_COLORS, carried verbatim) */
+export const FINGER_COLORS: Record<string, string> = {
+  left_pinky: "#e57373",
+  left_ring: "#ffb74d",
+  left_middle: "#fff176",
+  left_index: "#81c784",
+  right_index: "#4dd0e1",
+  right_middle: "#64b5f6",
+  right_ring: "#9575cd",
+  right_pinky: "#f06292",
+  thumb: "#bdbdbd",
+};
 
 function $<T extends HTMLElement>(id: string): T {
   return document.getElementById(id) as T;
@@ -19,35 +37,41 @@ export interface LegendItem {
 
 export class Hud {
   private keys = new Map<string, HTMLElement>();
+  private leftHand: FingerHand;
+  private rightHand: FingerHand;
 
   constructor() {
     const kb = $<HTMLElement>("keyboard");
     kb.innerHTML = "";
-    for (const row of ROWS) {
+    this.leftHand = new FingerHand("left_", FINGER_COLORS, false);
+    kb.appendChild(this.leftHand.el);
+    const board = document.createElement("div");
+    board.className = "kboard";
+    kb.appendChild(board);
+    for (const row of keyboardRows()) {
       const r = document.createElement("div");
       r.className = "krow";
-      for (const ch of row) {
-        const k = document.createElement("span");
-        k.className = "key";
-        k.textContent = ch;
-        this.keys.set(ch, k);
-        r.appendChild(k);
-      }
-      kb.appendChild(r);
+      for (const ch of row) r.appendChild(this.makeKey(ch, ch));
+      board.appendChild(r);
     }
-    const r = document.createElement("div");
-    r.className = "krow";
-    const sp = document.createElement("span");
-    sp.className = "key space";
-    sp.textContent = "spatie";
-    this.keys.set(" ", sp);
-    r.appendChild(sp);
-    const dot = document.createElement("span");
-    dot.className = "key";
-    dot.textContent = ".";
-    this.keys.set(".", dot);
-    r.appendChild(dot);
-    kb.appendChild(r);
+    // space + the period are layout-neutral, so the guide adds them itself
+    const extra = document.createElement("div");
+    extra.className = "krow";
+    extra.appendChild(this.makeKey(" ", "spatie", "space"));
+    extra.appendChild(this.makeKey(".", "."));
+    board.appendChild(extra);
+    this.rightHand = new FingerHand("right_", FINGER_COLORS, true);
+    kb.appendChild(this.rightHand.el);
+  }
+
+  private makeKey(ch: string, label: string, extraClass = ""): HTMLElement {
+    const k = document.createElement("span");
+    k.className = `key ${extraClass}`.trim();
+    k.textContent = label;
+    // the home-row anchor f/j keeps its one scaffold: a marked label, from the start (A1/A8)
+    if (guidanceForChar(ch)?.isHomeAnchor) k.classList.add("anchor");
+    this.keys.set(ch, k);
+    return k;
   }
 
   /** XP + stars, top-right (the Godot build shows the same counters). */
@@ -138,12 +162,38 @@ export class Hud {
       .join("");
   }
 
+  /**
+   * Light the key for the next expected character (or "" to clear), in its finger's colour,
+   * and pop the matching fingertip on the legend beside the keyboard.
+   */
   highlightKey(ch: string): void {
-    for (const [k, el] of this.keys) el.classList.toggle("lit", k === ch && ch !== "");
+    for (const [k, el] of this.keys) {
+      const on = k === ch && ch !== "";
+      el.classList.toggle("lit", on);
+      el.style.background = on ? FINGER_COLORS[guidanceForChar(k)?.finger ?? ""] ?? "" : "";
+    }
+    const finger = ch === "" ? "" : guidanceForChar(ch)?.finger ?? "";
+    // the thumb is shared (space) -- light it on both hands
+    if (finger === "thumb") {
+      this.leftHand.highlight("thumb");
+      this.rightHand.highlight("thumb");
+    } else {
+      this.leftHand.highlight(finger.startsWith("left") ? finger : "");
+      this.rightHand.highlight(finger.startsWith("right") ? finger : "");
+    }
   }
 
   keyboard(visible: boolean): void {
     $<HTMLElement>("keyboard").hidden = !visible;
+  }
+
+  /**
+   * Show/hide the finger legend without touching the keys. The overworld types site names,
+   * where per-finger coaching is just noise -- the hands stay hidden there.
+   */
+  hands(visible: boolean): void {
+    this.leftHand.setVisible(visible);
+    this.rightHand.setVisible(visible);
   }
 }
 

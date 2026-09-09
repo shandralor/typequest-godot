@@ -5,6 +5,8 @@ const KEY = "tq_progress";
 interface Store {
   flags: Record<string, boolean>;
   choices: Record<string, string>;
+  /** cumulative effort counters that grow ACROSS runs (words, adventures, xp, stars) */
+  stats: Record<string, number>;
 }
 
 function load(): Store {
@@ -12,12 +14,12 @@ function load(): Store {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const s = JSON.parse(raw) as Store;
-      return { flags: s.flags ?? {}, choices: s.choices ?? {} };
+      return { flags: s.flags ?? {}, choices: s.choices ?? {}, stats: s.stats ?? {} };
     }
   } catch {
     /* fall through */
   }
-  return { flags: {}, choices: {} };
+  return { flags: {}, choices: {}, stats: {} };
 }
 
 let store = load();
@@ -44,8 +46,33 @@ export function setChoice(name: string, value: string): void {
   store.choices[name] = value;
   persist();
 }
+// --- cumulative stats (AppProgress.get_stat / add_stat) ------------------------
+// Effort counters that add up across runs -- words typed, adventures finished, xp, stars.
+// The semantics are CUMULATIVE (effort accumulates and is never spent), and privacy A5 holds:
+// these are coarse counts, nothing identifying.
+
+export function getStat(name: string): number {
+  return store.stats[name] ?? 0;
+}
+
+export function addStat(name: string, delta: number): void {
+  if (delta === 0) return;
+  store.stats[name] = (store.stats[name] ?? 0) + delta;
+  persist();
+}
+
+/** Every stat that has ever been counted (the menu totals read this). */
+export function allStats(): Record<string, number> {
+  return { ...store.stats };
+}
+
+/** Words in a piece of prose, the way the Godot build counts them (_word_count). */
+export function wordCount(prose: string): number {
+  return prose.split(" ").filter((w) => w !== "").length;
+}
+
 /** Debug: wipe progress (the `?reset` query does this). */
 export function resetProgress(): void {
-  store = { flags: {}, choices: {} };
+  store = { flags: {}, choices: {}, stats: {} };
   persist();
 }

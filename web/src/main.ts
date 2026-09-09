@@ -14,7 +14,8 @@ import { Menu, stepHero } from "./ui/menu";
 import { MusicPlayer } from "./audio/musicPlayer";
 import { OverworldMode } from "./game/overworldMode";
 import { ScenarioMode } from "./game/scenarioMode";
-import { getChoice, setChoice, getFlag, setFlag, resetProgress } from "./game/flags";
+import { getChoice, setChoice, getFlag, setFlag, resetProgress, allStats } from "./game/flags";
+import { setActiveTransient } from "./game/keyboardSettings";
 import { ISLAND_FOV, OW_IDLE_BIAS, OW_IDLE_ZOOM } from "./game/cameraRigs";
 
 const locale = { resolve: nlBe.resolve, fillTokens: nlBe.fillTokens };
@@ -30,6 +31,9 @@ const PICKER_SCENE = { tiles: [], props: [], shapes: [{ kind: "plane" as const, 
 
 async function main(): Promise<void> {
   if (location.search.includes("reset")) resetProgress();
+  // ?layout=qwerty swaps the keyboard axis for this session only (debug), the way --layout does
+  const layoutArg = new URLSearchParams(location.search).get("layout");
+  if (layoutArg) setActiveTransient(layoutArg);
   const canvas = document.getElementById("app") as HTMLCanvasElement;
   const world = new World(canvas, document.getElementById("fade")!);
   const hud = new Hud();
@@ -63,6 +67,7 @@ async function main(): Promise<void> {
     hud.choices(null);
     hud.hideBand();
     hud.keyboard(false);
+    hud.hands(false);
     hud.hideScore();
     backBtn.hidden = true;
   }
@@ -80,6 +85,7 @@ async function main(): Promise<void> {
     world.hero.face(0, 1);
     world.hero.setMoving(false);
     world.useIslandCamera(OVERWORLD.camera, { zoom: MENU_ZOOM, bias: OW_IDLE_BIAS, fov: MENU_FOV, snap: true });
+    menu.totals(allStats());
     menu.show("TypeQuest", [
       { text: "Start", onPress: () => void startPressed() },
       { text: "Kies je held", onPress: () => showPicker(() => void showMenu()) },
@@ -150,6 +156,7 @@ async function main(): Promise<void> {
     music.playContext("adventure");
     clearUi();
     hud.keyboard(true);
+    hud.hands(true); // per-finger coaching belongs to the prose, not the island's site words
     hud.score(0, 0);
     backBtn.hidden = false;
     scenario = new ScenarioMode(world, hud, locale, heroId, () => {

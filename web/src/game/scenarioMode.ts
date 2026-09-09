@@ -13,7 +13,7 @@ import { build as buildScenario } from "../content/scenarios";
 import { HOUSE_ITEMS } from "../content/home/homeArc";
 import { AUTHORED } from "../editor/content_index";
 import { resolve as resolveAsset } from "../axis/vocabulary/fantasyPoc";
-import { getFlag, setFlag } from "./flags";
+import { addStat, getFlag, setFlag, wordCount } from "./flags";
 import { HeroRig } from "./hero";
 import type { World } from "./world";
 import type { Hud } from "../ui/hud";
@@ -340,6 +340,7 @@ export class ScenarioMode {
     }
     if (this.prose.isComplete()) {
       this.run!.scoreCurrent(this.prose.correctChars(), this.prose.accuracy(), true);
+      addStat("words", wordCount(this.prose.target)); // cumulative effort, counted per beat
       this.hud.score(this.score().xp, this.score().stars);
       this.world.hero.setMoving(false);
       if (this.run!.current()?.isEnding()) this.resolveEnding();
@@ -448,6 +449,14 @@ export class ScenarioMode {
     this.hud.highlightKey("");
     this.hud.message(this.locale.fillTokens(text, this.heroId) + "\n(druk op enter)");
     if (this.currentSet === "forge") this.world.useRig(rigFor("forge", { walking: false, win: true, landmarks: false }), false);
+    // bank the persistent effort for a real adventure only: a home chore (fetching gear) and
+    // the cave setback are not one, so they do not add to the totals (Godot's `celebrate`)
+    if (ending.type === "win" && this.currentSet !== "house") {
+      const run = this.score();
+      addStat("adventures", 1);
+      addStat("xp", run.xp);
+      addStat("stars", run.stars);
+    }
     this.phase = "win";
   }
 

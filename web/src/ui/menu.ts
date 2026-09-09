@@ -33,6 +33,27 @@ export class Menu {
 
   hide(): void {
     $<HTMLElement>("menu").hidden = true;
+    this.totals(null);
+  }
+
+  /**
+   * The cumulative effort line under the title: everything the child has typed so far, across
+   * every run. Effort only adds up, so this is the one number that never goes down (G9).
+   */
+  totals(stats: Record<string, number> | null): void {
+    const el = $<HTMLElement>("totals");
+    if (!stats || (stats.words ?? 0) === 0) {
+      el.hidden = true;
+      return;
+    }
+    el.hidden = false;
+    const parts = [
+      count(stats.words ?? 0, "woord", "woorden") + " getypt",
+      count(stats.adventures ?? 0, "avontuur", "avonturen"),
+      count(stats.stars ?? 0, "ster", "sterren"),
+      `${stats.xp ?? 0} XP`,
+    ];
+    el.textContent = parts.join("  -  ");
   }
 
   /** The picker caption: which hero is centred, and how to choose. */
@@ -41,6 +62,11 @@ export class Menu {
     el.hidden = label === null;
     if (label !== null) el.innerHTML = `<div class="pick-name">${label}</div><div class="pick-hint">&lt; pijltjes &gt; &nbsp; Enter om te kiezen</div>`;
   }
+}
+
+/** "1 avontuur" / "3 avonturen" -- a 6-year-old reads this line, so the Dutch has to be right. */
+export function count(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`;
 }
 
 /** Cycle helper for the picker carousel. */

@@ -884,3 +884,36 @@ Godot `main` is untouched; this branch holds the Three.js rebuild spike (`web/`)
 - NEXT: (a) polish -- choice walk toward the fork before the cut, gaze at cave/bridge while
   typing, score/XP HUD, music, the crystal + drawbridge crossing (brug node), archery crosshair
   + arrows; (b) engine direction decision (Godot vs web); (c) later, package the editor standalone.
+
+## Web build chosen; finger guide + cumulative stats ported (2026-09-09)
+
+Decision (owner, after the Godot-vs-web comparison): **the web build is the direction** --
+it runs far better in the browser and now matches the desktop visuals. The two gaps the
+comparison named have been closed, so nothing Godot-only remains in band 1.
+
+- **Finger guide** (port of `ui/keyboard_guide.gd` + `ui/finger_hand.gd`):
+  - `web/src/game/keyboardSettings.ts` -- the active-layout selector (port of
+    `game/keyboard_settings.gd`), persisted in the `layout` profile choice, `?layout=qwerty`
+    switches transiently. The on-screen keyboard is now built from `keyboardRows()` of the
+    ACTIVE layout instead of a hardcoded QWERTY string, so the board re-letters on a switch.
+  - `web/src/ui/fingerHand.ts` -- the finger legend: the two Kenney nail sprites (now in
+    `web/public/assets/kenney/monster/`, CC0) used as CSS **masks** so the tint is the finger
+    colour, the same trick Godot's `modulate` plays on a white texture. Godot geometry carried
+    verbatim (fingertips bottom-aligned at y=96, thumb dropped 18, labels at y=116, idle nails
+    darkened 0.5, active scaled 1.14).
+  - `web/src/ui/hud.ts` -- `FINGER_COLORS` carried verbatim; the lit key takes its finger's
+    colour inline, f/j keep the marked home-anchor label, and `hud.hands(v)` mirrors
+    `set_hands_visible` (hands ON in a scenario, OFF on the island where site words are typed).
+  - CSS: `#keyboard` is now `[hand][kboard][hand]`; the hands scale via `--hs`
+    (0.85 / 0.62 / 0.45 at the 820px + 620px height breakpoints).
+- **Cumulative stats** (port of `AppProgress.add_stat`): `getStat` / `addStat` / `allStats` /
+  `wordCount` in `web/src/game/flags.ts`, persisted in the same localStorage blob. Wired the
+  way Godot wires it: `words` per finished prose beat, and `adventures` / `xp` / `stars` on a
+  win that is NOT a house scene (a home chore and the cave setback are not adventures). The
+  menu shows the running totals under the title, correctly pluralised.
+- 97 tests pass (`npx vitest run`), typecheck clean. Verified in the browser at 1600x1000 and
+  1024x600: AZERTY board, `h` lit right-index cyan with the matching nail popped, `o` lit
+  right-ring purple, hands hidden on the island, `?layout=qwerty` re-letters the board and
+  re-aims the guidance, and a full `bos` run banked 82 words / 1 avontuur / 9 sterren / 300 XP.
+- NEXT: make the spike canonical (fold `web/` forward, decide what happens to the Godot tree),
+  and the deferred perf/optimization pass.
