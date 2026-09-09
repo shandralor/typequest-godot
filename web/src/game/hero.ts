@@ -5,22 +5,49 @@
 
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { assetUrl } from "../assetPath";
 
 const RIGS = ["kaykit/adventurers/Rig_Medium_General.glb", "kaykit/adventurers/Rig_Medium_MovementBasic.glb"];
 /** the Walking_A clip is authored for roughly this ground speed (world units / s) */
 const WALK_REF_SPEED = 2.4;
 
-/** Free a subtree's geometry and materials. */
-function disposeTree(root: THREE.Object3D): void {
-  root.traverse((o) => {
-    const m = o as THREE.Mesh;
-    if (!m.isMesh) return;
-    m.geometry?.dispose();
-    const mat = m.material as THREE.Material | THREE.Material[] | undefined;
-    if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
-    else mat?.dispose();
+// ONE loader and ONE promise per URL, shared by the hero and every NPC (docs/woc-playbook.md).
+// Before this, each HeroRig built its own loader and re-fetched + re-parsed the character GLB
+// AND both shared rig GLBs -- so a scene with two NPCs parsed the rigs six times over, and
+// every hero swap in the picker paid for them again.
+const loader = new GLTFLoader();
+const gltfCache = new Map<string, Promise<THREE.Object3D & { animations?: THREE.AnimationClip[] }>>();
+
+function loadGltf(path: string): Promise<THREE.Object3D & { animations?: THREE.AnimationClip[] }> {
+  let p = gltfCache.get(path);
+  if (!p) {
+    p = loader.loadAsync(assetUrl("/assets/" + path)).then((gltf) => {
+      const root = gltf.scene as THREE.Object3D & { animations?: THREE.AnimationClip[] };
+      root.animations = gltf.animations;
+      root.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh) return;
+        m.castShadow = true;
+        m.receiveShadow = true;
+        m.frustumCulled = false; // skinned parts can report stale bind-pose bounds and vanish
+      });
+      return root;
+    });
+    gltfCache.set(path, p);
+  }
+  return p;
+}
+
+/** The shared animation clips, parsed from the rig GLBs once for the whole app. */
+let clipsPromise: Promise<Map<string, THREE.AnimationClip>> | null = null;
+function loadClips(): Promise<Map<string, THREE.AnimationClip>> {
+  clipsPromise ??= Promise.all(RIGS.map(loadGltf)).then((rigs) => {
+    const m = new Map<string, THREE.AnimationClip>();
+    for (const r of rigs) for (const c of r.animations ?? []) m.set(c.name, c);
+    return m;
   });
+  return clipsPromise;
 }
 
 export class HeroRig {
@@ -34,17 +61,18 @@ export class HeroRig {
   private loadGen = 0;
   private loadedPath = "";
 
-  /** Drop the currently-shown model (and everything bound to it) so a reload replaces it. */
+  /**
+   * Drop the currently-shown model (and everything bound to it) so a reload replaces it.
+   * Nothing is disposed: a clone SHARES its geometry and materials with the cached template,
+   * so disposing here would blank every other character using that model.
+   */
   private clearModel(): void {
     this.loadedPath = "";
     this.mixer?.stopAllAction();
     this.mixer = null;
     this.actions.clear();
     this.current = null;
-    for (const child of [...this.node.children]) {
-      this.node.remove(child);
-      disposeTree(child);
-    }
+    for (const child of [...this.node.children]) this.node.remove(child);
   }
 
   async load(modelPath: string): Promise<void> {
@@ -55,27 +83,17 @@ export class HeroRig {
     if (modelPath === this.loadedPath) return; // already showing this hero
     const gen = ++this.loadGen;
     this.clearModel();
-    const loader = new GLTFLoader();
-    const [hero, ...rigs] = await Promise.all([loader.loadAsync(assetUrl("/assets/" + modelPath)), ...RIGS.map((r) => loader.loadAsync(assetUrl("/assets/" + r)))]);
-    if (gen !== this.loadGen) {
-      disposeTree(hero.scene); // a newer load won while this one was in flight
-      return;
-    }
-    const model = hero.scene;
-    model.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (m.isMesh) {
-        m.castShadow = true;
-        m.receiveShadow = true;
-        m.frustumCulled = false; // skinned parts can report stale bind-pose bounds and vanish
-      }
-    });
+    const [template, clips] = await Promise.all([loadGltf(modelPath), loadClips()]);
+    if (gen !== this.loadGen) return; // a newer load won while this one was in flight
+    // SkeletonUtils.clone gives this rig its OWN skeleton over the template's shared geometry,
+    // which is what lets two NPCs of the same model animate independently.
+    const model = cloneSkinned(template);
     // pivot at the feet: seat the measured lowest point on y = 0
     model.position.y -= new THREE.Box3().setFromObject(model).min.y;
     this.node.add(model);
     this.loadedPath = modelPath;
     this.mixer = new THREE.AnimationMixer(model);
-    for (const r of rigs) for (const c of r.animations) this.clips.set(c.name, c);
+    this.clips = clips;
     this.play("Idle_A");
   }
 

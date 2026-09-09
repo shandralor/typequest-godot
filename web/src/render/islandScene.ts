@@ -165,6 +165,47 @@ export function createIslandScene(canvas: HTMLCanvasElement): IslandScene {
   return { renderer, scene, camera, sun, hemi, loadModel, getModel: (p) => cache.get(p), setupPost, resize, render };
 }
 
+/**
+ * A model that appears more than once is drawn as ONE InstancedMesh per sub-mesh instead of a
+ * clone per placement. The island is mostly repeats -- the authored overworld places the same
+ * 24-triangle water tile 147 times -- so cloning cost 147 draw calls (plus 147 more in the
+ * shadow pass) to move 3.5k triangles. Two placements already win: a model with N sub-meshes
+ * costs N instanced draws instead of 2N cloned ones.
+ */
+const INSTANCE_MIN = 2;
+
+/** Every drawable sub-mesh of a loaded template, with its transform RELATIVE to the template. */
+interface TemplatePart {
+  geometry: THREE.BufferGeometry;
+  material: THREE.Material | THREE.Material[];
+  local: THREE.Matrix4;
+}
+
+/**
+ * Flatten a template into instanceable parts. Returns null when the model cannot be instanced
+ * (a skinned mesh needs its own skeleton, so it stays a clone) -- callers fall back to cloning.
+ * Exported for the test that pins `placement * local` to what cloning would have produced.
+ */
+export function templateParts(base: THREE.Object3D): TemplatePart[] | null {
+  base.updateWorldMatrix(true, true);
+  // Relative to the template's PARENT, not to the template itself: cloning puts the whole
+  // template (root transform included) under the placement wrapper, so the root's own
+  // position/rotation has to survive here too. Cached templates are unparented, which makes
+  // this the identity -- but a gltf root that carries a transform would otherwise be flattened
+  // away and every instance of it would sit in the wrong place.
+  const toLocal = new THREE.Matrix4();
+  if (base.parent) toLocal.copy(base.parent.matrixWorld).invert();
+  const parts: TemplatePart[] = [];
+  let skinned = false;
+  base.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if ((o as THREE.SkinnedMesh).isSkinnedMesh) skinned = true;
+    if (!m.isMesh || !m.geometry) return;
+    parts.push({ geometry: m.geometry, material: m.material, local: new THREE.Matrix4().multiplyMatrices(toLocal, m.matrixWorld) });
+  });
+  return skinned || parts.length === 0 ? null : parts;
+}
+
 /** Build a static scene group from a SceneDef (the game path): tiles + props + shapes + lights. */
 export async function buildIslandGroup(
   s: IslandScene,
@@ -175,20 +216,70 @@ export async function buildIslandGroup(
   group.name = "island";
   const land = new THREE.Box3();
   const hidden = new Set(def.props.filter((p) => p.hidden).map((p) => p));
-  def.props.forEach(() => void 0);
   const placements = expandIsland(def);
   const nTiles = def.tiles.length;
+
+  // Hidden props stay in the group as individual hidden clones rather than being dropped or
+  // folded into an instance. They are authored content a later feature turns ON (the house
+  // wall carries a weapon per hero class, tagged and hidden), and an invisible object costs
+  // nothing to draw -- so keep them findable instead of optimising them away.
+  const byModel = new Map<string, THREE.Matrix4[]>();
   placements.forEach((p, i) => {
-    const base = s.getModel(p.model);
-    if (!base) return;
-    const wrap = new THREE.Group();
-    wrap.applyMatrix4(p.matrix);
-    wrap.add(base.clone(true));
     const prop = i >= nTiles ? def.props[i - nTiles] : null;
-    if (prop && hidden.has(prop)) wrap.visible = false;
-    group.add(wrap);
-    if (!isSeaOrSky(p.model)) land.expandByObject(wrap);
+    if (prop && hidden.has(prop)) {
+      const wrap = new THREE.Group();
+      wrap.applyMatrix4(p.matrix);
+      const base = s.getModel(p.model);
+      if (base) wrap.add(base.clone(true));
+      wrap.visible = false;
+      group.add(wrap);
+      // Box3.expandByObject walks hidden children too, so this matches the pre-instancing
+      // framing exactly -- the land bounds must not shift under an optimisation.
+      if (!isSeaOrSky(p.model)) land.expandByObject(wrap);
+      return;
+    }
+    const list = byModel.get(p.model);
+    if (list) list.push(p.matrix);
+    else byModel.set(p.model, [p.matrix]);
   });
+
+  const box = new THREE.Box3();
+  const tmp = new THREE.Box3();
+  for (const [model, matrices] of byModel) {
+    const base = s.getModel(model);
+    if (!base) continue;
+    const sea = isSeaOrSky(model);
+    const parts = matrices.length >= INSTANCE_MIN ? templateParts(base) : null;
+    if (parts) {
+      for (const part of parts) {
+        const mesh = new THREE.InstancedMesh(part.geometry, part.material, matrices.length);
+        mesh.name = model;
+        mesh.castShadow = !/hex_water/.test(model); // flat sea at the bottom shadows nothing
+        mesh.receiveShadow = true;
+        const m = new THREE.Matrix4();
+        matrices.forEach((placement, i) => mesh.setMatrixAt(i, m.multiplyMatrices(placement, part.local)));
+        mesh.instanceMatrix.needsUpdate = true;
+        // culling reads these, and three only fills them for a plain Mesh
+        mesh.computeBoundingBox();
+        mesh.computeBoundingSphere();
+        group.add(mesh);
+      }
+      if (!sea) {
+        // bounds without materialising the clones: the template's box under each placement
+        box.setFromObject(base);
+        for (const placement of matrices) land.union(tmp.copy(box).applyMatrix4(placement));
+      }
+    } else {
+      for (const placement of matrices) {
+        const wrap = new THREE.Group();
+        wrap.applyMatrix4(placement);
+        wrap.add(base.clone(true));
+        group.add(wrap);
+        if (!sea) land.expandByObject(wrap);
+      }
+    }
+  }
+
   for (const sh of def.shapes ?? []) {
     const o = buildShape(sh);
     group.add(o);

@@ -949,3 +949,61 @@ Owner: "stash godot for now, three js is the main now, keep godot for reference.
 - NEXT: the deferred perf/optimization pass; fold the remaining Godot-era prose in
   `docs/godot-handoff.md` forward (it is still the best behaviour spec, but its paths are
   now `godot/...`); confirm the Pages deploy is green after the first push.
+
+## Optimization pass (2026-09-09)
+
+The pass the owner asked for long ago (it was gated on the intro landing). Measured first,
+in the production build, with `renderer.info.autoReset = false` so the numbers are per-frame
+and include the shadow + AO passes.
+
+**Before -> after (draw calls / triangles / meshes):**
+
+| scene | before | after |
+| --- | --- | --- |
+| island (menu + overworld) | 864 / 140,202 / 224 | **164** / 134,250 / **38** |
+| house (intro) | 176 / 80,598 / 47 | **148** / 81,678 / **39** |
+| forest fork (bos) | 3,132 / 990,026 / 970 | **292** / 1,225,506 / **72** |
+
+1. **Instanced repeated models** (`render/islandScene.ts`). A model placed 2+ times is now one
+   `InstancedMesh` per sub-mesh instead of a clone per placement -- the authored overworld
+   places the same 24-triangle water tile 147 times, which cost 147 draw calls (and 147 more
+   in the shadow pass) to move 3.5k triangles. Water no longer casts shadows (a flat plate at
+   sea level shadows nothing).
+   - The forest TRADES triangles for draw calls: an InstancedMesh is frustum-culled as one
+     unit, so all 495 trees are submitted even when ~50 are on screen (+24% triangles, -91%
+     draw calls). That is the right trade -- draw calls are CPU state changes, the extra
+     vertex work is not -- but it is the reason the forest triangle count went UP.
+   - Hidden props are NOT folded in: they stay individual hidden clones, because they are
+     authored content a later feature turns on (the house wall carries a weapon per hero
+     class, tagged and hidden). An invisible object costs nothing to draw.
+   - The editor is untouched: it builds its own view (`editor/scene_view.ts`), so picking and
+     gizmos still work per object.
+2. **One shared GLTF cache** (`game/hero.ts`). Every `HeroRig` used to build its own loader and
+   re-fetch + re-parse the character GLB AND both shared rig GLBs, so a scene with two NPCs
+   parsed the rigs six times and every picker keypress paid for them again. Now: one loader,
+   one promise per URL, clips parsed once, and characters come from `SkeletonUtils.clone`
+   (own skeleton, shared geometry). **Six picker swaps: 145ms -> 8ms.** Corollary: `clearModel`
+   must NOT dispose geometry/materials any more -- the cache owns them.
+3. A regression test (`tests/instancing.test.ts`) pins `placement * local` against what the old
+   clone path produced. It immediately caught a real bug: the first version measured sub-mesh
+   transforms relative to the TEMPLATE, which silently drops a gltf root node's own transform
+   and would misplace every instance of such a model. Fixed to measure relative to the
+   template's PARENT.
+
+Frame pacing on the island is a solid 60 (median 16.7ms, p95 17.0ms). First load is 3.1 MB
+over 88 requests: 2.7 MB models, 316 kB JS (302 kB gzip of that is three.js itself, which is
+normal and not worth splitting), 75 kB images.
+
+**Found while measuring, NOT fixed here -- the web build is missing animation clips.** Godot
+loads FIVE rig packs (`godot/render/hero_rig.gd`); the web build loads two, so these clips
+resolve to nothing and the animation silently does not play:
+`Cheering` (the win celebration), `Sawing` (the grinding work pose), `Lie_Idle` / `Lie_StandUp`
+(the intro wake-up -- the hero stands beside the bed instead of getting out of it), and every
+`Ranged_*` clip (the archery aim/release). The missing packs are
+`assets/kaykit/characters/Rig_Medium_{Tools,Simulation,CombatRanged}.glb`.
+Naive fix costs ~1.5 MB more on first load; the right fix is to load a rig pack LAZILY when a
+scene first needs one of its clips -- cheap now that `hero.ts` has a promise cache.
+
+- NEXT: the lazy rig packs (restores the missing animations without hurting first load); then
+  the 1.48 MB of rig GLBs is the biggest remaining first-load item (they are clips only, and
+  the game uses a handful of the 25 clips it downloads).
