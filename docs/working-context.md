@@ -1377,3 +1377,22 @@ the hero crabbed sideways through every turn. He now faces along the current leg
   beat is typed, so the fright reads.
 
 - NEXT: re-run the six-class QA sweep against this build.
+
+## The start screen goes fullscreen (2026-09-10)
+
+Owner: the menu has no typing band and no keyboard, so the brown strip under the stage was
+dead space there. The menu and the picker now take the WHOLE window; the playing states
+letterbox as before.
+
+- `body[data-cinema]` (set in `main.ts` on menu/picker, cleared on island/scenario) makes
+  `#app` 100vh and hides `#stage-mask` + `#bottom`. The canvas already has a ResizeObserver,
+  so the 3D view re-fits itself and nothing else needs to know.
+- The framing had to be retuned: at the old zoom the island overflowed the taller frame
+  (measured -- land spanned -0.14..0.96 across, 0.16..0.99 down). `MENU_ZOOM` 1.5 -> 1.95 and
+  a menu-only `MENU_BIAS` 1.5 now put it fully inside (0.04..0.83, 0.26..0.92). Menu only; the
+  playing island view is untouched.
+- The flat 55% scrim was fine over a letterbox strip but muted the whole island at fullscreen.
+  It is a radial pool behind the title and buttons now, so the map stays bright at the edges.
+
+Measure the framing rather than eyeballing it: projecting the land bounding box to screen
+fractions caught both the overflow and the off-centre in one step.

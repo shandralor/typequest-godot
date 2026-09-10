@@ -48,8 +48,12 @@
       .hand-inner { position: relative; width: 262px; height: 138px; transform: scale(var(--hs)); transform-origin: top left; }
       .nail { position: absolute; mask-size: 100% 100%; -webkit-mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; transition: transform .12s ease, background .12s ease; }
       .nail-label { position: absolute; height: 18px; line-height: 18px; text-align: center; font-size: 15px; color: #d8c9b0; }
-      #menu { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: rgba(10,7,4,.55); pointer-events: auto; }
-      #menu-title { font-size: 68px; letter-spacing: .04em; color: #ffe9b8; text-shadow: 0 4px 0 rgba(0,0,0,.45); }
+      /* A flat 55% scrim was fine over a letterboxed strip, but across the whole window it
+         muted the island into mud. Darken only where the type sits -- a soft pool behind the
+         title and buttons -- and let the map stay bright at the edges. */
+      #menu { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; pointer-events: auto;
+        background: radial-gradient(ellipse 46% 38% at 50% 47%, rgba(8,6,3,.72) 0%, rgba(8,6,3,.55) 45%, rgba(8,6,3,.12) 78%, rgba(8,6,3,0) 100%); }
+      #menu-title { font-size: 68px; letter-spacing: .04em; color: #ffe9b8; text-shadow: 0 4px 0 rgba(0,0,0,.5), 0 0 24px rgba(0,0,0,.55); }
       #totals { font-size: 20px; color: #e8d5b5; letter-spacing: .02em; text-shadow: 0 2px 0 rgba(0,0,0,.45); margin-top: -8px; }
       #menu-buttons { display: flex; flex-direction: column; gap: 12px; }
       #menu-buttons button { min-width: 320px; background: #9c7b56; color: #2a1d10; border: 2px solid #6d5236; border-radius: 10px; padding: 14px 26px; font-size: 26px; font-family: inherit; cursor: pointer; }
@@ -83,6 +87,13 @@
         .krow { gap: 4px; }
         #message { font-size: 20px; padding: 12px 18px; }
       }
+      /* MENU + PICKER: no typing band and no keyboard, so the brown strip below the stage is
+         dead space. Give those screens the whole window -- the island reads as a proper title
+         shot instead of a letterboxed one. The canvas has a ResizeObserver, so the 3D view
+         re-fits itself; nothing else has to know. */
+      body[data-cinema] #app { height: 100vh; }
+      body[data-cinema] #stage-mask,
+      body[data-cinema] #bottom { display: none; }
       [hidden] { display: none !important; }
     </style>
   </head>

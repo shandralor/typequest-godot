@@ -22,10 +22,17 @@ const locale = { resolve: nlBe.resolve, fillTokens: nlBe.fillTokens };
 type State = "menu" | "picker" | "island" | "scenario";
 /** the picker's close, slightly-raised hero shot (game_controller PICKER rig) */
 const PICKER_RIG = { off: [0, 2.1, 6.4] as [number, number, number], look: [0, 1.15, 0] as [number, number, number], fov: 40, fixed: true };
-/** the menu pulls further back than the island view so the title floats above the map */
-const MENU_ZOOM = 1.5;
+/**
+ * The menu framing. Retuned when the menu went fullscreen: at 1.5 the island overflowed the
+ * left and bottom edges of the taller frame (measured: land spanned -0.14..0.96 across and
+ * 0.16..0.99 down). Pulled back and the focus lifted so the whole island sits inside the
+ * frame with the title above it. Menu only -- the playing island view is untouched.
+ */
+const MENU_ZOOM = 1.95;
 /** the menu widens a touch so the title floats above the island (game_controller MAIN rig) */
 const MENU_FOV = 34;
+/** the menu looks at the island a little further north than the playing view does */
+const MENU_BIAS = 1.5;
 /** the picker stands the hero on a small grass pad, not the island (composer.compose_character) */
 const PICKER_SCENE = { tiles: [], props: [], shapes: [{ kind: "plane" as const, size: [9, 9], color: "#5f7d42", x: 0, z: 0, name: "Ground" }] };
 
@@ -57,6 +64,15 @@ async function main(): Promise<void> {
   const modelPath = (id: string): string => Characters.modelFor(id).replace(/^(res:\/\/)?assets\//, "");
   await world.loadHero(modelPath(heroId));
 
+  /**
+   * The menu and the picker have no typing UI, so they take the whole window; the playing
+   * states letterbox the stage above the brown band again. Set on <body>, styled in index.html.
+   */
+  function cinema(on: boolean): void {
+    if (on) document.body.setAttribute("data-cinema", "1");
+    else document.body.removeAttribute("data-cinema");
+  }
+
   /** Hide every overlay; each state turns back on what it needs. */
   function clearUi(): void {
     menu.hide();
@@ -79,12 +95,13 @@ async function main(): Promise<void> {
     scenario?.exit();
     scenario = null;
     clearUi();
+    cinema(true);
     await world.loadScene(OVERWORLD, "island");
     if (gen !== stateGen) return;
     world.hero.node.position.copy(world.anchor("hub"));
     world.hero.face(0, 1);
     world.hero.setMoving(false);
-    world.useIslandCamera(OVERWORLD.camera, { zoom: MENU_ZOOM, bias: OW_IDLE_BIAS, fov: MENU_FOV, snap: true });
+    world.useIslandCamera(OVERWORLD.camera, { zoom: MENU_ZOOM, bias: MENU_BIAS, fov: MENU_FOV, snap: true });
     menu.totals(allStats());
     menu.show("TypeQuest", [
       { text: "Start", onPress: () => void startPressed() },
@@ -110,6 +127,7 @@ async function main(): Promise<void> {
     music.playContext("menu");
     pickerAfter = after;
     clearUi();
+    cinema(true);
     pickerIndex = Math.max(0, Characters.ALL.findIndex((c) => c.id === heroId));
     void updatePicker();
   }
@@ -146,6 +164,7 @@ async function main(): Promise<void> {
     scenario?.exit();
     scenario = null;
     clearUi();
+    cinema(false);
     hud.keyboard(true);
     await world.loadHero(modelPath(heroId)); // the picked hero travels the island
     if (gen !== stateGen) return;
@@ -156,6 +175,7 @@ async function main(): Promise<void> {
     enterState("scenario");
     music.playContext("adventure");
     clearUi();
+    cinema(false);
     hud.keyboard(true);
     hud.hands(true); // per-finger coaching belongs to the prose, not the island's site words
     hud.score(0, 0);
