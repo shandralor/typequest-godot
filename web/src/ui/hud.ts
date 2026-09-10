@@ -133,6 +133,25 @@ export class Hud {
     m.hidden = text === "";
   }
 
+  /**
+   * The RPG item-get banner: "Je hebt nu je bijl!". It rides under the 3D puff for a beat and
+   * then clears itself, so the pickup reads as an event rather than as a prop quietly vanishing.
+   */
+  itemGet(text: string): void {
+    const el = $<HTMLElement>("itemget");
+    if (text === "") {
+      el.hidden = true;
+      return;
+    }
+    const inner = $<HTMLElement>("itemget-inner");
+    inner.innerHTML = `${esc(text)}<small>(druk op enter)</small>`;
+    el.hidden = false;
+    // restart the pop even when a second pickup lands while the first is still up
+    inner.style.animation = "none";
+    void inner.offsetWidth;
+    inner.style.animation = "";
+  }
+
   /** Right-side pills for the island's sites; `prefix` highlights what has been typed. */
   legend(items: LegendItem[] | null, prefix = ""): void {
     const el = $<HTMLElement>("legend");

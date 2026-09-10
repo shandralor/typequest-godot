@@ -86,6 +86,7 @@
         .kboard { gap: 4px; }
         .krow { gap: 4px; }
         #message { font-size: 20px; padding: 12px 18px; }
+        #itemget-inner { font-size: 20px; padding: 10px 18px; }
       }
       /* MENU + PICKER: no typing band and no keyboard, so the brown strip below the stage is
          dead space. Give those screens the whole window -- the island reads as a proper title
@@ -94,6 +95,12 @@
       body[data-cinema] #app { height: 100vh; }
       body[data-cinema] #stage-mask,
       body[data-cinema] #bottom { display: none; }
+      /* the RPG item-get banner: sits UNDER the 3D puff so the weapon stays readable */
+      #itemget { position: absolute; top: 5%; left: 50%; transform: translateX(-50%); pointer-events: none; }
+      #itemget-inner { background: linear-gradient(180deg, rgba(46,32,16,.95), rgba(24,16,8,.95)); border: 3px solid #e0c07a; border-radius: 12px; box-shadow: 0 0 24px rgba(224,192,122,.45); padding: 14px 30px; font-size: 28px; color: #f6e5bd; text-align: center; white-space: nowrap; animation: itemget-pop .45s ease-out both; }
+      #itemget-inner small { display: block; margin-top: 6px; font-size: 16px; color: #cbb488; }
+      @keyframes itemget-pop { from { opacity: 0; transform: translateY(14px) scale(.8); } to { opacity: 1; transform: none; } }
+      @media (prefers-reduced-motion: reduce) { #itemget-inner { animation: none; } }
       [hidden] { display: none !important; }
     </style>
   </head>
@@ -104,6 +111,7 @@
       <div id="score" hidden></div>
       <div id="message" hidden></div>
       <div id="legend" hidden></div>
+      <div id="itemget" hidden><div id="itemget-inner"></div></div>
       <div id="choices" hidden></div>
       <div id="bottom">
         <div id="band" hidden></div>

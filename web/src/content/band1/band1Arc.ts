@@ -57,7 +57,7 @@ export function build(): StoryGraph {
   grot.winKey = "grot.win";
   grot.celebrate = false;
   grot.setsFlag = "met_skeleton";
-  grot.safety = nlBeSafety("fnv1a:07954cfa");
+  grot.safety = nlBeSafety("fnv1a:1352a646");
   grot.scene = Scenes.grot();
   g.addNode(grot);
 

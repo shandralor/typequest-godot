@@ -109,3 +109,29 @@ describe("the forge beat fits the weapon", () => {
     }
   });
 });
+
+// The item-get banner names the weapon the child just took. Dutch article trap: only "zwaard"
+// is a het-word, so the line has to be possessive ("je bijl") for every class -- an article
+// here would be wrong for five of the six.
+describe("item-get banner", () => {
+  it("names each hero's own weapon, possessively", () => {
+    const want: Record<string, string> = {
+      knight: "zwaard",
+      barbarian: "bijl",
+      mage: "staf",
+      ranger: "kruisboog",
+      rogue: "dolk",
+      witch: "staf",
+    };
+    for (const [id, noun] of Object.entries(want)) {
+      const line = nlBe.fillTokens(nlBe.resolve("itemget.wapen"), id);
+      expect(line).toBe(`Je hebt nu je ${noun}!`);
+      expect(line).not.toMatch(/\b(het|de) /);
+    }
+  });
+
+  it("names the chosen ranged weapon when that is what was fetched", () => {
+    expect(nlBe.resolve("itemget.bow")).toBe("Je hebt nu je boog!");
+    expect(nlBe.resolve("itemget.crossbow")).toBe("Je hebt nu je kruisboog!");
+  });
+});

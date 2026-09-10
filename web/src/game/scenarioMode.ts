@@ -44,6 +44,11 @@ const POSE_CLIPS: Record<string, string> = { idle: "Idle_A", work: "Sawing", aim
 const PACE_SPEED = 1.4;
 /** the angle the drawbridge leaf is authored at, standing up out of the water */
 const BRIDGE_RAISED = (65 * Math.PI) / 180;
+/** how long the RPG item-get puff plays, and how big the weapon reads inside it */
+const ITEM_GET_RISE = 0.5;
+const ITEM_GET_CARRY = 0.9;
+const ITEM_GET_LEN = 0.95;
+const ITEM_GET_HOLD = 2.1;
 /** the island's cloud, reused small as the haze the spellbook rides on */
 const HAZE_MODEL = "kaykit/hexagon/cloud_big.gltf";
 /** the weapon on the grinding wheel is scaled to this length, so every blade reads the same */
@@ -104,6 +109,8 @@ export class ScenarioMode {
   private travel: { points: THREE.Vector3[]; dropFrom?: number } | null = null;
   /** an NPC ambling a closed authored loop while the child types (the miller round his mill) */
   private pacer: { npc: HeroRig; curve: THREE.CatmullRomCurve3; length: number; t: number } | null = null;
+  /** the RPG item-get: the weapon held aloft in a puff of cloud while the wall goes empty */
+  private itemGet: { group: THREE.Object3D; t: number; from: THREE.Vector3 } | null = null;
   /** the cloud bank the caster's book rides on */
   private haze: THREE.Object3D | null = null;
   /** the crystal on the cave floor, so the hero has something to actually pick up */
@@ -167,6 +174,9 @@ export class ScenarioMode {
   private clearEffects(): void {
     this.book = null;
     this.haze = null;
+    if (this.itemGet) this.world.s.scene.remove(this.itemGet.group);
+    this.itemGet = null;
+    this.hud.itemGet("");
     this.crystal = null;
     if (this.sparks) {
       this.world.s.scene.remove(this.sparks.group);
@@ -484,6 +494,85 @@ export class ScenarioMode {
     this.haze = group;
   }
 
+  /**
+   * The classic RPG item-get: a puff of cloud at the rack, the weapon rising out of it and
+   * turning. It also does honest work -- the wall prop is hidden UNDER the puff, so the weapon
+   * leaving the wall reads as the pickup rather than as something popping out of existence.
+   */
+  private async playItemGet(assetId: string, anchor: string, primary: boolean): Promise<void> {
+    // ONLY the primary fetch empties the class rack. A blade class fetching a boog leaves their
+    // own zwaard hanging where it was -- they have not taken it yet.
+    const wall = primary ? this.hideWallWeapon() : null;
+    const at = wall
+      ? wall.getWorldPosition(new THREE.Vector3())
+      : this.world.hasAnchor(anchor)
+        ? this.world.anchor(anchor)
+        : this.world.hero.node.position.clone();
+    const path = resolveAsset(assetId).replace(/^assets\//, "");
+    const [weapon, cloud] = await Promise.all([
+      this.world.s.loadModel(path).catch(() => null),
+      this.world.s.loadModel(HAZE_MODEL).catch(() => null),
+    ]);
+    if (!weapon) return;
+    const group = new THREE.Group();
+    group.position.set(at.x, at.y, at.z);
+    // the puff: a few small clouds, materials CLONED before going transparent because they are
+    // shared with the island's real sky
+    if (cloud) {
+      for (let i = 0; i < 4; i++) {
+        const puff = cloud.clone(true);
+        puff.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (!m.isMesh) return;
+          const mat = (Array.isArray(m.material) ? m.material[0] : m.material).clone() as THREE.MeshStandardMaterial;
+          mat.transparent = true;
+          mat.opacity = 0.85;
+          mat.depthWrite = false;
+          m.material = mat;
+          m.castShadow = false;
+        });
+        const a = (i / 4) * Math.PI * 2;
+        puff.position.set(Math.cos(a) * 0.45, -0.5, Math.sin(a) * 0.32);
+        puff.scale.setScalar(0.26);
+        group.add(puff);
+      }
+    }
+    // the prize itself, scaled so it reads at a glance whatever the class carries
+    const prize = weapon.clone(true);
+    prize.name = "item_get_prize";
+    const box = new THREE.Box3().setFromObject(prize);
+    const longest = Math.max(...box.getSize(new THREE.Vector3()).toArray());
+    if (longest > 0) prize.scale.setScalar(ITEM_GET_LEN / longest);
+    // held up at a jaunty angle, and canted forward: a flat blade on a plain Y spin goes
+    // invisible edge-on twice a turn, which is exactly when a child happens to look
+    prize.rotation.set(-0.38, 0, Math.PI / 5);
+    group.add(prize);
+    // a weapon model's origin is its grip, not its middle, so an un-centred prize hangs off to
+    // one side of the puff instead of rising out of it
+    const centred = new THREE.Box3().setFromObject(prize).getCenter(new THREE.Vector3());
+    prize.position.sub(centred);
+    prize.position.y += 0.3; // it rides ABOVE the puff, not inside it
+    this.world.s.scene.add(group);
+    this.stagedProps.push(group);
+    this.itemGet = { group, t: 0, from: at };
+  }
+
+  /**
+   * Hide the weapon this hero just took off the wall. The house authors one variant per class
+   * (tagged weapon_<id>) and only that one is visible, so the tag identifies it exactly.
+   */
+  private hideWallWeapon(): THREE.Object3D | null {
+    const want = `weapon_${this.heroId}`;
+    const authored = this.world.def?.props?.find((p) => p.tags?.includes(want));
+    if (!authored) return null;
+    let found: THREE.Object3D | null = null;
+    this.world.s.scene.traverse((o) => {
+      if (!found && o.name === authored.m && o.visible) found = o;
+    });
+    if (found) (found as THREE.Object3D).visible = false;
+    return found;
+  }
+
   /** Which model flies to the target for this class ("" when it is the code-built magic orb). */
   private projectileModel(): string {
     if (!this.ranged) return "";
@@ -714,6 +803,7 @@ export class ScenarioMode {
   }
 
   private resolveEnding(): void {
+    let gotItem = false;
     const node = this.run!.current();
     if (node?.setsFlag) for (const f of node.setsFlag.split(" ")) if (f) setFlag(f);
     if (this.pickup) {
@@ -723,6 +813,13 @@ export class ScenarioMode {
       // a jager's kruisboog and a caster's staf ARE the ranged weapon, so fetching the primary
       // opens the practice yard too -- they should never be sent back for a bow
       if (this.pickup.flag === "has_sword" && primaryIsRanged(this.heroId)) setFlag("has_ranged");
+      // and show it: the weapon rises out of a puff of cloud while the rack goes empty
+      const got = this.pickup.ranged ?? meleeFor(this.heroId);
+      void this.playItemGet(got, this.pickup.anchor, !this.pickup.ranged);
+      // the RPG banner CARRIES this beat -- the ordinary win panel would say the same thing
+      // twice and sit right over the puff
+      this.hud.itemGet(this.heldProse(`itemget.${this.pickup.ranged ?? "wapen"}`));
+      gotItem = true;
       this.world.hero.playOneShot("PickUp");
       this.pickup = null;
     } else if (node?.ending === "win") {
@@ -748,7 +845,7 @@ export class ScenarioMode {
     this.hud.prompt("");
     this.hud.hideBand();
     this.hud.highlightKey("");
-    this.hud.message(this.locale.fillTokens(text, this.heroId) + "\n(druk op enter)");
+    if (!gotItem) this.hud.message(this.locale.fillTokens(text, this.heroId) + "\n(druk op enter)");
     if (this.currentSet === "forge") this.world.useRig(rigFor("forge", { walking: false, win: true, landmarks: false }), false);
     // bank the persistent effort for a real adventure only: a home chore (fetching gear) and
     // the cave setback are not one, so they do not add to the totals (Godot's `celebrate`)
@@ -774,6 +871,24 @@ export class ScenarioMode {
       }
       for (const n of this.npcs) n.update(dt);
       return;
+    }
+    if (this.itemGet) {
+      const g = this.itemGet;
+      g.t += dt;
+      // beat one: the puff swells on the rack and the weapon rises out of it, hiding the gap.
+      // beat two: it carries across to above the hero's head and HOLDS there, turning slowly,
+      // until the child presses enter -- an RPG item-get is a pause, not a flourish to miss.
+      const lift = Math.min(1, g.t / ITEM_GET_RISE);
+      const carry = Math.max(0, Math.min(1, (g.t - ITEM_GET_RISE) / ITEM_GET_CARRY));
+      const ease = carry * carry * (3 - 2 * carry);
+      // the head position is read LIVE: the beat's walk is still easing him toward the rack
+      // when the passage completes, so a snapshot taken then aims at the doorway he left
+      const to = this.world.hero.node.position.clone();
+      to.y += ITEM_GET_HOLD;
+      g.group.position.lerpVectors(g.from, to, ease);
+      g.group.position.y += 0.55 * lift + Math.sin(g.t * 2) * 0.05 * ease;
+      g.group.rotation.y = g.t * 0.55;
+      g.group.scale.setScalar(0.4 + 0.6 * lift + 0.35 * ease);
     }
     if (this.book) {
       this.bookT += dt;

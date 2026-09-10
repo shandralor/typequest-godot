@@ -28,7 +28,7 @@ export const CATALOG: Record<string, string> = {
   // prose (typed to reveal the beat)
   "start.prose": "de kleine {held} wandelt door het bos. de {held} volgt het pad en stapt verder.",
   "kruispunt.prose": "het pad gaat twee kanten op. links gaapt een zwarte grot. rechts staat een oude brug.",
-  "grot.prose": "in de grot rammelt een wit skelet. de {held} rent snel terug naar het licht.",
+  "grot.prose": "in de grot rammelt een eng skelet. de {held} rent snel terug naar het licht.",
   "brug.prose": "de brug ligt naar beneden. de {held} stapt over de brug en gaat verder.",
   // narration (read aloud)
   "start.narration": "Luister goed en typ elk woord dat je leest.",
@@ -83,6 +83,11 @@ export const CATALOG: Record<string, string> = {
   "home.narration": "Typ de woorden.",
   "home.win": "Tot de volgende keer!",
   "home.win_sword": "Je hebt je {wapen} gehaald!",
+  // the RPG item-get banner over the puff. POSSESSIVE, not an article: "het" is only correct
+  // for zwaard, and "de" only for the other five -- "je" is right for both genders.
+  "itemget.wapen": "Je hebt nu je {wapen}!",
+  "itemget.bow": "Je hebt nu je boog!",
+  "itemget.crossbow": "Je hebt nu je kruisboog!",
   "home.win_bow": "Je hebt je boog gehaald!",
   "home.win_crossbow": "Je hebt je kruisboog gehaald!",
   "home.nothing": "Je hebt alles al gehaald!",
