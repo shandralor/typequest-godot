@@ -47,8 +47,8 @@ export interface RangedLoadout {
 export const RANGED: Record<string, RangedLoadout> = {
   knight: { weapon: "bow", hand: "handslot.l", spin: true, aim: "Ranged_Bow_Aiming_Idle", fire: "Ranged_Bow_Release", projectile: "arrow" },
   ranger: { weapon: "crossbow", hand: "handslot.r", spin: false, aim: "Ranged_1H_Aiming", fire: "Ranged_1H_Shoot", projectile: "bolt" },
-  mage: { weapon: "wand", hand: "handslot.r", spin: false, aim: "Ranged_Magic_Spellcasting", fire: "Ranged_Magic_Shoot", projectile: "magic" },
-  witch: { weapon: "wand", hand: "handslot.r", spin: false, aim: "Ranged_Magic_Spellcasting", fire: "Ranged_Magic_Shoot", projectile: "magic" },
+  mage: { weapon: "staff", hand: "handslot.r", spin: false, aim: "Ranged_Magic_Spellcasting", fire: "Ranged_Magic_Shoot", projectile: "magic" },
+  witch: { weapon: "staff", hand: "handslot.r", spin: false, aim: "Ranged_Magic_Spellcasting", fire: "Ranged_Magic_Shoot", projectile: "magic" },
   barbarian: { weapon: "axe", hand: "handslot.r", spin: false, aim: "Idle_A", fire: "Throw", projectile: "" },
   rogue: { weapon: "dagger", hand: "handslot.r", spin: false, aim: "Idle_A", fire: "Throw", projectile: "" },
 };
@@ -111,4 +111,16 @@ export function weaponGroupFor(id: string): WeaponGroup {
 /** Vocabulary id of the hero's primary weapon -- what {wapen} names, and what is staged. */
 export function meleeFor(id: string): string {
   return GROUPS[id]?.melee ?? "sword";
+}
+
+/**
+ * Does this hero's PRIMARY weapon already serve as their ranged weapon?
+ *
+ * A jager's kruisboog and a magier's staf are ranged weapons. Only the blade classes need a
+ * separate bow or crossbow. Without this the practice yard demanded `has_ranged`, which only
+ * the bow/crossbow fetch granted -- so a mage was told "Haal eerst een boog thuis!" and had to
+ * carry a bow to cast with, and a jager fetched a plain boog on top of his crossbow.
+ */
+export function primaryIsRanged(id: string): boolean {
+  return weaponGroupFor(id) !== "blades";
 }

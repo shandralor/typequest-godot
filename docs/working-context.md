@@ -1396,3 +1396,41 @@ letterbox as before.
 
 Measure the framing rather than eyeballing it: projecting the land bounding box to screen
 fractions caught both the overflow and the off-centre in one step.
+
+## The ranged gate sent casters and the jager on a pointless errand (2026-09-10)
+
+The ranger and mage reviews found the same structural bug, and it is the clearest example yet
+of a feature landing without its consequences being followed through the content.
+
+The practice yard requires `has_ranged`, and ONLY the bow/crossbow fetch granted it. But a
+jager's kruisboog and a caster's staf ARE ranged weapons -- so those classes were told
+"Haal eerst een boog thuis!", made a second trip home for an off-class weapon, and then trained
+with it: **a magier cast spells holding a bow**, and a jager shot a plain boog while the game
+called his weapon a kruisboog.
+
+- `primaryIsRanged()` (true for the ranged and caster groups) now decides this. Fetching the
+  primary weapon sets `has_ranged` as well for those classes, and the bow/crossbow branches are
+  filtered out of their home fork entirely -- the blade classes still get the choice, which is
+  the point of that feature.
+- Casters now train with the **staff**, not a wand. The wand was small enough that a reviewer
+  read the mage's hands as empty, and the staff is what `{wapen}` names anyway.
+- `gearGating.test.ts` pins the rule per hero, so a future change cannot quietly re-introduce
+  the errand.
+
+Verified: a mage is offered only "staf", taking it sets both flags, and the practice yard arms
+him with the staff and fires a magic bolt into the target.
+
+### Still open from the five reviews (owner's call)
+
+- **A fetched weapon never leaves the wall into the hand** -- ALL FIVE reviewers, every class.
+  The single most-reported defect in the sweep, and it undercuts the whole fetch scenario.
+- **"een wit skelet" is a dark armoured warrior with glowing yellow eyes.** Every reviewer
+  flagged both the wrong colour word and that it is the scariest asset in a game for six-year-olds.
+- **Soft-gated sites lose their padlock** once `met_skeleton` unlocks them, so a child types a
+  word the menu presents as available and is refused.
+- The caster forge prose still names "je staf" while only the spellbook is staged.
+- The archery camera sits close behind the hero; a mage's hat crowds the frame.
+- 5-20 consecutive black frames on some scene loads (worst at the forge).
+- The **throw path** (barbaar/verkenner axe or dolk at the yard) is STILL unexercised: both runs
+  fetched a boog. Now that the blade classes keep the choice, a run that takes the melee-only
+  path would finally cover it.

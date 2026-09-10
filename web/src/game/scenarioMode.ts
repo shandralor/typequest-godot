@@ -13,7 +13,7 @@ import { build as buildScenario } from "../content/scenarios";
 import { HOUSE_ITEMS } from "../content/home/homeArc";
 import { AUTHORED } from "../editor/content_index";
 import { resolve as resolveAsset } from "../axis/vocabulary/fantasyPoc";
-import { rangedFor, meleeFor, weaponGroupFor, WORK_CLIPS, WORK_PROPS, type RangedLoadout } from "../content/characters";
+import { rangedFor, meleeFor, weaponGroupFor, primaryIsRanged, WORK_CLIPS, WORK_PROPS, type RangedLoadout } from "../content/characters";
 import { startFor as forgeStartFor } from "../content/grind/grindArc";
 import { addStat, getChoice, setChoice, getFlag, setFlag, wordCount } from "./flags";
 import { HeroRig, ensureClips } from "./hero";
@@ -656,7 +656,10 @@ export class ScenarioMode {
       // never show the same word twice: the ranger's primary weapon IS a kruisboog, so the
       // kruisboog branch of the ranged choice would otherwise duplicate their own banner and
       // the child would have two identical words to pick between
-      .filter((c, i, all) => all.findIndex((o) => o.word === c.word) === i);
+      .filter((c, i, all) => all.findIndex((o) => o.word === c.word) === i)
+      // the bow/crossbow branches are for the blade classes only; a jager and a caster already
+      // carry their ranged weapon, so offering them one is a pointless extra errand
+      .filter((c) => !(primaryIsRanged(this.heroId) && /neem_boog|neem_kruisboog/.test(c.choice.target)));
     if (this.candidates.length === 0) {
       // nothing left to take -- a short "you have everything" beat, then leave
       this.hud.hideBand();
@@ -717,6 +720,9 @@ export class ScenarioMode {
       setFlag(this.pickup.flag); // the gear is his now: the island's gear gate opens
       // and WHICH ranged weapon he took, so the practice yard arms him with it
       if (this.pickup.ranged) setChoice("ranged", this.pickup.ranged);
+      // a jager's kruisboog and a caster's staf ARE the ranged weapon, so fetching the primary
+      // opens the practice yard too -- they should never be sent back for a bow
+      if (this.pickup.flag === "has_sword" && primaryIsRanged(this.heroId)) setFlag("has_ranged");
       this.world.hero.playOneShot("PickUp");
       this.pickup = null;
     } else if (node?.ending === "win") {
