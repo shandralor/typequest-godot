@@ -466,7 +466,7 @@ export class ScenarioMode {
     const box = new THREE.Box3().setFromObject(obj);
     const longest = Math.max(...box.getSize(new THREE.Vector3()).toArray());
     if (longest > 0) obj.scale.setScalar(BLADE_LEN / longest);
-    if (!this.world.hero.attachToHand(obj, "handslot.r", new THREE.Vector3(-0.1, 0.34, 0.34))) {
+    if (!this.world.hero.attachToHand(obj, "handslot.r", new THREE.Vector3(0, 0.1, 0.1))) {
       // no grip on this rig: fall back to the old wheel placement rather than dropping it
       await this.stageProp(meleeFor(this.heroId), "grind_point");
       return;
