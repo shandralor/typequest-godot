@@ -21,7 +21,7 @@ export function build(): StoryGraph {
   node.ending = "win";
   node.winKey = "boog.win";
   node.setsFlag = "archery_done"; // bow training done (with sword_sharp -> fully_trained)
-  node.safety = { "nl-BE": { hash: "fnv1a:2cb6ed08", date: "2026-09-09", criteria_version: "v0-stub" } };
+  node.safety = { "nl-BE": { hash: "fnv1a:f60fdda3", date: "2026-09-09", criteria_version: "v0-stub" } };
   node.scene = scene();
   g.addNode(node);
   return g;

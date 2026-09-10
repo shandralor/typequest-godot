@@ -791,8 +791,11 @@ export class ScenarioMode {
       this.world.hero.node.rotation.y = this.gazeYaw;
     }
     if (this.travel) {
-      // he does not set off until he is upright -- the get-up plays out in place on the bed
-      const p = this.risingFromBed ? 0 : Math.min(1, this.prose.progress());
+      // He does not set off until he is upright -- the get-up plays out in place on the bed.
+      // BUT the hold is released once the passage is finished: a fast reader can type the whole
+      // intro inside the 2-3s get-up, and pinning progress at 0 meant they watched the win fire
+      // with the hero still on the mattress while the prose described him crossing the room.
+      const p = this.risingFromBed && !this.prose.isComplete() ? 0 : Math.min(1, this.prose.progress());
       const pos = pointOnRoute(this.travel.points, p);
       // Face along the CURRENT leg. The facing was set once, at the final destination, so on a
       // multi-leg route he crabbed sideways through every turn -- which is what read as jank.
@@ -811,7 +814,10 @@ export class ScenarioMode {
       if (this.travel.dropFrom !== undefined) {
         pos.y = this.travel.dropFrom * (1 - Math.min(1, p / BED_DROP_END));
       }
-      this.world.hero.node.position.copy(pos);
+      // ease toward the route point rather than snapping to it: normal typing moves it a hair
+      // at a time (no visible difference), but it keeps the catch-up smooth when the hold above
+      // is released all at once
+      this.world.hero.node.position.lerp(pos, Math.min(1, dt * 6));
       this.sinceKey += dt;
       if (this.sinceKey > IDLE_AFTER && this.world.hero.isMoving) this.world.hero.setMoving(false);
     }

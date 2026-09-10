@@ -54,7 +54,7 @@ export function build(): StoryGraph {
   boog.narrationKey = "home.narration";
   boog.ending = "win";
   boog.winKey = "home.win_bow";
-  boog.safety = safety("fnv1a:85f528ed");
+  boog.safety = safety("fnv1a:d86d6e7a");
   boog.scene = houseScene();
   g.addNode(boog);
 
@@ -64,7 +64,7 @@ export function build(): StoryGraph {
   kruisboog.narrationKey = "home.narration";
   kruisboog.ending = "win";
   kruisboog.winKey = "home.win_crossbow";
-  kruisboog.safety = safety("fnv1a:fa433239");
+  kruisboog.safety = safety("fnv1a:a6691b86");
   kruisboog.scene = houseScene();
   g.addNode(kruisboog);
   return g;

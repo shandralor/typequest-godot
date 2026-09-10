@@ -53,14 +53,14 @@ export const CATALOG: Record<string, string> = {
   "slijpen.caster.narration": "Lees de spreuk en typ elk woord.",
   "slijpen.caster.win": "Goed gedaan! Je {wapen} gloeit weer.",
   // archery session
-  "boog.prose": "de {held} maakt zich klaar. de {held} mikt goed op het doel. het vliegt snel en recht door de lucht. de {held} raakt het doel precies in het midden.",
+  "boog.prose": "de {held} maakt zich klaar. de {held} mikt goed op het doel. de {held} haalt diep adem. de {held} raakt het doel precies in het midden.",
   "boog.narration": "Mik goed en typ elk woord.",
   "boog.win": "Raak! Recht in de roos.",
   // molen
   // Rewritten to what is actually ON SCREEN: the windmill model's door is baked shut, the miller
   // stands outside on the path, and nothing mills or waves. The tip he gives is the point of the
   // beat and is unchanged.
-  "mill.prose": "de molenaar staat voor zijn molen. hij ziet je op het pad. de oude man weet veel over het bos. de oude brug opent met een kristal. het skelet in de grot bewaakt het. versla het en pak het kristal. de molenaar wenst je veel geluk.",
+  "mill.prose": "de molenaar loopt rond zijn molen. hij ziet je meteen staan. hij weet veel over het bos. de oude brug opent met een kristal. het skelet in de grot bewaakt het. versla het en pak het kristal. de molenaar wenst je veel geluk.",
   "mill.narration": "De molenaar heeft een tip voor je.",
   "mill.win": "Nu weet je hoe je de brug opent!",
   // grotFight -- the armed return
@@ -78,8 +78,8 @@ export const CATALOG: Record<string, string> = {
   "home.prose": "de {held} is weer thuis. de {held} pakt iets van de muur.",
   "home.sword_prose": "de {held} pakt een {wapen} van de plank.",
   // the ranged weapon is the child's CHOICE, not the class's: boog or kruisboog
-  "home.bow_prose": "de {held} pakt de boog van de muur. de koker met pijlen gaat mee.",
-  "home.crossbow_prose": "de {held} pakt de kruisboog van de muur. de koker met pijlen gaat mee.",
+  "home.bow_prose": "de {held} pakt de boog van de muur.",
+  "home.crossbow_prose": "de {held} pakt de kruisboog van de muur.",
   "home.narration": "Typ de woorden.",
   "home.win": "Tot de volgende keer!",
   "home.win_sword": "Je hebt je {wapen} gehaald!",
