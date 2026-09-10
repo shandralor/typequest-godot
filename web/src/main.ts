@@ -15,7 +15,7 @@ import { MusicPlayer } from "./audio/musicPlayer";
 import { OverworldMode } from "./game/overworldMode";
 import { ScenarioMode } from "./game/scenarioMode";
 import { getChoice, setChoice, getFlag, setFlag, resetProgress, allStats } from "./game/flags";
-import { setActiveTransient } from "./game/keyboardSettings";
+import { active as activeLayout, available as availableLayouts, setActive as setLayout, setActiveTransient } from "./game/keyboardSettings";
 import { ISLAND_FOV, OW_IDLE_BIAS, OW_IDLE_ZOOM } from "./game/cameraRigs";
 
 const locale = { resolve: nlBe.resolve, fillTokens: nlBe.fillTokens };
@@ -51,7 +51,9 @@ async function main(): Promise<void> {
   let state: State = "menu";
   /** bumped on every state entry; async continuations bail when they are no longer current */
   let stateGen = 0;
-  let muted = false;
+  // remembered across runs, like the layout: a parent who turns the music off should not have
+  // to turn it off again every time the child opens the game
+  let muted = getChoice("muted", "") === "1";
   const enterState = (s: State): number => {
     state = s;
     return ++stateGen;
@@ -106,7 +108,39 @@ async function main(): Promise<void> {
     menu.show("TypeQuest", [
       { text: "Start", onPress: () => void startPressed() },
       { text: "Kies je held", onPress: () => showPicker(() => void showMenu()) },
-      { text: "Opties", onPress: () => hud.message("Opties komen later.") },
+      { text: "Opties", onPress: () => showOptions() },
+    ]);
+  }
+
+  /**
+   * OPTIONS: the settings a grown-up sets once for this child. The keyboard layout is the one
+   * that matters -- the finger guidance is only correct for the board actually under their
+   * hands, and a QWERTY child taught AZERTY fingering is being taught the wrong thing.
+   * Each row cycles its own value and re-renders in place, so there is no OK/Cancel to explain.
+   */
+  function showOptions(): void {
+    const layouts = availableLayouts();
+    menu.totals(null);
+    menu.show("Opties", [
+      {
+        text: `Toetsenbord: ${activeLayout().DISPLAY_NAME}`,
+        onPress: () => {
+          const i = layouts.findIndex((l) => l.LAYOUT_ID === activeLayout().LAYOUT_ID);
+          setLayout(layouts[(i + 1) % layouts.length].LAYOUT_ID);
+          hud.buildKeyboard(); // re-letter the board and re-aim the finger colours
+          showOptions();
+        },
+      },
+      {
+        text: `Muziek: ${muted ? "uit" : "aan"}`,
+        onPress: () => {
+          muted = !muted;
+          music.setMuted(muted);
+          setChoice("muted", muted ? "1" : "0");
+          showOptions();
+        },
+      },
+      { text: "Terug", secondary: true, onPress: () => void showMenu() },
     ]);
   }
 
@@ -210,6 +244,7 @@ async function main(): Promise<void> {
 
   // browsers refuse to play audio before the user interacts, so the first key or click starts
   // whichever context is already pending
+  music.setMuted(muted); // honour the remembered choice before a single note plays
   const unlockMusic = (): void => music.unlock();
   window.addEventListener("keydown", unlockMusic, { once: true });
   window.addEventListener("pointerdown", unlockMusic, { once: true });
@@ -221,6 +256,7 @@ async function main(): Promise<void> {
       e.preventDefault();
       muted = !muted;
       music.setMuted(muted);
+      setChoice("muted", muted ? "1" : "0");
       hud.message(muted ? "Muziek uit (ctrl+m)" : "Muziek aan (ctrl+m)");
       window.setTimeout(() => hud.message(""), 1400);
       return;

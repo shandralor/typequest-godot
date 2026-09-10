@@ -42,9 +42,20 @@ export class Hud {
   private rightHand: FingerHand;
 
   constructor() {
+    this.leftHand = new FingerHand("left_", FINGER_COLORS, false);
+    this.rightHand = new FingerHand("right_", FINGER_COLORS, true);
+    this.buildKeyboard();
+  }
+
+  /**
+   * Lay out the on-screen board from the ACTIVE layout axis. Called again when the child
+   * switches layout in the options, which is the whole point of the axis: re-lettering the
+   * board and re-aiming the finger guidance is this one call, with no logic change (A3).
+   */
+  buildKeyboard(): void {
     const kb = $<HTMLElement>("keyboard");
     kb.innerHTML = "";
-    this.leftHand = new FingerHand("left_", FINGER_COLORS, false);
+    this.keys.clear();
     kb.appendChild(this.leftHand.el);
     const board = document.createElement("div");
     board.className = "kboard";
@@ -61,7 +72,6 @@ export class Hud {
     extra.appendChild(this.makeKey(" ", "spatie", "space"));
     extra.appendChild(this.makeKey(".", "."));
     board.appendChild(extra);
-    this.rightHand = new FingerHand("right_", FINGER_COLORS, true);
     kb.appendChild(this.rightHand.el);
   }
 

@@ -332,7 +332,8 @@ export class ScenarioMode {
       // the open spellbook. The descriptor cannot name it (it has no hero), so it is staged
       // here, like the archery target.
       const group = weaponGroupFor(this.heroId);
-      await this.stageProp(WORK_PROPS[group] || meleeFor(this.heroId), "grind_point");
+      if (group === "blades") await this.stageWorkBlade();
+      else await this.stageProp(WORK_PROPS[group], "grind_point");
       // A caster's book is not put down anywhere -- it HANGS in the air in front of her,
       // tilted so the open pages face the child, with the spell guttering underneath it.
       if (group === "caster") this.floatBook();
@@ -340,7 +341,17 @@ export class ScenarioMode {
     if (setName === "forge" && weaponGroupFor(this.heroId) === "blades") {
       // the shower sits on the wheel in front of him and heats up as the song is typed --
       // only the grinding beat throws sparks; fletching and studying do not
-      const at = this.world.anchor("grind_point").clone().add(new THREE.Vector3(0, 0.7, 0));
+      // on the MEASURED top of the wheel, not a guessed height -- the wheel is scaled to
+      // working height in the authored scene and a magic number would drift from it
+      const stone = this.world.s.scene.getObjectByName("kaykit/rpgtools_bits/grindstone.gltf");
+      const at = this.world.anchor("grind_point").clone();
+      if (stone) {
+        // on the MEASURED wheel, not at the generic anchor: the stone is authored away from
+        // grind_point (which the ranger's bench and the caster's book still use) and scaled to
+        // working height, so any guessed offset would drift from it
+        const box = new THREE.Box3().setFromObject(stone);
+        at.set((box.min.x + box.max.x) / 2, box.max.y - 0.1, (box.min.z + box.max.z) / 2);
+      } else at.y += 0.7;
       this.sparks = new Sparks(at);
       this.world.s.scene.add(this.sparks.group);
     }
@@ -437,6 +448,38 @@ export class ScenarioMode {
         if (target) rig.lookAtPoint(target);
         else rig.face(0, 1); // "camera"
     }
+  }
+
+  /**
+   * The blade the hero is grinding, IN HIS HANDS rather than parked in front of the wheel.
+   * Seated on the stone it read as floating: there is no contact, the Sawing arms swing behind
+   * it, and any camera move breaks the illusion again. Held, the clip does the work for us.
+   */
+  private async stageWorkBlade(): Promise<void> {
+    const path = resolveAsset(meleeFor(this.heroId)).replace(/^assets\//, "");
+    const base = await this.world.s.loadModel(path).catch(() => null);
+    if (!base) return;
+    const obj = base.clone(true);
+    obj.name = meleeFor(this.heroId);
+    // sword, axe and dagger are authored at wildly different scales -- axe_C at native size
+    // covered the hero's head -- so normalise the longest edge before it goes in the hand
+    const box = new THREE.Box3().setFromObject(obj);
+    const longest = Math.max(...box.getSize(new THREE.Vector3()).toArray());
+    if (longest > 0) obj.scale.setScalar(BLADE_LEN / longest);
+    if (!this.world.hero.attachToHand(obj, "handslot.r", new THREE.Vector3(-0.1, 0.34, 0.34))) {
+      // no grip on this rig: fall back to the old wheel placement rather than dropping it
+      await this.stageProp(meleeFor(this.heroId), "grind_point");
+      return;
+    }
+    // Tipped head-down across the wheel. In the grip's own axes the blade points straight up
+    // out of the fist, which put it behind the hero's head and out of shot; these numbers were
+    // chosen by photographing the candidates, not derived.
+    obj.rotation.set(2.4, -0.5, 0);
+    // a bone carries the armature's own scale, so undo it or the blade arrives hero-sized
+    const slotScale = new THREE.Vector3();
+    obj.parent!.getWorldScale(slotScale);
+    if (slotScale.x > 0) obj.scale.multiplyScalar(1 / slotScale.x);
+    this.heldProps.push(obj);
   }
 
   /** Put a vocabulary prop at an anchor (or in the hero's hands for "hand"). */
