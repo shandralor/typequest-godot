@@ -38,7 +38,7 @@ export const EXTRA_RIGS: Record<string, string[]> = {
   // paragraph: it wakes on the floor, taunts, walks in, staggers and finally falls
   "kaykit/characters/Rig_Medium_Special.glb": [
     "Skeletons_Awaken_Floor", "Skeletons_Awaken_Standing", "Skeletons_Idle", "Skeletons_Walking",
-    "Skeletons_Taunt", "Skeletons_Taunt_Longer", "Skeletons_Death", "Skeletons_Death_Pose",
+    "Skeletons_Taunt", "Skeletons_Taunt_Longer", "Skeletons_Death", "Skeletons_Death_Pose", "Skeletons_Death_Resurrect",
     "Skeletons_Inactive_Floor_Pose", "Skeletons_Spawn_Ground",
   ],
   // dodging out of the way is a real choice the child can type

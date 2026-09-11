@@ -63,10 +63,35 @@ export const CATALOG: Record<string, string> = {
   "mill.prose": "de molenaar loopt rond zijn molen. hij ziet je meteen staan. hij weet veel over het bos. de oude brug opent met een kristal. het skelet in de grot bewaakt het. versla het en pak het kristal. de molenaar wenst je veel geluk.",
   "mill.narration": "De molenaar heeft een tip voor je.",
   "mill.win": "Nu weet je hoe je de brug opent!",
-  // grotFight -- the armed return
-  "grotFight.prose": "de {held} maakt zich klaar voor de strijd. het skelet komt met grote stappen dichtbij. de {held} valt het skelet dapper aan. het skelet wankelt even. nog een keer en het valt om. daar ligt een glanzend kristal. de {held} pakt het kristal snel op.",
+  // grotFight -- the armed return. The prose is the APPROACH only; the fight itself is three
+  // staged phases the child steers with a typed word (word.sla / word.blok / word.duik), and
+  // strijdVal.prose is the payoff they type once the skeleton is down.
+
+  "grotFight.prose": "de {held} stapt de donkere grot in. het skelet ligt stil op de grond. dan beweegt er iets in het donker. de {held} maakt zich klaar voor de strijd.",
   "grotFight.narration": "Wees dapper! Nu ben je sterk genoeg.",
+  "strijdVal.prose": "het skelet valt met een klap om. daar ligt een glanzend kristal. de {held} pakt het kristal snel op.",
+  "strijdVal.narration": "Het is gelukt! Typ elk woord.",
   "grotFight.win": "Je verslaat het skelet! Het kristal is van jou.",
+
+  // The three fight phases. Each one READS what the skeleton is doing and the child answers
+  // with the matching word -- that is the whole rule, and it is telegraphed every time, so a
+  // six-year-old can learn it rather than guess. Narration only: these beats are steered, not
+  // typed, and the typing volume lives in the approach and the payoff around them.
+  // The phase LINE is shown, not typed (prerevealed): it is what the child reads to know which
+  // word to answer with, so it has to say plainly what the skeleton is doing.
+  "strijd.slag.prose": "het skelet komt overeind en haalt uit.",
+  "strijd.slag.narration": "Het skelet haalt uit! Blok of duik!",
+  "strijd.open.prose": "het skelet staat stil. nu kan de {held} slaan.",
+  "strijd.open.narration": "Het skelet staat open. Sla toe!",
+  "strijd.wankel.prose": "het skelet wankelt heen en weer.",
+  "strijd.wankel.narration": "Het skelet wankelt! Nog een keer!",
+  // the setbacks. Nobody loses the run: the phase simply comes round again.
+  "strijd.raak.prose": "het skelet raakt de {held} hard.",
+  "strijd.raak.narration": "Au! Het skelet raakt jouw {held}. Probeer het nog eens.",
+  "strijd.mis.prose": "de {held} wacht te lang met slaan.",
+  "strijd.mis.narration": "Je wacht te lang. Het skelet komt weer op je af.",
+  "strijd.herrijst.prose": "het skelet staat langzaam weer op.",
+  "strijd.herrijst.narration": "Het skelet staat weer op! Sla nog een keer.",
   // intro
   // Third person THROUGHOUT: it read "de barbaar loopt ... hier hangt JE bijl ... JE maakt een
   // ommetje", swapping person mid-passage. "een {wapen}" also dodges the de/het trap, since
@@ -103,6 +128,11 @@ export const CATALOG: Record<string, string> = {
   "word.grot": "grot",
   "word.brug": "brug",
   "word.kist": "kist",
+  // the fight words. Short, unambiguous imperatives a six-year-old can read at a glance:
+  // "wijk" was rejected because a Flemish child reads it first as a neighbourhood.
+  "word.sla": "sla",
+  "word.blok": "blok",
+  "word.duik": "duik",
   "word.zwaard": "{wapen}",
   "word.boog": "boog",
   "word.kruisboog": "kruisboog",

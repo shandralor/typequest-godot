@@ -54,6 +54,22 @@ const HAZE_MODEL = "kaykit/hexagon/cloud_big.gltf";
 /** the weapon on the grinding wheel is scaled to this length, so every blade reads the same */
 const BLADE_LEN = 1.15;
 /**
+ * The staged cave fight: which nodes are fight beats, and everything they can play. Prefetched
+ * together, because a phase that has to wait for its pack arrives after the child has already
+ * typed their word.
+ */
+const FIGHT_NODES = /^(grot_fight|strijd_)/;
+/** how far apart the two of them stand once the fight starts */
+const FIGHT_GAP = 2.0;
+export function isFightNode(id: string): boolean {
+  return FIGHT_NODES.test(id);
+}
+const FIGHT_CLIPS = [
+  "Skeletons_Inactive_Floor_Pose", "Skeletons_Awaken_Floor", "Skeletons_Idle", "Skeletons_Taunt",
+  "Skeletons_Death", "Skeletons_Death_Pose", "Skeletons_Death_Resurrect",
+  "Melee_Block", "Melee_Block_Hit", "Dodge_Backward", "Hit_A",
+];
+/**
  * How far below the grindstone prop's highest point the blade's edge rides. It is not a small
  * bite into the stone: the prop's top is its CRANK HANDLE, not the wheel, so a blade seated on
  * the measured max hovered a visible gap above the rim it is supposed to be grinding on.
@@ -117,6 +133,8 @@ export class ScenarioMode {
   private travel: { points: THREE.Vector3[]; dropFrom?: number } | null = null;
   /** an NPC ambling a closed authored loop while the child types (the miller round his mill) */
   private pacer: { npc: HeroRig; curve: THREE.CatmullRomCurve3; length: number; t: number } | null = null;
+  /** the skeleton rises ONCE per visit to the cave, not once per phase */
+  private fightAwake = false;
   /** the RPG item-get: the weapon held aloft in a puff of cloud while the wall goes empty */
   private itemGet: { group: THREE.Object3D; t: number; from: THREE.Vector3 } | null = null;
   /** the cloud bank the caster's book rides on */
@@ -265,6 +283,7 @@ export class ScenarioMode {
     if (node.isEnding()) wanted.push("Cheering");
     if (this.ranged) wanted.push(this.ranged.aim, this.ranged.fire);
     if (this.scenarioId === "intro") wanted.push("Lie_Idle", "Lie_StandUp");
+    if (isFightNode(node.id)) wanted.push(...FIGHT_CLIPS, this.meleeClip());
     await ensureClips(wanted);
 
     // actors
@@ -351,6 +370,11 @@ export class ScenarioMode {
       }
     }
     if (!restage && setName === "archery") await this.buildArcheryTarget();
+    // Arm him. He walks into the cave carrying nothing otherwise, and "sla" with empty hands is
+    // the same defect the forge had: the prose names a weapon that is not on screen.
+    if (isFightNode(node.id) && this.heldProps.length === 0) {
+      await this.stageProp(meleeFor(this.heroId), "hand", { ...rangedFor(this.heroId), hand: "handslot.r" });
+    }
     if (setName === "forge" && !restage) {
       // what the beat is ABOUT lies in front of him -- his own weapon, a bundle of arrows or
       // the open spellbook. The descriptor cannot name it (it has no hero), so it is staged
@@ -407,7 +431,7 @@ export class ScenarioMode {
     // only blades work over the grinding wheel; the others need the framing that is not
     // pitched down at one
     const reading = setName === "forge" && weaponGroupFor(this.heroId) !== "blades";
-    this.world.useRig(rigFor(setName, { walking: !!this.travel, win: false, landmarks, reading }), fresh || !restage);
+    this.world.useRig(rigFor(setName, { walking: !!this.travel, win: false, landmarks, reading, fight: isFightNode(node.id) && node.id !== "grot_fight" }), fresh || !restage);
     // the gaze owns a STANDING lead's yaw: at the fork he looks ahead, then at the cave when the
     // prose says "links", then at the bridge at "rechts" (walking beats keep their travel facing)
     const anchorAt = (n: string): { x: number; z: number } | undefined => {
@@ -432,6 +456,7 @@ export class ScenarioMode {
     }
     this.hud.prompt(node.narrationKey ? this.locale.resolve(node.narrationKey) : "");
     this.hud.message("");
+    if (isFightNode(node.id)) this.stageFight(node.id);
     if (node.prerevealed) {
       this.prose = new TypingState("");
       this.hud.plain(this.heldProse(node.proseKey));
@@ -810,6 +835,78 @@ export class ScenarioMode {
     return path ? this.world.s.getModel(path)?.clone(true) ?? null : null;
   }
 
+  /**
+   * How this class swings. A staff jabs, a barbarian's axe comes down two-handed, a dagger
+   * stabs -- one clip for everybody read as the wrong weapon entirely.
+   */
+  private meleeClip(): string {
+    if (this.heroId === "barbarian") return "Melee_2H_Attack_Chop";
+    if (this.heroId === "rogue" || weaponGroupFor(this.heroId) === "caster") return "Melee_1H_Attack_Stab";
+    return "Melee_1H_Attack_Slice_Diagonal";
+  }
+
+  /**
+   * Pose the skeleton for a fight beat. It wakes ONCE: coming back to a phase after a setback
+   * is the same skeleton still standing, and replaying the rise each time would undo the one
+   * thing the staging is for.
+   */
+  private stageFight(nodeId: string): void {
+    const skel = this.npcs[0];
+    if (!skel) return;
+    if (nodeId === "grot_fight") {
+      this.fightAwake = false;
+      skel.play("Skeletons_Inactive_Floor_Pose");
+      return;
+    }
+    // Close the distance. Authored at far_right the skeleton is three and a half metres away
+    // across the room -- fine for the fright on the first visit, a thumbnail in a duel. Put
+    // them at arm's length and turn them to each other; this is render-authored staging, which
+    // is where the brief allows the protagonist's position to be decided (B4).
+    const hero = this.world.hero.node.position;
+    // side by side ACROSS the camera, not one behind the other: facing him down the lens put
+    // the hero's back to the child and the skeleton behind his shoulder
+    skel.node.position.set(hero.x + FIGHT_GAP, hero.y, hero.z - 0.35);
+    skel.face(hero.x - skel.node.position.x, hero.z - skel.node.position.z);
+    this.world.hero.face(skel.node.position.x - hero.x, skel.node.position.z - hero.z);
+    this.gaze = { mode: "none", links: -1, rechts: -1 }; // the gaze must not turn him back
+    if (!this.fightAwake) {
+      this.fightAwake = true;
+      void skel.playOneShot("Skeletons_Awaken_Floor", "Skeletons_Idle").then(() => {
+        if (this.fightAwake) void skel.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
+      });
+      return;
+    }
+    if (nodeId === "strijd_herrijst") void skel.playOneShot("Skeletons_Death_Resurrect", "Skeletons_Idle");
+    else if (nodeId === "strijd_wankel") skel.play("Skeletons_Idle");
+    else if (nodeId === "strijd_slag") void skel.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
+    else skel.play("Skeletons_Idle");
+  }
+
+  /**
+   * The exchange the typed word buys. Whether it WORKED is read off the target node, not off
+   * the word: the graph already decides that, and duplicating the rule here is how the two
+   * drift apart.
+   */
+  private async fightExchange(word: string, target: string): Promise<void> {
+    const skel = this.npcs[0];
+    const hero = this.world.hero;
+    const missed = /strijd_(raak|mis|herrijst)/.test(target);
+    if (word === this.locale.resolve("word.sla")) {
+      await hero.playOneShot(this.meleeClip(), "Idle_A");
+      if (target === "strijd_val") await skel?.playOneShot("Skeletons_Death", "Skeletons_Death_Pose");
+      else if (!missed) await skel?.playOneShot("Hit_A", "Skeletons_Idle");
+    } else if (word === this.locale.resolve("word.blok")) {
+      await hero.playOneShot(missed ? "Melee_Block" : "Melee_Block_Hit", "Idle_A");
+    } else if (word === this.locale.resolve("word.duik")) {
+      await hero.playOneShot("Dodge_Backward", "Idle_A");
+    }
+    // a wrong answer costs a knock, never the run: the phase simply comes round again
+    if (missed && target !== "strijd_herrijst") {
+      await skel?.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
+      await hero.playOneShot("Hit_A", "Idle_A");
+    }
+  }
+
   private beginChoice(): void {
     const node = this.run!.current();
     if (!node || node.choices.length === 0) return this.resolveEnding();
@@ -871,6 +968,13 @@ export class ScenarioMode {
       // fork never snaps (Godot _begin_choice_walk)
       const landmark = hint === "left" ? this.gazeTargets.cave : hint === "right" ? this.gazeTargets.bridge : undefined;
       const after = sameSetWalk ? () => void this.enterNode(false) : () => void this.world.fadeCut(() => this.enterNode(true));
+      // A fight beat plays the exchange the word bought BEFORE the next phase is entered:
+      // without the pause the animation is cut off by its own consequence.
+      if (isFightNode(tgt?.id ?? "")) {
+        this.phase = "pause";
+        void this.fightExchange(this.picked.word, tgt?.id ?? "").then(after);
+        return;
+      }
       if (landmark) {
         this.phase = "pause";
         const from = this.world.hero.node.position.clone();

@@ -32,14 +32,44 @@ describe("band-1 traversal", () => {
     expect(brug.isAvailable(both)).toBe(true); // the crossing is open in exactly that state
   });
 
-  it("grot is a somber win (met_skeleton, no crystal); grot_fight grants the crystal", () => {
+  it("grot is a somber win (met_skeleton, no crystal); the fight grants the crystal", () => {
     const g = build();
     const grot = g.getNodeById("grot")!;
     expect(grot.ending).toBe("win");
     expect(grot.celebrate).toBe(false);
     expect(grot.setsFlag).toContain("met_skeleton");
     expect(grot.setsFlag).not.toContain("has_crystal");
-    expect(g.getNodeById("grot_fight")!.setsFlag).toContain("has_crystal");
+    // the armed return is now the APPROACH to a staged fight; the crystal is won at its end
+    expect(g.getNodeById("grot_fight")!.setsFlag).not.toContain("has_crystal");
+    expect(g.getNodeById("strijd_val")!.setsFlag).toContain("has_crystal");
+  });
+
+  // The fight is three phases with a setback each, and every path has to come back round --
+  // a six-year-old must never be able to type a legal word and end up stuck in the cave.
+  it("every fight choice leads somewhere, and every path can still reach the crystal", () => {
+    const g = build();
+    const seen = new Set<string>();
+    const walk = (id: string): void => {
+      if (seen.has(id)) return;
+      seen.add(id);
+      const n = g.getNodeById(id)!;
+      expect(n, `node '${id}' is missing`).toBeTruthy();
+      for (const c of n.choices) walk(c.target);
+    };
+    walk("grot_fight");
+    for (const id of ["strijd_slag", "strijd_open", "strijd_wankel", "strijd_raak", "strijd_mis", "strijd_herrijst", "strijd_val"]) {
+      expect(seen.has(id), `'${id}' is unreachable from the fight`).toBe(true);
+    }
+    // no phase is a dead end: each one offers a way on
+    for (const id of seen) {
+      const n = g.getNodeById(id)!;
+      expect(n.choices.length > 0 || n.ending === "win", `'${id}' is a dead end`).toBe(true);
+    }
+    // and each of the three real phases takes all three fight words
+    for (const id of ["strijd_slag", "strijd_open", "strijd_wankel"]) {
+      const words = g.getNodeById(id)!.choices.map((c) => c.wordKey).sort();
+      expect(words).toEqual(["word.blok", "word.duik", "word.sla"]);
+    }
   });
 });
 

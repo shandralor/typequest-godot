@@ -61,16 +61,85 @@ export function build(): StoryGraph {
   grot.scene = Scenes.grot();
   g.addNode(grot);
 
-  // grot_fight -- the ARMED return (via the grot fork once fully_trained). Wins has_crystal.
+  // grot_fight -- the ARMED return (via the grot fork once fully_trained). The APPROACH only;
+  // the fight is staged in three phases below and the crystal is won at the end of them.
   const grotFight = new StoryNode("grot_fight");
   grotFight.proseKey = "grotFight.prose";
   grotFight.narrationKey = "grotFight.narration";
-  grotFight.ending = "win";
-  grotFight.winKey = "grotFight.win";
-  grotFight.setsFlag = "has_crystal";
-  grotFight.safety = nlBeSafety("fnv1a:48aecf72");
+  grotFight.choices = [new Choice("word.verder", "strijd_slag", "forward")];
+  grotFight.safety = nlBeSafety("fnv1a:2d165f21");
   grotFight.scene = Scenes.grot();
   g.addNode(grotFight);
+
+  // --- the fight, three phases ------------------------------------------------------------
+  //
+  // Every phase telegraphs what the skeleton is doing and the child answers with the matching
+  // word. One rule, stated every time, so it can be LEARNED rather than guessed. A wrong word
+  // is never a loss: the hero takes a knock and the phase comes round again, which is the only
+  // stake a six-year-old should carry.
+  //
+  // These are `prerevealed` (A9): narration plus a fork, no passage to type. The typing volume
+  // for this beat lives in the approach above and the payoff below, where it does not fight
+  // with the choice.
+  const phase = (id: string, key: string, hash: string): StoryNode => {
+    const n = new StoryNode(id);
+    n.proseKey = `${key}.prose`;
+    n.narrationKey = `${key}.narration`;
+    n.prerevealed = true;
+    n.celebrate = false;
+    n.safety = nlBeSafety(hash);
+    n.scene = Scenes.grot();
+    return n;
+  };
+
+  // phase 1 -- it wakes and swings. Blocking or dodging both work; swinging INTO it does not.
+  const slag = phase("strijd_slag", "strijd.slag", "fnv1a:41293368");
+  slag.choices = [
+    new Choice("word.blok", "strijd_open", "forward"),
+    new Choice("word.duik", "strijd_open", "left"),
+    new Choice("word.sla", "strijd_raak", "right"),
+  ];
+  g.addNode(slag);
+
+  // phase 2 -- its guard is down. Now the swing lands; waiting wastes the opening.
+  const open = phase("strijd_open", "strijd.open", "fnv1a:9e3014bf");
+  open.choices = [
+    new Choice("word.sla", "strijd_wankel", "forward"),
+    new Choice("word.blok", "strijd_mis", "left"),
+    new Choice("word.duik", "strijd_mis", "right"),
+  ];
+  g.addNode(open);
+
+  // phase 3 -- it staggers. One more swing finishes it; anything else lets it recover.
+  const wankel = phase("strijd_wankel", "strijd.wankel", "fnv1a:ca111d12");
+  wankel.choices = [
+    new Choice("word.sla", "strijd_val", "forward"),
+    new Choice("word.blok", "strijd_herrijst", "left"),
+    new Choice("word.duik", "strijd_herrijst", "right"),
+  ];
+  g.addNode(wankel);
+
+  // the three setbacks -- each one names what went wrong and hands the phase back
+  const raak = phase("strijd_raak", "strijd.raak", "fnv1a:d79b51b2");
+  raak.choices = [new Choice("word.verder", "strijd_slag", "forward")];
+  g.addNode(raak);
+  const mis = phase("strijd_mis", "strijd.mis", "fnv1a:bfe598b6");
+  mis.choices = [new Choice("word.verder", "strijd_open", "forward")];
+  g.addNode(mis);
+  const herrijst = phase("strijd_herrijst", "strijd.herrijst", "fnv1a:97d00bc6");
+  herrijst.choices = [new Choice("word.verder", "strijd_open", "forward")];
+  g.addNode(herrijst);
+
+  // the payoff, typed: the skeleton goes down and the crystal is his
+  const val = new StoryNode("strijd_val");
+  val.proseKey = "strijdVal.prose";
+  val.narrationKey = "strijdVal.narration";
+  val.ending = "win";
+  val.winKey = "grotFight.win";
+  val.setsFlag = "has_crystal";
+  val.safety = nlBeSafety("fnv1a:0d5a0632");
+  val.scene = Scenes.grot();
+  g.addNode(val);
 
   // brug -- the CROSSING: reuses the fork set with the lowered drawbridge.
   const brug = new StoryNode("brug");

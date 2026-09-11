@@ -54,6 +54,12 @@ export const ARCHERY: Rig = { off: [2.3, 3.0, 6.2], look: [-0.3, 0.45, -7.0], fo
  */
 export const CAVE: Rig = { off: [0, 2.9, 7.6], look: [0, 1.15, -1.4], fov: 50 };
 /**
+ * The staged fight: a two-shot close enough to read a swing. The CAVE framing is a room shot --
+ * right for arriving and being frightened, and it left the skeleton a thumbnail in the back of
+ * the cave once the two of them were actually fighting.
+ */
+export const FIGHT: Rig = { off: [1.0, 2.0, 5.0], look: [1.0, 1.1, -0.4], fov: 46 };
+/**
  * The mill. Same problem as the cave for the opposite reason: the standing rig's wide lens put
  * the hero and the miller at about 60px in a 1440px frame, marooned in an empty green field,
  * so the one NPC the beat is about was barely identifiable. Closer and tighter.
@@ -71,13 +77,13 @@ export const OW_IDLE_BIAS = 5.0;
 export const OW_TRAVEL_ZOOM = 0.62;
 
 /** Pick the rig for a staged scene. `set` is the SceneDef name; `phase` distinguishes the win. */
-export function rigFor(set: string, opts: { walking: boolean; win: boolean; landmarks: boolean; reading?: boolean }): Rig {
+export function rigFor(set: string, opts: { walking: boolean; win: boolean; landmarks: boolean; reading?: boolean; fight?: boolean }): Rig {
   if (set === "house") return HOUSE;
   if (opts.walking) return WALKING;
   if (opts.landmarks) return LANDMARKS;
   if (set === "forge") return opts.win ? WORK_WIN : opts.reading ? WORK_READ : WORK;
   if (set === "archery") return ARCHERY;
-  if (set === "dungeon") return CAVE;
+  if (set === "dungeon") return opts.fight ? FIGHT : CAVE;
   if (set === "mill") return MILL;
   return STANDING;
 }
