@@ -223,7 +223,7 @@ async function main(): Promise<void> {
     await island.enter(at);
   }
 
-  async function startScenario(id: string): Promise<void> {
+  async function startScenario(id: string, atNode = ""): Promise<void> {
     enterState("scenario");
     music.playContext("adventure");
     clearUi();
@@ -237,7 +237,7 @@ async function main(): Promise<void> {
       if (id === "intro") setFlag("intro_seen");
       void world.fadeCut(() => enterIsland(island.at));
     });
-    await scenario.start(id);
+    await scenario.start(id, atNode);
   }
 
   const island = new OverworldMode(world, hud, locale, (site) => {
@@ -317,6 +317,36 @@ async function main(): Promise<void> {
   document.body.setAttribute("data-ready", "1");
   world.s.renderer.setAnimationLoop(tick);
   // harness hooks: drive the game from a script + pause the loop for captures
+  // --- DEV HARNESS: only when the page is opened with ?dev ---------------------------------
+  if (location.search.includes("dev")) {
+    void import("./dev/devPanel").then(({ DevPanel, rigEntry }) => {
+      new DevPanel({
+        jump: (id, node) => startScenario(id, node),
+        island: () => enterIsland(island.at),
+        setHero: async (id) => {
+          heroId = id;
+          setChoice("hero", id);
+          setChoice("hero_chosen", "1");
+          const here = scenario?.dev;
+          if (here) await startScenario(here.scenarioId, here.nodeId);
+          else await enterIsland(island.at);
+        },
+        heroId: () => heroId,
+        finishTyping: () => {
+          for (const c of scenario?.dev.remaining ?? "") scenario?.char(c);
+        },
+        rigs: () => [
+          rigEntry("held", world.hero),
+          ...(scenario?.dev.npcs ?? []).map((n, i) => rigEntry(`npc ${i + 1}`, n)),
+        ],
+        status: () => {
+          const d = scenario?.dev;
+          return d ? `${d.scenarioId} / ${d.nodeId} / ${d.phase}` : `${state} / ${island.at}`;
+        },
+      });
+    });
+  }
+
   const w = window as unknown as Record<string, unknown>;
   w.__game = {
     world,

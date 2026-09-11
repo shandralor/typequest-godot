@@ -27,6 +27,24 @@ export const EXTRA_RIGS: Record<string, string[]> = {
   // the forge: a looped horizontal saw for grinding a blade, and a generic work loop for the
   // beats that are not grinding at all (fletching arrows, studying over the spellbook)
   "kaykit/characters/Rig_Medium_Tools.glb": ["Sawing", "Working_A"],
+  // the cave fight: the hero's swings, blocks and dodges
+  "kaykit/characters/Rig_Medium_CombatMelee.glb": [
+    "Melee_1H_Attack_Chop", "Melee_1H_Attack_Slice_Diagonal", "Melee_1H_Attack_Slice_Horizontal",
+    "Melee_1H_Attack_Stab", "Melee_2H_Attack_Chop", "Melee_2H_Attack_Spinning", "Melee_2H_Idle",
+    "Melee_Block", "Melee_Block_Attack", "Melee_Block_Hit", "Melee_Blocking",
+    "Melee_Unarmed_Attack_Punch_A", "Melee_Unarmed_Idle",
+  ],
+  // ... and the SKELETON's own vocabulary, which is what makes the fight a scene rather than a
+  // paragraph: it wakes on the floor, taunts, walks in, staggers and finally falls
+  "kaykit/characters/Rig_Medium_Special.glb": [
+    "Skeletons_Awaken_Floor", "Skeletons_Awaken_Standing", "Skeletons_Idle", "Skeletons_Walking",
+    "Skeletons_Taunt", "Skeletons_Taunt_Longer", "Skeletons_Death", "Skeletons_Death_Pose",
+    "Skeletons_Inactive_Floor_Pose", "Skeletons_Spawn_Ground",
+  ],
+  // dodging out of the way is a real choice the child can type
+  "kaykit/characters/Rig_Medium_MovementAdvanced.glb": [
+    "Dodge_Backward", "Dodge_Left", "Dodge_Right",
+  ],
   // the practice yard, per weapon class
   "kaykit/characters/Rig_Medium_CombatRanged.glb": [
     "Ranged_Bow_Aiming_Idle", "Ranged_Bow_Release",
@@ -102,6 +120,21 @@ export async function ensureClips(names: string[]): Promise<void> {
   if (packs.size === 0) return;
   const loaded = await Promise.all([...packs].map((p) => loadGltf(p).catch(() => null)));
   for (const r of loaded) if (r) mergeClips(r);
+}
+
+/**
+ * Load one clip pack by path and merge it into the shared library. The game never needs this --
+ * it asks for clips by NAME through ensureClips. The dev panel does: to offer an animation that
+ * nothing plays yet, it has to pull the packs whole.
+ */
+export async function loadClipPack(path: string): Promise<void> {
+  const root = await loadGltf(path);
+  mergeClips(root);
+}
+
+/** Every clip currently loaded. Dev panel only. */
+export function allClipNames(): string[] {
+  return [...sharedClips.keys()];
 }
 
 export class HeroRig {

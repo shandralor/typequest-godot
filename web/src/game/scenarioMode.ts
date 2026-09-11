@@ -161,7 +161,21 @@ export class ScenarioMode {
 
   private flag = (name: string): boolean => getFlag(name);
 
-  async start(id: string): Promise<void> {
+  /**
+   * Read-only handles for the dev harness (`?dev`). A narrow getter rather than loosening the
+   * fields: the harness needs to see where it is and what is staged, not to reach in and steer.
+   */
+  get dev(): { scenarioId: string; nodeId: string; phase: string; npcs: readonly HeroRig[]; remaining: string } {
+    return {
+      scenarioId: this.scenarioId,
+      nodeId: this.run?.currentId ?? "",
+      phase: this.phase,
+      npcs: this.npcs,
+      remaining: this.prose.target.slice(this.prose.cursor),
+    };
+  }
+
+  async start(id: string, atNode = ""): Promise<void> {
     this.scenarioId = id;
     this.run = new RunState(buildScenario(id), this.locale);
     this.run.heroId = this.heroId; // choice words carry {wapen}; the match needs it filled
@@ -170,6 +184,8 @@ export class ScenarioMode {
     // the forge beat depends on what the hero carries: blades grind, the ranger fletches,
     // casters study -- three authored nodes, one per group (characters.weaponGroupFor)
     if (id === "grind") this.run.currentId = forgeStartFor(weaponGroupFor(this.heroId));
+    // dev harness: land on one beat instead of playing up to it (?dev panel)
+    if (atNode && this.run.graph.hasNode(atNode)) this.run.currentId = atNode;
     this.hud.legend(null);
     this.hud.keyboard(true);
     await this.enterNode(true);

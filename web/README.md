@@ -63,3 +63,21 @@ component kind, gizmos, ghost), `viewport` (orbit camera, plane picking, pointer
 `catalog.generated.ts` (`python3 tools/gen_catalog.py`). Tests: every set round-trips losslessly
 and serialises byte-identically to its file (`src/tests/scenes.test.ts`). Shape follows the
 world-of-claudecraft map editor; see `docs/editor-blueprint.md`.
+
+## Dev harness (`?dev`)
+
+`npm run dev`, then open **http://localhost:5173/?dev**. A panel appears over the game:
+
+- **Held** -- swap the playable class; whatever is on screen restarts as that hero.
+- **Sprong** -- jump to the island or the start of any scenario.
+- **Beat** -- jump to ONE node of one scenario (`band1:grot_fight`, `grind:slijpen_caster`, ...).
+  This is the point of the tool: a beat is one click, not a five-minute playthrough.
+- **Vlaggen** -- toggle the gate flags (`fully_trained`, `has_crystal`, ...) so a beat can be
+  reached in the state you want to judge it in.
+- **Typen / maak af** -- type the rest of the current passage instantly.
+- **Animatie** -- play ANY clip in the KayKit library on the hero or on a staged NPC. Every
+  rig pack is loaded here, including ones the game does not use yet, because choosing an
+  animation means looking at the ones you have not used.
+
+ctrl+D hides the panel. The whole module is behind a dynamic import guarded by the `?dev`
+query, so the child's game never constructs, fetches or binds any of it.
