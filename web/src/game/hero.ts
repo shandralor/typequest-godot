@@ -137,6 +137,15 @@ export function allClipNames(): string[] {
   return [...sharedClips.keys()];
 }
 
+/**
+ * Is this a pose to settle into rather than a loop to run? KayKit marks the loopable variants
+ * with an "Idle" suffix (Ranged_Bow_Aiming_Idle, Melee_2H_Idle); the bare movement clips --
+ * Ranged_1H_Aiming, Ranged_Magic_Spellcasting -- raise the weapon and end.
+ */
+export function isHoldPose(name: string): boolean {
+  return /^Ranged_/.test(name) && !/Idle$/.test(name);
+}
+
 export class HeroRig {
   readonly node = new THREE.Group();
   private mixer: THREE.AnimationMixer | null = null;
@@ -228,6 +237,33 @@ export class HeroRig {
    * that resolves when it has settled, so a caller can pace a beat to the animation rather
    * than to a guessed duration. Fetches the clip's pack if it is not loaded yet.
    */
+  /**
+   * Settle INTO a pose and stay there: play the clip once and clamp on its last frame.
+   *
+   * play() loops, which is right for a walk or an idle and wrong for a pose that is a
+   * MOVEMENT into a position. Ranged_1H_Aiming raises the crossbow; looped, the hero raised it,
+   * dropped it and raised it again for the whole beat. The bow has a real Ranged_Bow_Aiming_Idle
+   * to loop; the one-handed and magic sets do not, so they need holding.
+   */
+  hold(name: string): void {
+    this.wantedLoop = name;
+    const a = this.action(name);
+    if (!a) {
+      if (packForClip.has(name)) {
+        void ensureClips([name]).then(() => {
+          if (this.wantedLoop === name) this.hold(name);
+        });
+      }
+      return;
+    }
+    if (a === this.current) return;
+    a.reset().setLoop(THREE.LoopOnce, 1);
+    a.clampWhenFinished = true;
+    a.setEffectiveWeight(1).play();
+    if (this.current) a.crossFadeFrom(this.current, 0.25, false);
+    this.current = a;
+  }
+
   playOneShot(name: string, then = "Idle_A"): Promise<void> {
     const a = this.action(name);
     if (!a) {
@@ -245,7 +281,10 @@ export class HeroRig {
     const onDone = (e: { action: THREE.AnimationAction }): void => {
       if (e.action !== a) return;
       this.mixer?.removeEventListener("finished", onDone);
-      this.play(then, 0.3);
+      // return to a HOLD when that is what `then` is -- a shot that drops back into a looped
+      // raise animation re-raises the weapon after every single arrow
+      if (isHoldPose(then)) this.hold(then);
+      else this.play(then, 0.3);
       settled();
     };
     this.mixer?.addEventListener("finished", onDone);

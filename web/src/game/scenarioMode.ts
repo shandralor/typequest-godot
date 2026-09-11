@@ -16,7 +16,7 @@ import { resolve as resolveAsset } from "../axis/vocabulary/fantasyPoc";
 import { rangedFor, meleeFor, weaponGroupFor, primaryIsRanged, WORK_CLIPS, WORK_PROPS, type RangedLoadout } from "../content/characters";
 import { startFor as forgeStartFor } from "../content/grind/grindArc";
 import { addStat, getChoice, setChoice, getFlag, setFlag, wordCount } from "./flags";
-import { HeroRig, ensureClips } from "./hero";
+import { HeroRig, ensureClips, isHoldPose } from "./hero";
 import type { World } from "./world";
 import type { Hud } from "../ui/hud";
 import type { SceneDef } from "../world/sceneDef";
@@ -358,7 +358,9 @@ export class ScenarioMode {
         if (!this.risingFromBed) {
           this.faceActor(hero, a.facing, this.travel?.points[this.travel.points.length - 1]);
           hero.setMoving(false);
-          hero.play(poseClip(a.pose));
+          const clip = poseClip(a.pose);
+          if (isHoldPose(clip)) hero.hold(clip);
+          else hero.play(clip);
         }
       } else if (!restage) {
         const npc = new HeroRig();
@@ -723,6 +725,7 @@ export class ScenarioMode {
       // child -- copying it flipped the knight's already-approved bow. Correct a weapon here
       // only after looking at it, never by porting the Godot value on faith.
       if (this.world.hero.attachToHand(obj, held?.hand ?? "handslot.l")) {
+        if (held?.gripTurn) obj.rotateY(held.gripTurn);
         this.heldProps.push(obj);
         return;
       }

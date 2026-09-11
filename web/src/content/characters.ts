@@ -42,11 +42,18 @@ export interface RangedLoadout {
   aim: string;
   fire: string;
   projectile: string;
+  /**
+   * Yaw correction, in radians, for how the model sits in the grip. MEASURED off the model, not
+   * guessed: a crossbow's stock runs along its local +Z, and in the hand that put the bolt
+   * pointing 90 degrees across the lane while the hero aimed down it. A bow's aim is its local
+   * -X and needs nothing. Check a new weapon's local bounding box before adding a number here.
+   */
+  gripTurn?: number;
 }
 
 export const RANGED: Record<string, RangedLoadout> = {
   knight: { weapon: "bow", hand: "handslot.l", spin: true, aim: "Ranged_Bow_Aiming_Idle", fire: "Ranged_Bow_Release", projectile: "arrow" },
-  ranger: { weapon: "crossbow", hand: "handslot.r", spin: false, aim: "Ranged_1H_Aiming", fire: "Ranged_1H_Shoot", projectile: "bolt" },
+  ranger: { weapon: "crossbow", hand: "handslot.r", spin: false, aim: "Ranged_1H_Aiming", fire: "Ranged_1H_Shoot", projectile: "bolt", gripTurn: Math.PI / 2 },
   mage: { weapon: "staff", hand: "handslot.r", spin: false, aim: "Ranged_Magic_Spellcasting", fire: "Ranged_Magic_Shoot", projectile: "magic" },
   witch: { weapon: "staff", hand: "handslot.r", spin: false, aim: "Ranged_Magic_Spellcasting", fire: "Ranged_Magic_Shoot", projectile: "magic" },
   barbarian: { weapon: "axe", hand: "handslot.r", spin: false, aim: "Idle_A", fire: "Throw", projectile: "" },

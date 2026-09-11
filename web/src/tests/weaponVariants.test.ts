@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import { HOUSE } from "../content/scenes/house";
-import { ALL, meleeFor, weaponGroupFor, WORK_PROPS } from "../content/characters";
+import { ALL, meleeFor, weaponGroupFor, WORK_PROPS, RANGED, rangedFor } from "../content/characters";
 import { build } from "../content/scenarios";
 import { startFor } from "../content/grind/grindArc";
 import { resolve as resolveAsset } from "../axis/vocabulary/fantasyPoc";
@@ -133,5 +133,25 @@ describe("item-get banner", () => {
   it("names the chosen ranged weapon when that is what was fetched", () => {
     expect(nlBe.resolve("itemget.bow")).toBe("Je hebt nu je boog!");
     expect(nlBe.resolve("itemget.crossbow")).toBe("Je hebt nu je kruisboog!");
+  });
+});
+
+// How a weapon sits in the hand is a property of the MODEL, not of the class holding it.
+// A crossbow's stock runs along its local +Z; a bow aims along its local -X. Attached with no
+// correction the crossbow pointed ninety degrees across the lane while the hero aimed down it.
+describe("ranged grip correction", () => {
+  it("only the crossbow needs turning, and by a quarter turn", () => {
+    expect(RANGED.ranger.weapon).toBe("crossbow");
+    expect(RANGED.ranger.gripTurn).toBeCloseTo(Math.PI / 2);
+    for (const id of ["knight", "mage", "witch", "barbarian", "rogue"]) {
+      expect(RANGED[id].gripTurn ?? 0, `${id} should not need a grip turn`).toBe(0);
+    }
+  });
+
+  it("a blade class that picks up a crossbow gets the correction with it", () => {
+    for (const id of ["knight", "barbarian", "rogue"]) {
+      expect(rangedFor(id, "crossbow").gripTurn).toBeCloseTo(Math.PI / 2);
+      expect(rangedFor(id, "bow").gripTurn ?? 0).toBe(0);
+    }
   });
 });
