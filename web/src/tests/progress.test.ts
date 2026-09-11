@@ -3,7 +3,7 @@
 // has 400 today, whatever happened in the run.
 
 import { beforeEach, describe, expect, it } from "vitest";
-import { addStat, allStats, getStat, resetProgress, wordCount, setFlag, getFlag } from "../game/flags";
+import { addStat, allStats, getStat, resetProgress, wordCount, setFlag, getFlag, getChoice, setChoice, SETTINGS_KEYS } from "../game/flags";
 import { count } from "../ui/menu";
 
 describe("cumulative stats", () => {
@@ -58,5 +58,36 @@ describe("the totals line", () => {
     expect(count(1, "avontuur", "avonturen")).toBe("1 avontuur");
     expect(count(0, "avontuur", "avonturen")).toBe("0 avonturen");
     expect(count(7, "ster", "sterren")).toBe("7 sterren");
+  });
+});
+
+// "Begin opnieuw" in Opties wipes the adventure. What it must NOT wipe is the settings: a child
+// starting over has not moved to a different keyboard, and silently reverting them to AZERTY
+// would teach the wrong fingering from the next keystroke on.
+describe("reset from the options screen", () => {
+  it("clears flags and stats but keeps the settings", () => {
+    resetProgress();
+    setFlag("met_skeleton");
+    setFlag("has_sword");
+    addStat("words", 120);
+    setChoice("layout", "qwerty");
+    setChoice("muted", "1");
+    setChoice("hero", "witch");
+
+    resetProgress(SETTINGS_KEYS);
+
+    expect(getFlag("met_skeleton")).toBe(false);
+    expect(getFlag("has_sword")).toBe(false);
+    expect(allStats().words ?? 0).toBe(0);
+    expect(getChoice("layout", "azerty")).toBe("qwerty");
+    expect(getChoice("muted", "")).toBe("1");
+    // the hero is progress as far as the store is concerned -- main.ts puts it back by hand
+    expect(getChoice("hero", "")).toBe("");
+  });
+
+  it("the bare reset keeps nothing", () => {
+    setChoice("layout", "qwerty");
+    resetProgress();
+    expect(getChoice("layout", "azerty")).toBe("azerty");
   });
 });

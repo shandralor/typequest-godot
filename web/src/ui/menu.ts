@@ -56,6 +56,18 @@ export class Menu {
     el.textContent = parts.join("  -  ");
   }
 
+  /**
+   * A line under the title, where the totals normally sit -- used for the reset warning. It
+   * belongs INSIDE the menu rather than in the hud's message panel, which is positioned for the
+   * playing view and lands on top of the title here.
+   */
+  note(text: string): void {
+    const el = $<HTMLElement>("totals");
+    el.hidden = text === "";
+    el.textContent = text;
+    el.classList.toggle("warn", text !== "");
+  }
+
   /** The picker caption: which hero is centred, and how to choose. */
   picker(label: string | null): void {
     const el = $<HTMLElement>("picker");

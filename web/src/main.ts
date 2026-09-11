@@ -14,7 +14,7 @@ import { Menu, stepHero } from "./ui/menu";
 import { MusicPlayer } from "./audio/musicPlayer";
 import { OverworldMode } from "./game/overworldMode";
 import { ScenarioMode } from "./game/scenarioMode";
-import { getChoice, setChoice, getFlag, setFlag, resetProgress, allStats } from "./game/flags";
+import { getChoice, setChoice, getFlag, setFlag, resetProgress, allStats, SETTINGS_KEYS } from "./game/flags";
 import { active as activeLayout, available as availableLayouts, setActive as setLayout, setActiveTransient } from "./game/keyboardSettings";
 import { ISLAND_FOV, OW_IDLE_BIAS, OW_IDLE_ZOOM } from "./game/cameraRigs";
 
@@ -37,7 +37,7 @@ const MENU_BIAS = 1.5;
 const PICKER_SCENE = { tiles: [], props: [], shapes: [{ kind: "plane" as const, size: [9, 9], color: "#5f7d42", x: 0, z: 0, name: "Ground" }] };
 
 async function main(): Promise<void> {
-  if (location.search.includes("reset")) resetProgress();
+  if (location.search.includes("reset")) resetProgress(SETTINGS_KEYS);
   // ?layout=qwerty swaps the keyboard axis for this session only (debug), the way --layout does
   const layoutArg = new URLSearchParams(location.search).get("layout");
   if (layoutArg) setActiveTransient(layoutArg);
@@ -118,9 +118,8 @@ async function main(): Promise<void> {
    * hands, and a QWERTY child taught AZERTY fingering is being taught the wrong thing.
    * Each row cycles its own value and re-renders in place, so there is no OK/Cancel to explain.
    */
-  function showOptions(): void {
+  function showOptions(armed = false): void {
     const layouts = availableLayouts();
-    menu.totals(null);
     menu.show("Opties", [
       {
         text: `Toetsenbord: ${activeLayout().DISPLAY_NAME}`,
@@ -140,8 +139,27 @@ async function main(): Promise<void> {
           showOptions();
         },
       },
+      { text: "Kies je held", onPress: () => showPicker(() => showOptions()) },
+      // Two taps, and the second one says what it does. A child browsing the menu should not be
+      // able to delete a month of adventures by pressing one button once.
+      armed
+        ? { text: "Ja, wis alles", onPress: () => void wipe() }
+        : { text: "Begin opnieuw", onPress: () => showOptions(true) },
       { text: "Terug", secondary: true, onPress: () => void showMenu() },
     ]);
+    menu.note(armed ? "Alle sterren en avonturen verdwijnen. Je held en je instellingen blijven." : "");
+  }
+
+  /** Wipe the adventure and start over from the title, settings and hero intact. */
+  async function wipe(): Promise<void> {
+    const hero = getChoice("hero", Characters.DEFAULT_ID);
+    const chosen = getChoice("hero_chosen", "");
+    resetProgress(SETTINGS_KEYS);
+    setChoice("hero", hero);
+    if (chosen) setChoice("hero_chosen", chosen);
+    heroId = hero;
+    menu.note("");
+    await showMenu();
   }
 
   /** First run picks a hero before anything else, then flows into the intro / island. */

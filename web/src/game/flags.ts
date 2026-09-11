@@ -71,8 +71,18 @@ export function wordCount(prose: string): number {
   return prose.split(" ").filter((w) => w !== "").length;
 }
 
-/** Debug: wipe progress (the `?reset` query does this). */
-export function resetProgress(): void {
-  store = { flags: {}, choices: {}, stats: {} };
+/**
+ * Wipe progress: the `?reset` query and the Opties button. `keep` names choices that are NOT
+ * progress and must survive -- the keyboard layout above all. A child starting the adventure
+ * again has not moved to a different keyboard, and silently reverting them to AZERTY would
+ * teach the wrong fingering from the next keystroke on.
+ */
+export function resetProgress(keep: readonly string[] = []): void {
+  const kept: Record<string, string> = {};
+  for (const k of keep) if (store.choices[k] !== undefined) kept[k] = store.choices[k];
+  store = { flags: {}, choices: kept, stats: {} };
   persist();
 }
+
+/** The choices that are settings rather than progress, so a reset leaves them alone. */
+export const SETTINGS_KEYS = ["layout", "muted"] as const;
