@@ -70,7 +70,11 @@ export class App {
   private draftTimer: number | null = null;
 
   constructor() {
-    this.scene = this.scenes.find((x) => x.name === "overworld") ?? this.scenes[0];
+    // ?set=<name> opens straight on one scene. Without it the editor always starts on the
+    // island, which means clicking through the picker every time you come back to a set you
+    // are actively tuning (the cave, this week).
+    const want = new URLSearchParams(location.search).get("set") ?? "overworld";
+    this.scene = this.scenes.find((x) => x.name === want) ?? this.scenes.find((x) => x.name === "overworld") ?? this.scenes[0];
     this.def = this.loadInitial();
     this.vp = new Viewport($<HTMLCanvasElement>("view"), {
       onHover: (h) => this.onHover(h),

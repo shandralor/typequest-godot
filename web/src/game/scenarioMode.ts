@@ -64,11 +64,28 @@ const FIGHT_GAP = 2.0;
 export function isFightNode(id: string): boolean {
   return FIGHT_NODES.test(id);
 }
+/**
+ * What the skeleton does DURING the passage, and how far into it. The prose describes a swing
+ * at the end of its third sentence; playing that at the top of the beat is the same fault the
+ * mill and the boog had -- the words outrunning the picture. Fired once per entry, off the same
+ * 0..1 progress signal the travel walks use.
+ */
+const FIGHT_CUES: Record<string, { at: number; clip: string; then: string }> = {
+  strijd_slag: { at: 0.72, clip: "Skeletons_Taunt", then: "Skeletons_Idle" },
+  strijd_wankel: { at: 0.3, clip: "Hit_A", then: "Skeletons_Idle" },
+  strijd_herrijst: { at: 0.25, clip: "Skeletons_Death_Resurrect", then: "Skeletons_Idle" },
+};
 const FIGHT_CLIPS = [
   "Skeletons_Inactive_Floor_Pose", "Skeletons_Awaken_Floor", "Skeletons_Idle", "Skeletons_Taunt",
   "Skeletons_Death", "Skeletons_Death_Pose", "Skeletons_Death_Resurrect",
-  "Melee_Block", "Melee_Block_Hit", "Dodge_Backward", "Hit_A",
+  "Melee_Block", "Melee_Block_Hit", "Melee_2H_Idle", "Dodge_Backward", "Hit_A",
 ];
+/**
+ * The hero's resting pose during the fight. Idle_A is a stroll: arms down, and a sword in that
+ * hand sticks straight out sideways, which is what made the grip look wrong. The guard stance
+ * holds the weapon up in front of him, which is both readable and what the beat is about.
+ */
+const FIGHT_IDLE = "Melee_2H_Idle";
 /**
  * How far below the grindstone prop's highest point the blade's edge rides. It is not a small
  * bite into the stone: the prop's top is its CRANK HANDLE, not the wheel, so a blade seated on
@@ -135,6 +152,8 @@ export class ScenarioMode {
   private pacer: { npc: HeroRig; curve: THREE.CatmullRomCurve3; length: number; t: number } | null = null;
   /** the skeleton rises ONCE per visit to the cave, not once per phase */
   private fightAwake = false;
+  /** this phase's cue has already fired */
+  private fightCued = false;
   /** the RPG item-get: the weapon held aloft in a puff of cloud while the wall goes empty */
   private itemGet: { group: THREE.Object3D; t: number; from: THREE.Vector3 } | null = null;
   /** the cloud bank the caster's book rides on */
@@ -797,6 +816,7 @@ export class ScenarioMode {
       this.sinceKey = 0;
       if (this.travel) this.world.hero.setMoving(true, 2.0);
     }
+    this.fightCue();
     if (this.prose.isComplete()) {
       this.run!.scoreCurrent(this.prose.correctChars(), this.prose.accuracy(), true);
       addStat("words", wordCount(this.prose.target)); // cumulative effort, counted per beat
@@ -869,6 +889,7 @@ export class ScenarioMode {
     skel.face(hero.x - skel.node.position.x, hero.z - skel.node.position.z);
     this.world.hero.face(skel.node.position.x - hero.x, skel.node.position.z - hero.z);
     this.gaze = { mode: "none", links: -1, rechts: -1 }; // the gaze must not turn him back
+    this.world.hero.play(FIGHT_IDLE);
     if (!this.fightAwake) {
       this.fightAwake = true;
       void skel.playOneShot("Skeletons_Awaken_Floor", "Skeletons_Idle").then(() => {
@@ -876,10 +897,10 @@ export class ScenarioMode {
       });
       return;
     }
-    if (nodeId === "strijd_herrijst") void skel.playOneShot("Skeletons_Death_Resurrect", "Skeletons_Idle");
-    else if (nodeId === "strijd_wankel") skel.play("Skeletons_Idle");
-    else if (nodeId === "strijd_slag") void skel.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
+    // whatever it DOES in this phase is cued off the typing (FIGHT_CUES); here it just waits
+    if (nodeId === "strijd_herrijst") skel.play("Skeletons_Death_Pose");
     else skel.play("Skeletons_Idle");
+    this.fightCued = false;
   }
 
   /**
@@ -892,19 +913,31 @@ export class ScenarioMode {
     const hero = this.world.hero;
     const missed = /strijd_(raak|mis|herrijst)/.test(target);
     if (word === this.locale.resolve("word.sla")) {
-      await hero.playOneShot(this.meleeClip(), "Idle_A");
+      await hero.playOneShot(this.meleeClip(), FIGHT_IDLE);
       if (target === "strijd_val") await skel?.playOneShot("Skeletons_Death", "Skeletons_Death_Pose");
       else if (!missed) await skel?.playOneShot("Hit_A", "Skeletons_Idle");
     } else if (word === this.locale.resolve("word.blok")) {
-      await hero.playOneShot(missed ? "Melee_Block" : "Melee_Block_Hit", "Idle_A");
+      await hero.playOneShot(missed ? "Melee_Block" : "Melee_Block_Hit", FIGHT_IDLE);
     } else if (word === this.locale.resolve("word.duik")) {
-      await hero.playOneShot("Dodge_Backward", "Idle_A");
+      await hero.playOneShot("Dodge_Backward", FIGHT_IDLE);
     }
+    // it was already wobbling, so a missed finish topples it anyway -- and the herrijst passage
+    // is about it crawling back up, which only reads if the child saw it go down
+    if (target === "strijd_herrijst") await skel?.playOneShot("Skeletons_Death", "Skeletons_Death_Pose");
     // a wrong answer costs a knock, never the run: the phase simply comes round again
     if (missed && target !== "strijd_herrijst") {
       await skel?.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
-      await hero.playOneShot("Hit_A", "Idle_A");
+      await hero.playOneShot("Hit_A", FIGHT_IDLE);
     }
+  }
+
+  /** Play this phase's skeleton beat once the typing reaches the sentence that describes it. */
+  private fightCue(): void {
+    if (this.fightCued) return;
+    const cue = FIGHT_CUES[this.run?.currentId ?? ""];
+    if (!cue || this.prose.progress() < cue.at) return;
+    this.fightCued = true;
+    void this.npcs[0]?.playOneShot(cue.clip, cue.then);
   }
 
   private beginChoice(): void {
