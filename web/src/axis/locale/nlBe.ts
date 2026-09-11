@@ -77,20 +77,21 @@ export const CATALOG: Record<string, string> = {
   // with the matching word -- that is the whole rule, and it is telegraphed every time, so a
   // six-year-old can learn it rather than guess. Narration only: these beats are steered, not
   // typed, and the typing volume lives in the approach and the payoff around them.
-  // The phase LINE is shown, not typed (prerevealed): it is what the child reads to know which
-  // word to answer with, so it has to say plainly what the skeleton is doing.
-  "strijd.slag.prose": "het skelet komt overeind en haalt uit.",
+  // Each phase is a passage the child TYPES and then a fork. The passage is also the tell:
+  // it says plainly what the skeleton is doing, which is how the child knows which word
+  // answers it. Typing it is the point -- the fork steers the fight, it does not replace it.
+  "strijd.slag.prose": "het skelet komt langzaam overeind. het kijkt de {held} recht aan. dan haalt het hard uit met zijn arm.",
   "strijd.slag.narration": "Het skelet haalt uit! Blok of duik!",
-  "strijd.open.prose": "het skelet staat stil. nu kan de {held} slaan.",
+  "strijd.open.prose": "het skelet staat nu heel even stil. zijn armen hangen laag naar beneden. dit is het moment om te slaan.",
   "strijd.open.narration": "Het skelet staat open. Sla toe!",
-  "strijd.wankel.prose": "het skelet wankelt heen en weer.",
+  "strijd.wankel.prose": "het skelet wankelt heen en weer. er vallen botjes op de grond. nog een keer en het valt om.",
   "strijd.wankel.narration": "Het skelet wankelt! Nog een keer!",
   // the setbacks. Nobody loses the run: the phase simply comes round again.
-  "strijd.raak.prose": "het skelet raakt de {held} hard.",
+  "strijd.raak.prose": "het skelet raakt de {held} op de arm. dat doet pijn maar het gaat wel. de {held} staat weer stevig klaar.",
   "strijd.raak.narration": "Au! Het skelet raakt jouw {held}. Probeer het nog eens.",
-  "strijd.mis.prose": "de {held} wacht te lang met slaan.",
+  "strijd.mis.prose": "de {held} wacht te lang met slaan. het skelet stapt weer naar achteren. de {held} moet weer goed kijken.",
   "strijd.mis.narration": "Je wacht te lang. Het skelet komt weer op je af.",
-  "strijd.herrijst.prose": "het skelet staat langzaam weer op.",
+  "strijd.herrijst.prose": "het skelet krabbelt langzaam weer omhoog. de botten klikken zacht tegen elkaar. het staat weer recht voor de {held}.",
   "strijd.herrijst.narration": "Het skelet staat weer op! Sla nog een keer.",
   // intro
   // Third person THROUGHOUT: it read "de barbaar loopt ... hier hangt JE bijl ... JE maakt een

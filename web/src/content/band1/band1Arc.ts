@@ -78,14 +78,13 @@ export function build(): StoryGraph {
   // is never a loss: the hero takes a knock and the phase comes round again, which is the only
   // stake a six-year-old should carry.
   //
-  // These are `prerevealed` (A9): narration plus a fork, no passage to type. The typing volume
-  // for this beat lives in the approach above and the payoff below, where it does not fight
-  // with the choice.
+  // Every phase is a PASSAGE the child types and then a fork. The passage is also the tell --
+  // it says what the skeleton is doing, which is how the child knows which word answers it --
+  // so the typing and the choice teach the same thing instead of competing.
   const phase = (id: string, key: string, hash: string): StoryNode => {
     const n = new StoryNode(id);
     n.proseKey = `${key}.prose`;
     n.narrationKey = `${key}.narration`;
-    n.prerevealed = true;
     n.celebrate = false;
     n.safety = nlBeSafety(hash);
     n.scene = Scenes.grot();
@@ -93,7 +92,7 @@ export function build(): StoryGraph {
   };
 
   // phase 1 -- it wakes and swings. Blocking or dodging both work; swinging INTO it does not.
-  const slag = phase("strijd_slag", "strijd.slag", "fnv1a:41293368");
+  const slag = phase("strijd_slag", "strijd.slag", "fnv1a:117d1034");
   slag.choices = [
     new Choice("word.blok", "strijd_open", "forward"),
     new Choice("word.duik", "strijd_open", "left"),
@@ -102,7 +101,7 @@ export function build(): StoryGraph {
   g.addNode(slag);
 
   // phase 2 -- its guard is down. Now the swing lands; waiting wastes the opening.
-  const open = phase("strijd_open", "strijd.open", "fnv1a:9e3014bf");
+  const open = phase("strijd_open", "strijd.open", "fnv1a:5345ff55");
   open.choices = [
     new Choice("word.sla", "strijd_wankel", "forward"),
     new Choice("word.blok", "strijd_mis", "left"),
@@ -111,7 +110,7 @@ export function build(): StoryGraph {
   g.addNode(open);
 
   // phase 3 -- it staggers. One more swing finishes it; anything else lets it recover.
-  const wankel = phase("strijd_wankel", "strijd.wankel", "fnv1a:ca111d12");
+  const wankel = phase("strijd_wankel", "strijd.wankel", "fnv1a:61171728");
   wankel.choices = [
     new Choice("word.sla", "strijd_val", "forward"),
     new Choice("word.blok", "strijd_herrijst", "left"),
@@ -120,13 +119,13 @@ export function build(): StoryGraph {
   g.addNode(wankel);
 
   // the three setbacks -- each one names what went wrong and hands the phase back
-  const raak = phase("strijd_raak", "strijd.raak", "fnv1a:d79b51b2");
+  const raak = phase("strijd_raak", "strijd.raak", "fnv1a:248abb79");
   raak.choices = [new Choice("word.verder", "strijd_slag", "forward")];
   g.addNode(raak);
-  const mis = phase("strijd_mis", "strijd.mis", "fnv1a:bfe598b6");
+  const mis = phase("strijd_mis", "strijd.mis", "fnv1a:daddaf85");
   mis.choices = [new Choice("word.verder", "strijd_open", "forward")];
   g.addNode(mis);
-  const herrijst = phase("strijd_herrijst", "strijd.herrijst", "fnv1a:97d00bc6");
+  const herrijst = phase("strijd_herrijst", "strijd.herrijst", "fnv1a:ab3ff740");
   herrijst.choices = [new Choice("word.verder", "strijd_open", "forward")];
   g.addNode(herrijst);
 

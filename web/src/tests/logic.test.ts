@@ -65,6 +65,13 @@ describe("band-1 traversal", () => {
       const n = g.getNodeById(id)!;
       expect(n.choices.length > 0 || n.ending === "win", `'${id}' is a dead end`).toBe(true);
     }
+    // Every phase is TYPED and then forks. The fight is still a typing beat: a version that
+    // only asked for the choice word cut the cave from ~50 typed words to three.
+    for (const id of ["strijd_slag", "strijd_open", "strijd_wankel", "strijd_raak", "strijd_mis", "strijd_herrijst"]) {
+      const n = g.getNodeById(id)!;
+      expect(n.proseKey, `'${id}' has no passage to type`).not.toBe("");
+      expect(n.prerevealed, `'${id}' shows its passage instead of asking for it`).toBe(false);
+    }
     // and each of the three real phases takes all three fight words
     for (const id of ["strijd_slag", "strijd_open", "strijd_wankel"]) {
       const words = g.getNodeById(id)!.choices.map((c) => c.wordKey).sort();
