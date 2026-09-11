@@ -53,6 +53,14 @@ const ITEM_GET_HOLD = 2.1;
 const HAZE_MODEL = "kaykit/hexagon/cloud_big.gltf";
 /** the weapon on the grinding wheel is scaled to this length, so every blade reads the same */
 const BLADE_LEN = 1.15;
+/**
+ * How far below the grindstone prop's highest point the blade's edge rides. It is not a small
+ * bite into the stone: the prop's top is its CRANK HANDLE, not the wheel, so a blade seated on
+ * the measured max hovered a visible gap above the rim it is supposed to be grinding on.
+ */
+const BLADE_BITE = 0.2;
+/** how far back from the wheel's centre the grip end sits, toward the hero working it */
+const GRIND_GRIP = 0.48;
 /** how high the caster's spellbook hangs, and how far it drifts up and down while it hangs */
 const BOOK_HEIGHT = 1.02;
 const BOOK_BOB = 0.06;
@@ -462,24 +470,38 @@ export class ScenarioMode {
     const obj = base.clone(true);
     obj.name = meleeFor(this.heroId);
     // sword, axe and dagger are authored at wildly different scales -- axe_C at native size
-    // covered the hero's head -- so normalise the longest edge before it goes in the hand
+    // covered the hero's head -- so normalise the longest edge first
     const box = new THREE.Box3().setFromObject(obj);
     const longest = Math.max(...box.getSize(new THREE.Vector3()).toArray());
     if (longest > 0) obj.scale.setScalar(BLADE_LEN / longest);
-    if (!this.world.hero.attachToHand(obj, "handslot.r", new THREE.Vector3(0, 0.1, 0.1))) {
-      // no grip on this rig: fall back to the old wheel placement rather than dropping it
-      await this.stageProp(meleeFor(this.heroId), "grind_point");
-      return;
-    }
-    // Tipped head-down across the wheel. In the grip's own axes the blade points straight up
-    // out of the fist, which put it behind the hero's head and out of shot; these numbers were
-    // chosen by photographing the candidates, not derived.
-    obj.rotation.set(2.4, -0.5, 0);
-    // a bone carries the armature's own scale, so undo it or the blade arrives hero-sized
-    const slotScale = new THREE.Vector3();
-    obj.parent!.getWorldScale(slotScale);
-    if (slotScale.x > 0) obj.scale.multiplyScalar(1 / slotScale.x);
-    this.heldProps.push(obj);
+    // All three weapons are authored running up their local +Y from a grip at the origin. Using
+    // the bbox CENTRE as the direction instead looks equivalent and is not: the axe's head hangs
+    // out sideways, which tilted the whole weapon off the stone.
+    const along = new THREE.Vector3(0, 1, 0);
+    const stone = this.world.s.scene.getObjectByName("kaykit/rpgtools_bits/grindstone.gltf");
+    if (!stone) return void this.stageProp(meleeFor(this.heroId), "grind_point");
+    const wheel = new THREE.Box3().setFromObject(stone);
+    const at = wheel.getCenter(new THREE.Vector3());
+    // Turn him to the stone. Square to the camera the wheel sat between his hands and the lens,
+    // so anything he held was behind it whatever its pose. (Render-authored hero pose, the
+    // brief's one exception.)
+    this.world.hero.face(at.x - this.world.hero.node.position.x, at.z - this.world.hero.node.position.z);
+    // The blade lies ACROSS the rim, edge down, handle toward him -- a held weapon tracked the
+    // hand into the stone and out of sight, and the hand is the one thing here the scene does
+    // not control. On the measured rim it reads as being worked whatever the arms are doing.
+    const toHero = this.world.hero.node.position.clone().sub(at).setY(0).normalize();
+    // grip nearest him, blade running away across the rim and barely tipped: a steeper angle
+    // only lifts one end off the stone, since the weapon is longer than the wheel is wide
+    obj.quaternion.setFromUnitVectors(along, toHero.clone().negate().setY(-0.08).normalize());
+    obj.updateWorldMatrix(true, true);
+    // lay its MIDDLE across the wheel rather than an end -- measured, since the origin is the
+    // grip and each model puts it at a different distance from the middle
+    const here = new THREE.Box3().setFromObject(obj);
+    obj.position.add(at).sub(here.getCenter(new THREE.Vector3())).addScaledVector(toHero, GRIND_GRIP);
+    obj.updateWorldMatrix(true, true);
+    obj.position.y += wheel.max.y - BLADE_BITE - new THREE.Box3().setFromObject(obj).min.y;
+    this.world.s.scene.add(obj);
+    this.stagedProps.push(obj);
   }
 
   /** Put a vocabulary prop at an anchor (or in the hero's hands for "hand"). */

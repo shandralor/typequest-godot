@@ -7,7 +7,7 @@ export const FORGE: SceneDef = {
   tiles: [
   ],
   props: [
-    { m: "kaykit/rpgtools_bits/grindstone.gltf", x: 0.55, z: 0.95, rot: 90, s: 0.48, tags: ["forge_blades"] },
+    { m: "kaykit/rpgtools_bits/grindstone.gltf", x: -0.15, z: 1.05, rot: 55, s: 0.42, tags: ["forge_blades"] },
     { m: "kaykit/dungeon/table_medium.gltf", x: 0.8, z: 1.5, rot: 90, tags: ["forge_ranged"] },
     { m: "kaykit/rpgtools_bits/anvil.gltf", x: -1.8, z: 0.6, rot: 320 },
     { m: "kaykit/forest_nature/Tree_1_A_Color1.gltf", x: 7.52, z: 4.803, rot: 225.752, s: 1.63 },
