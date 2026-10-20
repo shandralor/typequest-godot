@@ -425,8 +425,10 @@ export class ScenarioMode {
       this.world.s.scene.add(this.sparks.group);
     }
     // "daar ligt een glanzend kristal" -- so there has to BE one. It lies on the cave floor
-    // beside the skeleton and the hero picks it up at the win.
-    if (setName === "dungeon" && node.setsFlag?.includes("has_crystal") && !restage) {
+    // beside the skeleton and the hero picks it up at the win. The fight is staged ONCE on its
+    // approach (the phases re-stage the same set), so it has to be laid down there, not on the
+    // payoff node that sets the flag -- that one never loads the set.
+    if (setName === "dungeon" && (node.setsFlag?.includes("has_crystal") || isFightNode(node.id)) && !restage) {
       await this.stageProp("crystal", "far_right");
       const gem = this.stagedProps[this.stagedProps.length - 1];
       if (gem) {
@@ -475,7 +477,7 @@ export class ScenarioMode {
       this.gazeYaw = targetYaw(this.gaze, 0, { x: h.x, z: h.z }, this.gazeTargets);
       this.world.hero.node.rotation.y = this.gazeYaw;
     }
-    this.hud.prompt(node.narrationKey ? this.locale.resolve(node.narrationKey) : "");
+    this.hud.prompt(node.narrationKey ? this.locale.fillTokens(this.locale.resolve(node.narrationKey), this.heroId) : "");
     this.hud.message("");
     if (isFightNode(node.id)) this.stageFight(node.id);
     if (node.prerevealed) {
@@ -892,6 +894,10 @@ export class ScenarioMode {
     skel.face(hero.x - skel.node.position.x, hero.z - skel.node.position.z);
     this.world.hero.face(skel.node.position.x - hero.x, skel.node.position.z - hero.z);
     this.gaze = { mode: "none", links: -1, rechts: -1 }; // the gaze must not turn him back
+    // the prize lies in the clear just past the skeleton: at its far_right spot it sat exactly
+    // behind the skeleton's legs once the duel brought him closer, and the win named a crystal
+    // nobody had seen
+    if (this.crystal) this.crystal.position.set(hero.x + FIGHT_GAP + 1.0, 0.12, hero.z - 0.7);
     this.world.hero.play(FIGHT_IDLE);
     if (!this.fightAwake) {
       this.fightAwake = true;

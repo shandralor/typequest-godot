@@ -327,6 +327,9 @@ async function main(): Promise<void> {
           heroId = id;
           setChoice("hero", id);
           setChoice("hero_chosen", "1");
+          island.heroId = id;
+          // only the island entry loads the model; a beat restarted in place kept the old hero
+          await world.loadHero(modelPath(id));
           const here = scenario?.dev;
           if (here) await startScenario(here.scenarioId, here.nodeId);
           else await enterIsland(island.at);

@@ -3,6 +3,26 @@
 Update this at the end of every session: current state + next step. This plus
 CLAUDE.md is how another device picks up the work (git pull -> read these).
 
+## LIVE STATE (2026-10-20) -- read this section first; everything below is history
+
+The game is `web/` (Three.js + TS + Vite), deployed to https://typequest.teckhawk.be/ on push to
+main. Full campaign verified end to end by scripted playthrough for knight, witch and the
+barbarian/mage fight: intro -> bos (scare) -> thuis (weapon, ranged) -> smidse -> oefenplein ->
+molen -> bos (staged fight, win, crystal). 165 tests pass, typecheck clean.
+
+- Cave fight = 3 typed phases with a choice word each (sla/blok/duik), setbacks loop back.
+  `?dev` opens the dev harness (jump to any beat, flags, hero swap, play any clip).
+- Opties: keyboard layout, music, kies je held, two-tap "Begin opnieuw".
+
+Open, proposed next (not started):
+- caster forge win/prose say "je staf" while she studies a book (no staff on screen).
+- win message box (top 16%) sits over the archery target on "Raak!" and over the hero's head
+  in the cave win; consider placing #message lower for those beats.
+- the crystal win: the hero plays PickUp 3 m from the gem; an item-get puff ("Je hebt het
+  kristal!") like the house rack would land the payoff.
+- the cave is very dark for the fight phases (hard to read the exchange).
+- black frames on scene loads; thrown-weapon path at the yard (barbaar/dief) unexercised.
+
 ## Character choice + variant prose ({held} subject token) (2026-07-19)
 
 Character choice (roadmap G1/G2) + the dynamic-subject-noun design knot are now BUILT.

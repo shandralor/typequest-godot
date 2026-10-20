@@ -42,7 +42,7 @@ export interface DevHost {
 }
 
 const CSS = `
-#devpanel { position: absolute; top: 8px; left: 8px; width: 290px; max-height: calc(100% - 16px);
+#devpanel { position: fixed; top: 8px; left: 8px; width: 290px; max-height: calc(100% - 16px);
   overflow-y: auto; background: rgba(16,12,8,.93); border: 1px solid #6b5636; border-radius: 8px;
   color: #e9dcc2; font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace; padding: 8px 10px 10px;
   z-index: 99; }
@@ -83,7 +83,9 @@ export class DevPanel {
     this.root.id = "devpanel";
     this.root.appendChild(this.body);
     this.root.appendChild(this.statusLine);
-    document.getElementById("hud")?.appendChild(this.root);
+    // on <body>, not inside #hud: the title menu is a sibling of #hud drawn over it, so a panel
+    // nested in the hud could be seen on the title screen but not clicked
+    document.body.appendChild(this.root);
     // the panel must never eat a keystroke: the game listens on window, and a focused button
     // would swallow the space bar the child (and the harness) types
     this.root.addEventListener("keydown", (e) => e.stopPropagation());

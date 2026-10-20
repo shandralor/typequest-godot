@@ -43,9 +43,11 @@ export const WORK_READ: Rig = { off: [0.4, 2.6, 4.4], look: [0.6, 1.15, 1.1], fo
 /**
  * Over-the-shoulder down the lane: hero in the foreground, target ahead. The look sits lower
  * than Godot's (1.2) because the web stage is a wider, shallower strip than Godot's 1920x680,
- * so the same aim clipped the hero's legs at the bottom edge.
+ * so the same aim clipped the hero's legs at the bottom edge. The camera stands well out to the
+ * right: from 2.3 the target sat 0.02 (NDC) past the hero's edge, and the witch's hat or a
+ * raised arm covered it -- including on "Raak! Recht in de roos." Measured at 0.14 from 4.0.
  */
-export const ARCHERY: Rig = { off: [2.3, 3.0, 6.2], look: [-0.3, 0.45, -7.0], fov: 46 };
+export const ARCHERY: Rig = { off: [4.0, 3.0, 5.8], look: [-0.3, 0.45, -7.0], fov: 46 };
 /**
  * The cave. The dungeon set has no ROOF -- its rubble tops out around y = 7.5 -- and the
  * standing rig's wide 75-degree lens looked straight past it into the empty background, so the
