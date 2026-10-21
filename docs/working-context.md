@@ -8,7 +8,7 @@ CLAUDE.md is how another device picks up the work (git pull -> read these).
 The game is `web/` (Three.js + TS + Vite), deployed to https://typequest.teckhawk.be/ on push to
 main. Full campaign verified end to end by scripted playthrough for knight, witch and the
 barbarian/mage fight: intro -> bos (scare) -> thuis (weapon, ranged) -> smidse -> oefenplein ->
-molen -> bos (staged fight, win, crystal). 165 tests pass, typecheck clean.
+molen -> bos (staged fight, win, crystal). 168 tests pass, typecheck clean.
 
 - Cave fight = 3 typed phases with a choice word each (sla/blok/duik), setbacks loop back.
   `?dev` opens the dev harness (jump to any beat, flags, hero swap, play any clip).
@@ -23,6 +23,13 @@ Done 2026-10-21 (later): the cave duel is a fight -- each typed sentence plays w
 choice is a clash with contact flash/knockback/shake, skeleton hearts. Duel phases are one
 continuous scene (no fades). Scenes dressed from unused KayKit models (cave, mill, oefenplein);
 the editor palette now covers dungeon/halloween/resource/rpgtools/weapons packs (523 props).
+
+Done 2026-10-21 (fight fixes): typing "verder" no longer triggers a clash (only sla/blok/duik);
+the skeleton is pinned on its hips during Death/Resurrect/Awaken, so the KayKit root motion no
+longer slides it 1.8 m away and back; bone dressing removed from the cave. Dev-panel jumps used
+to leave the previous ScenarioMode alive (2 skeletons after one jump, 4 after quick jumps):
+`startScenario` now exits the old one first and ScenarioMode bails after every async load once
+exited (`gone`). 168 tests pass.
 
 Next ideas: Meshy only for gaps KayKit cannot fill (ask before spending credits); a Meshy hero
 spike if custom player models are wanted.
