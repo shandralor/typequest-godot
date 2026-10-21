@@ -182,6 +182,13 @@ export class ScenarioMode {
   /** hearts shown over the skeleton (-1 = none) */
   private heartsLeft = -1;
   private fightSpots = false;
+  /**
+   * Where the skeleton's BODY must stay while it falls, lies and gets up. KayKit's death clip
+   * throws the hips about 1.8 m backwards and the resurrect slides them all the way back, so
+   * unpinned it flew off, drifted while lying and skated forward as it rose -- which read as
+   * it jumping up and falling down. Measured on the hips bone, corrected every frame.
+   */
+  private skelPin: THREE.Vector3 | null = null;
   private bursts: ImpactBurst[] = [];
   private tweens: { obj: THREE.Object3D; from: THREE.Vector3; to: THREE.Vector3; t: number; dur: number; done: () => void }[] = [];
   private falling: { obj: THREE.Object3D; v: THREE.Vector3; spin: THREE.Vector3; floor: number }[] = [];
@@ -278,6 +285,7 @@ export class ScenarioMode {
     this.tweens = [];
     this.falling = [];
     this.skelWindup = null;
+    this.skelPin = null;
     this.setHearts(null);
     if (this.itemGet) this.world.s.scene.remove(this.itemGet.group);
     this.itemGet = null;
@@ -1043,6 +1051,8 @@ export class ScenarioMode {
     }
     this.fightAwake = true;
     this.skelDown = nodeId === "strijd_herrijst";
+    // lying (herrijst, or felled for the payoff) it stays exactly where it fell
+    if (this.skelPin) return;
     skel.node.position.copy(this.skelSpot);
     skel.face(hero.x - this.skelSpot.x, hero.z - this.skelSpot.z);
     if (nodeId === "strijd_herrijst") skel.play("Skeletons_Death_Pose");
@@ -1067,10 +1077,12 @@ export class ScenarioMode {
     const toHero = (): void => skel.face(hero.node.position.x - skel.node.position.x, hero.node.position.z - skel.node.position.z);
     switch (beat) {
       case "rise": {
-        if (this.fightAwake) return skel.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
+        if (this.fightAwake) return; // already up (back in this phase after a setback)
         this.fightAwake = true;
         this.skelDown = false;
+        this.pinHere(); // it gets up where it lies, not a stride away
         await skel.playOneShot("Skeletons_Awaken_Floor", "Skeletons_Idle");
+        this.skelPin = null;
         // up, and it comes for him: from where it lay to arm's length
         const d = skel.node.position.distanceTo(this.skelSpot);
         if (d > 0.1) {
@@ -1103,10 +1115,11 @@ export class ScenarioMode {
         return;
       case "topple": {
         this.skelDown = true;
+        this.pinHere(); // it falls where it stands
         const fall = skel.playOneShot("Skeletons_Death", "Skeletons_Death_Pose");
         // the dust and the jolt when it HITS the floor, not when it starts to go
         await this.wait(skel.duration("Skeletons_Death") * 0.55);
-        this.burst(skel.node.position.clone().add(new THREE.Vector3(0.3, 0.15, 0.2)), 0xd9c7a8, 1.1, 0.12);
+        this.burst(this.skelPin!.clone().setY(0.15).add(new THREE.Vector3(0, 0, 0.2)), 0xd9c7a8, 1.1, 0.12);
         this.setHearts(0);
         return fall;
       }
@@ -1117,7 +1130,9 @@ export class ScenarioMode {
         return hero.playOneShot("Melee_Block", FIGHT_IDLE);
       case "resurrect":
         this.skelDown = false;
+        if (!this.skelPin) this.pinHere();
         await skel.playOneShot("Skeletons_Death_Resurrect", "Skeletons_Idle");
+        this.skelPin = null; // up again: its hips are back over its feet
         toHero();
         return;
     }
@@ -1155,7 +1170,10 @@ export class ScenarioMode {
     // the hearts ride over the skeleton's head
     const skel = this.npcs[0];
     if (this.heartsLeft >= 0 && skel) {
-      const p = skel.node.position.clone().add(new THREE.Vector3(0, 2.3, 0)).project(this.world.s.camera);
+      // over the BODY (the hips), which is not where the node is while it lies or rises
+      const hips = this.skelHips();
+      const body = hips ? hips.getWorldPosition(new THREE.Vector3()) : skel.node.position.clone();
+      const p = body.setY(skel.node.position.y + 2.3).project(this.world.s.camera);
       const c = this.world.s.renderer.domElement.getBoundingClientRect();
       const h = document.getElementById("hud")?.getBoundingClientRect() ?? c;
       this.hud.heartsAt(c.left - h.left + ((p.x + 1) / 2) * c.width, c.top - h.top + ((1 - p.y) / 2) * c.height);
@@ -1196,13 +1214,14 @@ export class ScenarioMode {
   private dropBones(): void {
     const skel = this.npcs[0];
     if (!skel) return;
-    for (let i = 0; i < 4; i++) {
+    // two, and small: a heap of them read as a second skeleton lying on the floor
+    for (let i = 0; i < 2; i++) {
       const base = this.world.s.getModel(resolveAsset(i % 2 ? "bone_b" : "bone_a").replace(/^assets\//, ""));
       if (!base) continue;
       const bone = base.clone(true);
       const size = new THREE.Box3().setFromObject(bone).getSize(new THREE.Vector3());
       const long = Math.max(size.x, size.y, size.z);
-      if (long > 0) bone.scale.setScalar(0.4 / long);
+      if (long > 0) bone.scale.setScalar(0.3 / long);
       bone.position.copy(skel.node.position).add(new THREE.Vector3((Math.random() - 0.5) * 0.3, 1.0 + Math.random() * 0.3, (Math.random() - 0.5) * 0.3));
       this.world.s.scene.add(bone);
       this.stagedProps.push(bone);
@@ -1225,6 +1244,11 @@ export class ScenarioMode {
     if (!skel) return;
     const sla = word === this.locale.resolve("word.sla");
     const blok = word === this.locale.resolve("word.blok");
+    const duik = word === this.locale.resolve("word.duik");
+    // "verder" -- on to the next phase after the approach or a setback -- is not a move. Treating
+    // it as one ran the let-the-chance-pass reaction: the skeleton sprang up off the floor to
+    // jeer and dropped down again, and the hero dodged at nothing.
+    if (!sla && !blok && !duik) return;
     const between = this.heroSpot.clone().lerp(this.skelSpot, 0.5).add(new THREE.Vector3(0, 1.15, 0.15));
     if (fromId === "strijd_slag") {
       // The raised blade comes down whatever the answer; the word decides what it meets.
@@ -1277,9 +1301,10 @@ export class ScenarioMode {
       // which the herrijst passage needs, since it is about crawling back up
       void hero.playOneShot(blok ? "Melee_Block" : "Dodge_Backward", FIGHT_IDLE);
       this.skelDown = true;
+      this.pinHere();
       const fall = skel.playOneShot("Skeletons_Death", "Skeletons_Death_Pose");
       await this.wait(skel.duration("Skeletons_Death") * 0.55);
-      this.burst(skel.node.position.clone().add(new THREE.Vector3(0.3, 0.15, 0.2)), 0xd9c7a8, 0.9, 0.08);
+      this.burst(this.skelPin!.clone().setY(0.15).add(new THREE.Vector3(0, 0, 0.2)), 0xd9c7a8, 0.9, 0.08);
       await fall;
       return;
     }
@@ -1532,6 +1557,30 @@ export class ScenarioMode {
     }
     this.pace(dt);
     for (const n of this.npcs) n.update(dt);
+    this.pinSkeleton();
+  }
+
+  /** The skeleton's hips bone (its body's real position, whatever the clip does to it). */
+  private skelHips(): THREE.Object3D | null {
+    return this.npcs[0]?.node.getObjectByName("hips") ?? null;
+  }
+
+  /** Pin the skeleton's body where it is right now (see skelPin). */
+  private pinHere(): void {
+    const hips = this.skelHips();
+    if (!hips) return;
+    this.npcs[0].node.updateMatrixWorld(true);
+    this.skelPin = hips.getWorldPosition(new THREE.Vector3());
+  }
+
+  private pinSkeleton(): void {
+    const hips = this.skelHips();
+    if (!this.skelPin || !hips) return;
+    const node = this.npcs[0].node;
+    node.updateMatrixWorld(true);
+    const at = hips.getWorldPosition(new THREE.Vector3());
+    node.position.x += this.skelPin.x - at.x;
+    node.position.z += this.skelPin.z - at.z;
   }
 
   /** Walk the ambling NPC one step round its loop, facing the way it is going. */
