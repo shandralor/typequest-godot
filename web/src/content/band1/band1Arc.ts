@@ -87,7 +87,7 @@ export function build(): StoryGraph {
     n.narrationKey = `${key}.narration`;
     n.celebrate = false;
     n.safety = nlBeSafety(hash);
-    n.scene = Scenes.grot();
+    n.scene = Scenes.duel();
     return n;
   };
 
@@ -137,7 +137,7 @@ export function build(): StoryGraph {
   val.winKey = "grotFight.win";
   val.setsFlag = "has_crystal";
   val.safety = nlBeSafety("fnv1a:0d5a0632");
-  val.scene = Scenes.grot();
+  val.scene = Scenes.duel();
   g.addNode(val);
 
   // brug -- the CROSSING: reuses the fork set with the lowered drawbridge.

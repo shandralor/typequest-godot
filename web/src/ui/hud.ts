@@ -23,6 +23,9 @@ export const FINGER_COLORS: Record<string, string> = {
   thumb: "#bdbdbd",
 };
 
+const HEART_SVG =
+  '<svg viewBox="0 0 24 22" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.3C.2 8.2 1.9 3.6 6 3.1c2.4-.3 4.3 1 6 3.1 1.7-2.1 3.6-3.4 6-3.1 4.1.5 5.8 5.1 4 8.6C19.5 16.4 12 21 12 21z"/></svg>';
+
 function $<T extends HTMLElement>(id: string): T {
   return document.getElementById(id) as T;
 }
@@ -147,6 +150,51 @@ export class Hud {
     m.classList.toggle("side", side);
     m.textContent = text;
     m.hidden = text === "";
+  }
+
+  private heartsShown = -1;
+
+  /**
+   * The skeleton's hearts in the cave duel: a row of `max` hearts, `count` of them full. A heart
+   * that empties pops first, so a landed blow is something the child SEES count. null hides
+   * the row. Only the skeleton has hearts -- the hero cannot lose, which is right at age 6.
+   */
+  hearts(count: number | null, max = 3): void {
+    const row = $<HTMLElement>("hearts");
+    if (count === null) {
+      row.hidden = true;
+      this.heartsShown = -1;
+      return;
+    }
+    row.hidden = false;
+    if (row.children.length !== max) {
+      row.innerHTML = "";
+      for (let i = 0; i < max; i++) {
+        const h = document.createElement("span");
+        h.className = "heart";
+        h.innerHTML = HEART_SVG;
+        row.appendChild(h);
+      }
+    }
+    Array.from(row.children).forEach((h, i) => {
+      const full = i < count;
+      const was = h.classList.contains("full");
+      h.classList.toggle("full", full);
+      // pop the heart that just emptied; a refill (the skeleton rising again) just reappears
+      if (was && !full && this.heartsShown >= 0) {
+        h.classList.remove("pop");
+        void (h as HTMLElement).offsetWidth; // restart the animation
+        h.classList.add("pop");
+      }
+    });
+    this.heartsShown = count;
+  }
+
+  /** Pin the hearts row so its bottom-centre sits at (x, y) px in the page. */
+  heartsAt(x: number, y: number): void {
+    const row = $<HTMLElement>("hearts");
+    row.style.left = `${x}px`;
+    row.style.top = `${y}px`;
   }
 
   /**

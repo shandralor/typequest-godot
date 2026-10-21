@@ -28,6 +28,10 @@ export const ASSETS: Record<string, string> = {
   dagger: "assets/kaykit/fantasy_weapons_bits/dagger_A.gltf",
   arrow: "assets/kaykit/adventurers/arrow_bow.gltf",
   bolt: "assets/kaykit/adventurers/arrow_crossbow.gltf",
+  // the cave duel: the skeleton fights with its own blade, and sheds bones as it reels
+  skeleton_blade: "assets/kaykit/skeletons/Skeleton_Blade.gltf",
+  bone_a: "assets/kaykit/halloween/bone_A.gltf",
+  bone_b: "assets/kaykit/halloween/bone_B.gltf",
 };
 
 export function resolve(assetId: string): string {

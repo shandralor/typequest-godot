@@ -40,6 +40,15 @@ export function grot(): SceneDescriptor {
   return d;
 }
 
+// the duel phases (strijd_*) -- the SAME cave, continuous: a phase change must not fade out
+// and rebuild the set, or the skeleton is re-created standing at far_right, the bones it shed
+// vanish and the fight blinks to black between every exchange.
+export function duel(): SceneDescriptor {
+  const d = grot();
+  d.continuous = true;
+  return d;
+}
+
 // brug (the crossing) -- REUSES the fork set; a walking straight-scene, continuous.
 export function brug(): SceneDescriptor {
   const d = new SceneDescriptor();

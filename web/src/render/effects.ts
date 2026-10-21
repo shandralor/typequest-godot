@@ -204,3 +204,69 @@ export class Arrow {
     return this.landed;
   }
 }
+
+const BURST_COUNT = 22;
+const BURST_LIFE = 0.45;
+const FLASH_LIFE = 0.18;
+
+/**
+ * The moment two things MEET in the cave duel: a white-hot flash, a light that lights both
+ * fighters for an instant, and a spray of sparks that fall. Without it a blow that lands and a
+ * blow that misses look the same -- an animation playing near another one. Fire-and-forget:
+ * call update() each frame until `done`, then remove `group`.
+ */
+export class ImpactBurst {
+  readonly group = new THREE.Group();
+  done = false;
+  private t = 0;
+  private readonly flash: THREE.Sprite;
+  private readonly light: THREE.PointLight;
+  private readonly points: THREE.Points;
+  private readonly vel: THREE.Vector3[] = [];
+  private readonly peak: number;
+
+  constructor(at: THREE.Vector3, color = 0xfff1c4, strength = 1) {
+    this.peak = strength;
+    this.group.position.copy(at);
+    const tex = sparkTexture();
+    this.flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    this.flash.scale.setScalar(0.2);
+    this.group.add(this.flash);
+    this.light = new THREE.PointLight(color, 0, 4, 1.6);
+    this.group.add(this.light);
+    const xyz = new Float32Array(BURST_COUNT * 3);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(xyz, 3));
+    for (let i = 0; i < BURST_COUNT; i++) {
+      // a hemisphere biased upward and toward the camera, so the spray reads in a side-on shot
+      const v = new THREE.Vector3(Math.random() * 2 - 1, Math.random() * 1.2, Math.random() * 1.2 - 0.2).normalize();
+      this.vel.push(v.multiplyScalar((1.8 + Math.random() * 2.2) * strength));
+    }
+    this.points = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.07, map: tex, color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    this.group.add(this.points);
+  }
+
+  update(dt: number): void {
+    if (this.done) return;
+    this.t += dt;
+    const f = Math.min(1, this.t / FLASH_LIFE);
+    this.flash.scale.setScalar((0.25 + 0.9 * Math.sqrt(f)) * this.peak);
+    (this.flash.material as THREE.SpriteMaterial).opacity = 1 - f;
+    this.light.intensity = 9 * this.peak * (1 - f) * (1 - f);
+    const pos = this.points.geometry.getAttribute("position") as THREE.BufferAttribute;
+    for (let i = 0; i < BURST_COUNT; i++) {
+      const v = this.vel[i];
+      v.y += GRAVITY * dt;
+      pos.setXYZ(i, pos.getX(i) + v.x * dt, pos.getY(i) + v.y * dt, pos.getZ(i) + v.z * dt);
+    }
+    pos.needsUpdate = true;
+    (this.points.material as THREE.PointsMaterial).opacity = Math.max(0, 1 - this.t / BURST_LIFE);
+    if (this.t >= BURST_LIFE) this.done = true;
+  }
+
+  dispose(): void {
+    this.points.geometry.dispose();
+    (this.points.material as THREE.Material).dispose();
+    (this.flash.material as THREE.Material).dispose();
+  }
+}

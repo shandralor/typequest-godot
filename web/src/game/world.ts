@@ -153,6 +153,17 @@ export class World {
     look.set(base.x + this.rig.look[0], base.y + this.rig.look[1], base.z + this.rig.look[2]);
   }
 
+  private shakeAmp = 0;
+  private shakeDur = 1;
+  private shakeLeft = 0;
+
+  /** Jolt the camera for `secs`, easing out. Strength is in metres; keep it small. */
+  shake(strength: number, secs = 0.22): void {
+    this.shakeAmp = strength;
+    this.shakeDur = secs;
+    this.shakeLeft = secs;
+  }
+
   update(dt: number): void {
     this.hero.update(dt);
     if (this.camMode === "follow") {
@@ -164,6 +175,13 @@ export class World {
       this.camLook.lerp(look, k);
       this.s.camera.position.copy(this.camPos);
       this.s.camera.lookAt(this.camLook);
+    }
+    // a blow that lands knocks the camera, briefly -- applied on top of the rig, never into it
+    if (this.shakeLeft > 0 && this.camMode === "follow") {
+      this.shakeLeft = Math.max(0, this.shakeLeft - dt);
+      const k = this.shakeAmp * (this.shakeLeft / this.shakeDur);
+      this.s.camera.position.x += (Math.random() * 2 - 1) * k;
+      this.s.camera.position.y += (Math.random() * 2 - 1) * k;
     }
     this.s.render();
   }

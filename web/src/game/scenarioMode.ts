@@ -15,6 +15,7 @@ import { AUTHORED } from "../editor/content_index";
 import { resolve as resolveAsset } from "../axis/vocabulary/fantasyPoc";
 import { rangedFor, meleeFor, weaponGroupFor, primaryIsRanged, WORK_CLIPS, WORK_PROPS, type RangedLoadout } from "../content/characters";
 import { startFor as forgeStartFor } from "../content/grind/grindArc";
+import { FIGHT_BEATS, sentenceEnds, type FightBeat } from "../content/band1/fightBeats";
 import { addStat, getChoice, setChoice, getFlag, setFlag, wordCount } from "./flags";
 import { HeroRig, ensureClips, isHoldPose } from "./hero";
 import type { World } from "./world";
@@ -23,7 +24,7 @@ import type { SceneDef } from "../world/sceneDef";
 import { rigFor } from "./cameraRigs";
 import { buildShape } from "../render/sceneObjects";
 import { BRIDGE_LEAF } from "../render/islandScene";
-import { Sparks, Arrow, arrowRings, magicBolt } from "../render/effects";
+import { Sparks, Arrow, ImpactBurst, arrowRings, magicBolt } from "../render/effects";
 import { setupGaze, targetYaw, lerpAngle, type GazeState, type GazeTargets } from "./gaze";
 
 export interface Locale {
@@ -60,28 +61,36 @@ const BLADE_LEN = 1.15;
  */
 const FIGHT_NODES = /^(grot_fight|strijd_)/;
 /** how far apart the two of them stand once the fight starts */
-const FIGHT_GAP = 2.0;
+const FIGHT_GAP = 2.1;
 /** the warm fill over the duel (colour, intensity): the cave's own key leaves it unreadable */
 const FIGHT_TORCH = 0xffc58a;
 const FIGHT_TORCH_I = 6;
 export function isFightNode(id: string): boolean {
   return FIGHT_NODES.test(id);
 }
+/** The skeleton's attack: an overhead chop with its blade. */
+const SKEL_ATTACK = "Melee_1H_Attack_Chop";
 /**
- * What the skeleton does DURING the passage, and how far into it. The prose describes a swing
- * at the end of its third sentence; playing that at the top of the beat is the same fault the
- * mill and the boog had -- the words outrunning the picture. Fired once per entry, off the same
- * 0..1 progress signal the travel walks use.
+ * How far into the chop the blade is RAISED (where it freezes while the child answers) and
+ * where it comes down. The freeze is the telegraph: band-1 scores no speed, so the threat waits
+ * for the word instead of punishing a slow typist.
  */
-const FIGHT_CUES: Record<string, { at: number; clip: string; then: string }> = {
-  strijd_slag: { at: 0.72, clip: "Skeletons_Taunt", then: "Skeletons_Idle" },
-  strijd_wankel: { at: 0.3, clip: "Hit_A", then: "Skeletons_Idle" },
-  strijd_herrijst: { at: 0.25, clip: "Skeletons_Death_Resurrect", then: "Skeletons_Idle" },
+const SKEL_WINDUP = 0.32;
+const SKEL_CONTACT = 0.52;
+/** where in the hero's own strike the weapon meets the skeleton */
+const HERO_CONTACT = 0.42;
+/** how far the hero steps into a blow, so a swing reaches instead of cutting air */
+const LUNGE = 0.75;
+/** the skeleton's hearts on ENTERING each phase: each landed blow takes one, the fall the last */
+const FIGHT_HEARTS: Record<string, number> = {
+  strijd_slag: 3, strijd_open: 3, strijd_raak: 3, strijd_mis: 3, strijd_wankel: 2, strijd_herrijst: 2, strijd_val: 1,
 };
+const HEARTS_MAX = 3;
 const FIGHT_CLIPS = [
   "Skeletons_Inactive_Floor_Pose", "Skeletons_Awaken_Floor", "Skeletons_Idle", "Skeletons_Taunt",
   "Skeletons_Death", "Skeletons_Death_Pose", "Skeletons_Death_Resurrect",
   "Melee_Block", "Melee_Block_Hit", "Melee_2H_Idle", "Dodge_Backward", "Hit_A",
+  SKEL_ATTACK, "Skeletons_Walking",
 ];
 /**
  * The hero's resting pose during the fight. Idle_A is a stroll: arms down, and a sword in that
@@ -160,8 +169,22 @@ export class ScenarioMode {
   private pacer: { npc: HeroRig; curve: THREE.CatmullRomCurve3; length: number; t: number } | null = null;
   /** the skeleton rises ONCE per visit to the cave, not once per phase */
   private fightAwake = false;
-  /** this phase's cue has already fired */
-  private fightCued = false;
+  /** how many of this passage's sentences have had their fight beat, and the chain they play on */
+  private fightBeatAt = 0;
+  private fightChain: Promise<void> = Promise.resolve();
+  /** the skeleton's raised blade, frozen until the child's answer lets it fall */
+  private skelWindup: (() => Promise<void>) | null = null;
+  /** it is lying on the floor (fell, or has not risen yet) */
+  private skelDown = false;
+  /** where the duel stood each fighter this phase: lunges and knockbacks come back here */
+  private heroSpot = new THREE.Vector3();
+  private skelSpot = new THREE.Vector3();
+  /** hearts shown over the skeleton (-1 = none) */
+  private heartsLeft = -1;
+  private fightSpots = false;
+  private bursts: ImpactBurst[] = [];
+  private tweens: { obj: THREE.Object3D; from: THREE.Vector3; to: THREE.Vector3; t: number; dur: number; done: () => void }[] = [];
+  private falling: { obj: THREE.Object3D; v: THREE.Vector3; spin: THREE.Vector3; floor: number }[] = [];
   /** the RPG item-get: the weapon held aloft in a puff of cloud while the wall goes empty */
   private itemGet: { group: THREE.Object3D; t: number; from: THREE.Vector3; hold: THREE.Vector3; k: number } | null = null;
   /** the cloud bank the caster's book rides on */
@@ -246,6 +269,16 @@ export class ScenarioMode {
     this.book = null;
     this.haze = null;
     this.staffGlow = null; // its orb is a staged prop, removed with the rest
+    for (const b of this.bursts) {
+      this.world.s.scene.remove(b.group);
+      b.dispose();
+    }
+    this.bursts = [];
+    for (const t of this.tweens) t.done();
+    this.tweens = [];
+    this.falling = [];
+    this.skelWindup = null;
+    this.setHearts(null);
     if (this.itemGet) this.world.s.scene.remove(this.itemGet.group);
     this.itemGet = null;
     this.hud.itemGet("");
@@ -406,6 +439,18 @@ export class ScenarioMode {
     // the same defect the forge had: the prose names a weapon that is not on screen.
     if (isFightNode(node.id) && this.heldProps.length === 0) {
       await this.stageProp(meleeFor(this.heroId), "hand", { ...rangedFor(this.heroId), hand: "handslot.r" });
+    }
+    // and arm the skeleton: a duel where only one side has a weapon is a beating, and the
+    // telegraphed chop needs a blade to raise
+    const skel = this.npcs[0];
+    if (isFightNode(node.id) && skel && !skel.node.getObjectByName("skeleton_blade")) {
+      const base = await this.world.s.loadModel(resolveAsset("skeleton_blade").replace(/^assets\//, "")).catch(() => null);
+      if (base) {
+        const blade = base.clone(true);
+        blade.name = "skeleton_blade";
+        skel.attachToHand(blade, "handslot.r");
+      }
+      for (const b of ["bone_a", "bone_b"]) void this.world.s.loadModel(resolveAsset(b).replace(/^assets\//, "")).catch(() => null);
     }
     if (setName === "forge" && !restage) {
       // what the beat is ABOUT lies in front of him -- his own weapon, a bundle of arrows or
@@ -901,7 +946,7 @@ export class ScenarioMode {
       this.sinceKey = 0;
       if (this.travel) this.world.hero.setMoving(true, 2.0);
     }
-    this.fightCue();
+    this.fightBeats();
     if (this.prose.isComplete()) {
       this.run!.scoreCurrent(this.prose.correctChars(), this.prose.accuracy(), true);
       addStat("words", wordCount(this.prose.target)); // cumulative effort, counted per beat
@@ -951,82 +996,293 @@ export class ScenarioMode {
   }
 
   /**
-   * Pose the skeleton for a fight beat. It wakes ONCE: coming back to a phase after a setback
-   * is the same skeleton still standing, and replaying the rise each time would undo the one
-   * thing the staging is for.
+   * Stand the two of them for a fight phase. The skeleton wakes ONCE, and only when the child
+   * types it up ("het skelet komt langzaam overeind"); coming back to a phase after a setback
+   * is the same skeleton still standing.
    */
   private stageFight(nodeId: string): void {
     const skel = this.npcs[0];
     if (!skel) return;
+    // Close the distance. Authored at far_right the skeleton is three and a half metres away
+    // across the room -- fine for the fright on the first visit, a thumbnail in a duel. Side by
+    // side ACROSS the camera, at arm's length plus a lunge: facing him down the lens put the
+    // hero's back to the child. Render-authored staging, where the brief allows it (B4).
+    const hero = this.world.hero.node.position;
+    // the spots are fixed ONCE per duel: re-reading them each phase let every step-in and
+    // knockback creep the pair across the cave
+    if (!this.fightSpots || nodeId === "grot_fight") {
+      this.heroSpot.copy(hero);
+      this.skelSpot.set(hero.x + FIGHT_GAP, hero.y, hero.z - 0.35);
+      this.fightSpots = nodeId !== "grot_fight";
+    } else if (hero.distanceTo(this.heroSpot) > 0.05) void this.moveTo(this.world.hero.node, this.heroSpot, 0.4);
+    this.fightBeatAt = 0;
+    this.fightChain = Promise.resolve();
+    this.skelWindup = null;
+    this.gaze = { mode: "none", links: -1, rechts: -1 }; // the gaze must not turn him back
+    // the prize lies in the clear just past the skeleton, not behind its legs
+    if (this.crystal) this.crystal.position.set(this.skelSpot.x + 1.0, 0.12, this.skelSpot.z - 0.35);
     if (nodeId === "grot_fight") {
       this.fightAwake = false;
+      this.skelDown = true;
+      skel.play("Skeletons_Inactive_Floor_Pose");
+      this.setHearts(null);
+      return;
+    }
+    this.world.hero.face(this.skelSpot.x - hero.x, this.skelSpot.z - hero.z);
+    this.world.hero.play(FIGHT_IDLE);
+    this.setHearts(FIGHT_HEARTS[nodeId] ?? null);
+    // still lying where it fell on the first visit: it rises -- and comes for him -- on the
+    // sentence that says so (the "rise" beat). Only strijd_slag has that sentence; landing on a
+    // later phase directly (the dev harness) finds it already up.
+    if (!this.fightAwake && nodeId === "strijd_slag") {
+      // the scene re-poses its actors on every phase; it is still lying on the floor until then
       skel.play("Skeletons_Inactive_Floor_Pose");
       return;
     }
-    // Close the distance. Authored at far_right the skeleton is three and a half metres away
-    // across the room -- fine for the fright on the first visit, a thumbnail in a duel. Put
-    // them at arm's length and turn them to each other; this is render-authored staging, which
-    // is where the brief allows the protagonist's position to be decided (B4).
-    const hero = this.world.hero.node.position;
-    // side by side ACROSS the camera, not one behind the other: facing him down the lens put
-    // the hero's back to the child and the skeleton behind his shoulder
-    skel.node.position.set(hero.x + FIGHT_GAP, hero.y, hero.z - 0.35);
-    skel.face(hero.x - skel.node.position.x, hero.z - skel.node.position.z);
-    this.world.hero.face(skel.node.position.x - hero.x, skel.node.position.z - hero.z);
-    this.gaze = { mode: "none", links: -1, rechts: -1 }; // the gaze must not turn him back
-    // the prize lies in the clear just past the skeleton: at its far_right spot it sat exactly
-    // behind the skeleton's legs once the duel brought him closer, and the win named a crystal
-    // nobody had seen
-    if (this.crystal) this.crystal.position.set(hero.x + FIGHT_GAP + 1.0, 0.12, hero.z - 0.7);
-    this.world.hero.play(FIGHT_IDLE);
-    if (!this.fightAwake) {
-      this.fightAwake = true;
-      void skel.playOneShot("Skeletons_Awaken_Floor", "Skeletons_Idle").then(() => {
-        if (this.fightAwake) void skel.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
-      });
-      return;
-    }
-    // whatever it DOES in this phase is cued off the typing (FIGHT_CUES); here it just waits
+    this.fightAwake = true;
+    this.skelDown = nodeId === "strijd_herrijst";
+    skel.node.position.copy(this.skelSpot);
+    skel.face(hero.x - this.skelSpot.x, hero.z - this.skelSpot.z);
     if (nodeId === "strijd_herrijst") skel.play("Skeletons_Death_Pose");
     else skel.play("Skeletons_Idle");
-    this.fightCued = false;
+  }
+
+  /** Fire the beat of every sentence the child has finished (FIGHT_BEATS), in order. */
+  private fightBeats(): void {
+    const beats = FIGHT_BEATS[this.run?.currentId ?? ""];
+    if (!beats) return;
+    const ends = sentenceEnds(this.prose.target);
+    while (this.fightBeatAt < ends.length && this.prose.cursor >= ends[this.fightBeatAt]) {
+      const beat = beats[this.fightBeatAt++];
+      if (beat) this.fightChain = this.fightChain.then(() => this.playBeat(beat));
+    }
+  }
+
+  private async playBeat(beat: FightBeat): Promise<void> {
+    const skel = this.npcs[0];
+    const hero = this.world.hero;
+    if (!skel) return;
+    const toHero = (): void => skel.face(hero.node.position.x - skel.node.position.x, hero.node.position.z - skel.node.position.z);
+    switch (beat) {
+      case "rise": {
+        if (this.fightAwake) return skel.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
+        this.fightAwake = true;
+        this.skelDown = false;
+        await skel.playOneShot("Skeletons_Awaken_Floor", "Skeletons_Idle");
+        // up, and it comes for him: from where it lay to arm's length
+        const d = skel.node.position.distanceTo(this.skelSpot);
+        if (d > 0.1) {
+          skel.face(this.skelSpot.x - skel.node.position.x, this.skelSpot.z - skel.node.position.z);
+          skel.play("Skeletons_Walking");
+          await this.moveTo(skel.node, this.skelSpot, d / 1.2);
+        }
+        toHero();
+        skel.play("Skeletons_Idle");
+        return;
+      }
+      case "taunt":
+        return skel.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
+      case "windup":
+        toHero();
+        this.skelWindup = skel.windUp(SKEL_ATTACK, SKEL_WINDUP, "Skeletons_Idle");
+        return;
+      case "step_in": {
+        // "dit is het moment om te slaan" -- he edges in, guard up
+        const to = this.heroSpot.clone().lerp(this.skelSpot, 0.12);
+        await this.moveTo(hero.node, to, 0.35);
+        return;
+      }
+      case "reel":
+        this.knock(skel.node, this.skelSpot, 0.22);
+        return skel.playOneShot("Hit_A", "Skeletons_Idle");
+      case "bones":
+        this.dropBones();
+        return;
+      case "topple": {
+        this.skelDown = true;
+        const fall = skel.playOneShot("Skeletons_Death", "Skeletons_Death_Pose");
+        // the dust and the jolt when it HITS the floor, not when it starts to go
+        await this.wait(skel.duration("Skeletons_Death") * 0.55);
+        this.burst(skel.node.position.clone().add(new THREE.Vector3(0.3, 0.15, 0.2)), 0xd9c7a8, 1.1, 0.12);
+        this.setHearts(0);
+        return fall;
+      }
+      case "glint":
+        if (this.crystal) this.burst(this.crystal.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 0.25, 0)), 0x9fe8ff, 0.55, 0);
+        return;
+      case "guard":
+        return hero.playOneShot("Melee_Block", FIGHT_IDLE);
+      case "resurrect":
+        this.skelDown = false;
+        await skel.playOneShot("Skeletons_Death_Resurrect", "Skeletons_Idle");
+        toHero();
+        return;
+    }
+  }
+
+  /** the duel's moving parts: eased moves, impact bursts, falling bones and the heart row */
+  private updateFight(dt: number): void {
+    for (const t of this.tweens) {
+      t.t = Math.min(1, t.t + dt / t.dur);
+      const e = t.t * t.t * (3 - 2 * t.t);
+      t.obj.position.lerpVectors(t.from, t.to, e);
+    }
+    const finished = this.tweens.filter((t) => t.t >= 1);
+    this.tweens = this.tweens.filter((t) => t.t < 1);
+    for (const t of finished) t.done();
+    for (const b of this.bursts) b.update(dt);
+    for (const b of this.bursts.filter((x) => x.done)) {
+      this.world.s.scene.remove(b.group);
+      b.dispose();
+    }
+    this.bursts = this.bursts.filter((x) => !x.done);
+    for (const f of this.falling) {
+      f.v.y -= 9.8 * dt;
+      f.obj.position.addScaledVector(f.v, dt);
+      f.obj.rotation.x += f.spin.x * dt;
+      f.obj.rotation.y += f.spin.y * dt;
+      f.obj.rotation.z += f.spin.z * dt;
+      if (f.obj.position.y <= f.floor) {
+        f.obj.position.y = f.floor;
+        f.v.set(0, 0, 0);
+        f.spin.set(0, 0, 0);
+      }
+    }
+    this.falling = this.falling.filter((f) => f.v.lengthSq() > 0);
+    // the hearts ride over the skeleton's head
+    const skel = this.npcs[0];
+    if (this.heartsLeft >= 0 && skel) {
+      const p = skel.node.position.clone().add(new THREE.Vector3(0, 2.3, 0)).project(this.world.s.camera);
+      const c = this.world.s.renderer.domElement.getBoundingClientRect();
+      const h = document.getElementById("hud")?.getBoundingClientRect() ?? c;
+      this.hud.heartsAt(c.left - h.left + ((p.x + 1) / 2) * c.width, c.top - h.top + ((1 - p.y) / 2) * c.height);
+    }
+  }
+
+  private setHearts(n: number | null): void {
+    this.heartsLeft = n ?? -1;
+    this.hud.hearts(n, HEARTS_MAX);
+  }
+
+  /** a flash and spray of sparks where two things meet, with an optional camera jolt */
+  private burst(at: THREE.Vector3, color: number, strength: number, shake: number): void {
+    const b = new ImpactBurst(at, color, strength);
+    this.world.s.scene.add(b.group);
+    this.bursts.push(b);
+    if (shake > 0) this.world.shake(shake);
+  }
+
+  /** Ease `obj` to `to` over `secs`. A newer move of the same object replaces an older one. */
+  private moveTo(obj: THREE.Object3D, to: THREE.Vector3, secs: number): Promise<void> {
+    for (const t of this.tweens.filter((x) => x.obj === obj)) t.done();
+    this.tweens = this.tweens.filter((x) => x.obj !== obj);
+    return new Promise((done) => this.tweens.push({ obj, from: obj.position.clone(), to: to.clone(), t: 0, dur: Math.max(0.01, secs), done }));
+  }
+
+  /** Shove `obj` away from the other fighter by `dist`, then let it settle back on `home`. */
+  private knock(obj: THREE.Object3D, home: THREE.Vector3, dist: number): void {
+    const away = obj.position.clone().sub(obj === this.world.hero.node ? this.skelSpot : this.heroSpot).setY(0).setLength(dist);
+    void this.moveTo(obj, home.clone().add(away), 0.12).then(() => this.moveTo(obj, home, 0.45));
+  }
+
+  private wait(secs: number): Promise<void> {
+    return new Promise((r) => window.setTimeout(r, secs * 1000));
+  }
+
+  /** "er vallen botjes op de grond" -- a few bones drop off the skeleton and stay there */
+  private dropBones(): void {
+    const skel = this.npcs[0];
+    if (!skel) return;
+    for (let i = 0; i < 4; i++) {
+      const base = this.world.s.getModel(resolveAsset(i % 2 ? "bone_b" : "bone_a").replace(/^assets\//, ""));
+      if (!base) continue;
+      const bone = base.clone(true);
+      const size = new THREE.Box3().setFromObject(bone).getSize(new THREE.Vector3());
+      const long = Math.max(size.x, size.y, size.z);
+      if (long > 0) bone.scale.setScalar(0.4 / long);
+      bone.position.copy(skel.node.position).add(new THREE.Vector3((Math.random() - 0.5) * 0.3, 1.0 + Math.random() * 0.3, (Math.random() - 0.5) * 0.3));
+      this.world.s.scene.add(bone);
+      this.stagedProps.push(bone);
+      const v = new THREE.Vector3((Math.random() - 0.3) * 1.6, 1.2 + Math.random(), 0.4 + Math.random() * 0.8);
+      const spin = new THREE.Vector3(Math.random() * 9, Math.random() * 9, Math.random() * 9);
+      this.falling.push({ obj: bone, v, spin, floor: skel.node.position.y + 0.04 });
+    }
   }
 
   /**
-   * The exchange the typed word buys. Whether it WORKED is read off the target node, not off
-   * the word: the graph already decides that, and duplicating the rule here is how the two
-   * drift apart.
+   * The exchange the typed word buys -- a real clash, not two animations side by side: the hero
+   * steps INTO a blow, the weapons meet at a measured point in each swing, and what is hit
+   * flashes, recoils and loses a heart. Whether it WORKED is read off the target node, not off
+   * the word: the graph decides that, and duplicating the rule here is how the two drift apart.
    */
-  private async fightExchange(word: string, target: string): Promise<void> {
+  private async fightExchange(word: string, fromId: string, target: string): Promise<void> {
+    await this.fightChain; // the telegraph is up before it is answered
     const skel = this.npcs[0];
     const hero = this.world.hero;
-    const missed = /strijd_(raak|mis|herrijst)/.test(target);
-    if (word === this.locale.resolve("word.sla")) {
-      await hero.playOneShot(this.meleeClip(), FIGHT_IDLE);
-      if (target === "strijd_val") await skel?.playOneShot("Skeletons_Death", "Skeletons_Death_Pose");
-      else if (!missed) await skel?.playOneShot("Hit_A", "Skeletons_Idle");
-    } else if (word === this.locale.resolve("word.blok")) {
-      await hero.playOneShot(missed ? "Melee_Block" : "Melee_Block_Hit", FIGHT_IDLE);
-    } else if (word === this.locale.resolve("word.duik")) {
-      await hero.playOneShot("Dodge_Backward", FIGHT_IDLE);
+    if (!skel) return;
+    const sla = word === this.locale.resolve("word.sla");
+    const blok = word === this.locale.resolve("word.blok");
+    const between = this.heroSpot.clone().lerp(this.skelSpot, 0.5).add(new THREE.Vector3(0, 1.15, 0.15));
+    if (fromId === "strijd_slag") {
+      // The raised blade comes down whatever the answer; the word decides what it meets.
+      const wound = this.skelWindup;
+      this.skelWindup = null;
+      const swing = wound ? wound() : skel.playOneShot(SKEL_ATTACK, "Skeletons_Idle");
+      const toContact = skel.duration(SKEL_ATTACK) * (SKEL_CONTACT - (wound ? SKEL_WINDUP : 0));
+      if (blok) {
+        void hero.playOneShot("Melee_Block", FIGHT_IDLE);
+        await this.wait(toContact);
+        // steel on steel: sparks between them, and the block takes the weight of it
+        this.burst(between, 0xfff1c4, 1, 0.07);
+        void hero.playOneShot("Melee_Block_Hit", FIGHT_IDLE);
+        this.knock(hero.node, this.heroSpot, 0.15);
+      } else if (!sla) {
+        // duik: out from under it -- the blade cuts the air where he stood
+        void hero.playOneShot("Dodge_Backward", FIGHT_IDLE);
+        const back = this.heroSpot.clone().lerp(this.skelSpot, -0.35);
+        await this.moveTo(hero.node, back, Math.max(0.2, toContact));
+        void this.moveTo(hero.node, this.heroSpot, 0.6);
+      } else {
+        // sla into a blow already falling: it lands first
+        void hero.playOneShot(this.meleeClip(), FIGHT_IDLE);
+        await this.wait(toContact);
+        this.burst(this.heroSpot.clone().add(new THREE.Vector3(0.25, 1.1, 0.15)), 0xffd0c0, 1, 0.1);
+        void hero.playOneShot("Hit_A", FIGHT_IDLE);
+        this.knock(hero.node, this.heroSpot, 0.3);
+      }
+      await swing;
+      await this.wait(0.35);
+      return;
     }
-    // it was already wobbling, so a missed finish topples it anyway -- and the herrijst passage
-    // is about it crawling back up, which only reads if the child saw it go down
-    if (target === "strijd_herrijst") await skel?.playOneShot("Skeletons_Death", "Skeletons_Death_Pose");
-    // a wrong answer costs a knock, never the run: the phase simply comes round again
-    if (missed && target !== "strijd_herrijst") {
-      await skel?.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
-      await hero.playOneShot("Hit_A", FIGHT_IDLE);
+    if (sla && /strijd_(wankel|val)/.test(target)) {
+      // His turn, and it lands: step in, strike, and the skeleton takes it.
+      const strike = this.meleeClip();
+      const d = hero.duration(strike) || 1;
+      const shot = hero.playOneShot(strike, FIGHT_IDLE);
+      const reach = this.heroSpot.clone().lerp(this.skelSpot, LUNGE / FIGHT_GAP);
+      await this.moveTo(hero.node, reach, d * HERO_CONTACT);
+      this.burst(this.skelSpot.clone().add(new THREE.Vector3(-0.2, 1.1, 0.15)), 0xfff1c4, 1.2, 0.09);
+      this.setHearts(FIGHT_HEARTS[target] ?? 0);
+      void skel.playOneShot("Hit_A", "Skeletons_Idle");
+      this.knock(skel.node, this.skelSpot, 0.35);
+      await this.moveTo(hero.node, this.heroSpot, d * (1 - HERO_CONTACT));
+      await shot;
+      return;
     }
-  }
-
-  /** Play this phase's skeleton beat once the typing reaches the sentence that describes it. */
-  private fightCue(): void {
-    if (this.fightCued) return;
-    const cue = FIGHT_CUES[this.run?.currentId ?? ""];
-    if (!cue || this.prose.progress() < cue.at) return;
-    this.fightCued = true;
-    void this.npcs[0]?.playOneShot(cue.clip, cue.then);
+    if (target === "strijd_herrijst") {
+      // blok/duik at a skeleton already wobbling: no blow comes, and it topples by itself --
+      // which the herrijst passage needs, since it is about crawling back up
+      void hero.playOneShot(blok ? "Melee_Block" : "Dodge_Backward", FIGHT_IDLE);
+      this.skelDown = true;
+      const fall = skel.playOneShot("Skeletons_Death", "Skeletons_Death_Pose");
+      await this.wait(skel.duration("Skeletons_Death") * 0.55);
+      this.burst(skel.node.position.clone().add(new THREE.Vector3(0.3, 0.15, 0.2)), 0xd9c7a8, 0.9, 0.08);
+      await fall;
+      return;
+    }
+    // blok/duik when it stood open: the moment passes, and it jeers at him
+    void hero.playOneShot(blok ? "Melee_Block" : "Dodge_Backward", FIGHT_IDLE);
+    await skel.playOneShot("Skeletons_Taunt", "Skeletons_Idle");
   }
 
   private beginChoice(): void {
@@ -1080,6 +1336,7 @@ export class ScenarioMode {
     this.hud.highlightKey(this.picked.word.charAt(this.buffer.length));
     if (this.buffer === this.picked.word) {
       const hint = this.picked.choice.hint;
+      const fromId = this.run!.currentId;
       this.run!.choose(this.picked.word, this.flag);
       const tgt = this.run!.current();
       const sameSetWalk = !!tgt?.scene && this.setFor(tgt.scene) === this.currentSet && tgt.scene.continuous;
@@ -1094,7 +1351,7 @@ export class ScenarioMode {
       // without the pause the animation is cut off by its own consequence.
       if (isFightNode(tgt?.id ?? "")) {
         this.phase = "pause";
-        void this.fightExchange(this.picked.word, tgt?.id ?? "").then(after);
+        void this.fightExchange(this.picked.word, fromId, tgt?.id ?? "").then(after);
         return;
       }
       if (landmark) {
@@ -1135,7 +1392,9 @@ export class ScenarioMode {
       // the armed fight: the first cave visit is a scare the hero flees, and toppling the
       // skeleton there both spoils the fright and contradicts "rent snel terug naar het licht".
       const beaten = this.npcs.length > 0 && this.currentSet === "dungeon" && !!node?.setsFlag?.includes("has_crystal");
-      if (beaten) for (const n of this.npcs) n.playOneShot("Death_A", "Death_A_Pose");
+      // it normally went down on "valt met een klap om"; only topple one still standing
+      if (beaten && !this.skelDown) for (const n of this.npcs) n.playOneShot("Death_A", "Death_A_Pose");
+      this.setHearts(null);
       if (this.crystal) {
         // the same RPG item-get as the weapons at home: the crystal rises off the cave floor in
         // a puff and comes to hang over the hero's head. Before, he played a pickup three
@@ -1175,6 +1434,7 @@ export class ScenarioMode {
   }
 
   update(dt: number): void {
+    this.updateFight(dt);
     if (this.walkoff) {
       const w = this.walkoff;
       w.t += dt;

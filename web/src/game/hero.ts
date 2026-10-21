@@ -291,6 +291,32 @@ export class HeroRig {
     return this.oneShotDone;
   }
 
+  /** A loaded clip's length in seconds (0 when it is not loaded), to time an impact against. */
+  duration(name: string): number {
+    return this.action(name)?.getClip().duration ?? 0;
+  }
+
+  /**
+   * A telegraphed attack: play `name` up to `frac` of its length and FREEZE there, weapon
+   * raised, until the returned release() lets the blow come down. release() resolves when the
+   * one-shot has settled into `then`. This is what lets the child answer an attack at their own
+   * pace -- band-1 scores no speed, so the threat waits for the word.
+   */
+  windUp(name: string, frac: number, then = "Idle_A"): () => Promise<void> {
+    const done = this.playOneShot(name, then);
+    const a = this.action(name);
+    let released = false;
+    const timer = window.setTimeout(() => {
+      if (!released && a && this.current === a) a.paused = true;
+    }, this.duration(name) * frac * 1000);
+    return () => {
+      released = true;
+      window.clearTimeout(timer);
+      if (a) a.paused = false;
+      return done;
+    };
+  }
+
   /** Resolves when the one-shot in flight has settled (already-resolved when none is). */
   get oneShotSettled(): Promise<void> {
     return this.oneShotDone;
