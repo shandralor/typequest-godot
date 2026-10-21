@@ -225,6 +225,10 @@ async function main(): Promise<void> {
 
   async function startScenario(id: string, atNode = ""): Promise<void> {
     enterState("scenario");
+    // close the one on screen first: from the island it is already gone, but a dev-panel jump
+    // (or a hero swap) starts one beat over another, and the old skeleton stayed lying there
+    scenario?.exit();
+    scenario = null;
     music.playContext("adventure");
     clearUi();
     cinema(false);

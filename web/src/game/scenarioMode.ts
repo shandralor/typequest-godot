@@ -182,6 +182,8 @@ export class ScenarioMode {
   /** hearts shown over the skeleton (-1 = none) */
   private heartsLeft = -1;
   private fightSpots = false;
+  /** exited: a load still in flight must not stage into the scene the next mode now owns */
+  private gone = false;
   /**
    * Where the skeleton's BODY must stay while it falls, lies and gets up. KayKit's death clip
    * throws the hips about 1.8 m backwards and the resurrect slides them all the way back, so
@@ -339,6 +341,7 @@ export class ScenarioMode {
       // grinding wheel or the reading desk depending on what their beat is about
       await this.world.loadScene(def, d.mood === "dark" ? "dark" : "day",
         new Set([`weapon_${this.heroId}`, `forge_${weaponGroupFor(this.heroId)}`]));
+      if (this.gone) return;
       this.currentSet = setName;
     }
     // Pull in any rig pack this beat needs before posing anyone: the poses on stage, the
@@ -356,6 +359,7 @@ export class ScenarioMode {
     if (this.scenarioId === "intro") wanted.push("Lie_Idle", "Lie_StandUp");
     if (isFightNode(node.id)) wanted.push(...FIGHT_CLIPS, this.meleeClip());
     await ensureClips(wanted);
+    if (this.gone) return; // closed while this was loading: add nothing to a scene it no longer owns
 
     // actors
     this.travel = null;
@@ -418,6 +422,7 @@ export class ScenarioMode {
         const npc = new HeroRig();
         const path = resolveAsset(a.asset).replace(/^assets\//, "");
         await npc.load(path);
+        if (this.gone) return;
         npc.node.position.copy(this.world.anchor(a.anchor));
         this.faceActor(npc, a.facing);
         this.world.s.scene.add(npc.node);
@@ -453,6 +458,7 @@ export class ScenarioMode {
     const skel = this.npcs[0];
     if (isFightNode(node.id) && skel && !skel.node.getObjectByName("skeleton_blade")) {
       const base = await this.world.s.loadModel(resolveAsset("skeleton_blade").replace(/^assets\//, "")).catch(() => null);
+      if (this.gone) return;
       if (base) {
         const blade = base.clone(true);
         blade.name = "skeleton_blade";
@@ -531,6 +537,7 @@ export class ScenarioMode {
       this.fired = 0;
       const flying = this.projectileModel();
       if (flying) await this.world.s.loadModel(flying).catch(() => null);
+      if (this.gone) return;
     }
     // framing follows the scene type, exactly as the Godot rig does
     const landmarks = !!def0?.anchors?.some((a) => a.name === "bridge_near") && !this.travel;
@@ -613,6 +620,7 @@ export class ScenarioMode {
   private async stageWorkBlade(): Promise<void> {
     const path = resolveAsset(meleeFor(this.heroId)).replace(/^assets\//, "");
     const base = await this.world.s.loadModel(path).catch(() => null);
+    if (this.gone) return;
     if (!base) return;
     const obj = base.clone(true);
     obj.name = meleeFor(this.heroId);
@@ -681,6 +689,7 @@ export class ScenarioMode {
   private async standStaff(): Promise<void> {
     const path = resolveAsset(meleeFor(this.heroId)).replace(/^assets\//, "");
     const base = path ? await this.world.s.loadModel(path).catch(() => null) : null;
+    if (this.gone) return;
     if (!base) return;
     const staff = base.clone(true);
     const size = new THREE.Box3().setFromObject(staff).getSize(new THREE.Vector3());
@@ -719,6 +728,7 @@ export class ScenarioMode {
    */
   private async hazeUnder(at: THREE.Vector3): Promise<void> {
     const base = await this.world.s.loadModel(HAZE_MODEL).catch(() => null);
+    if (this.gone) return;
     if (!base || !this.book) return;
     const group = new THREE.Group();
     for (let i = 0; i < 3; i++) {
@@ -848,6 +858,7 @@ export class ScenarioMode {
     const path = resolveAsset(assetId).replace(/^assets\//, "");
     if (!path) return;
     const base = await this.world.s.loadModel(path).catch(() => null);
+    if (this.gone) return;
     if (!base) return;
     const obj = base.clone(true);
     obj.name = assetId; // findable later (a cloned gltf root is otherwise called "Scene")
@@ -910,6 +921,7 @@ export class ScenarioMode {
   private async buildArcheryTarget(): Promise<void> {
     const pos = this.world.anchor("target");
     const base = await this.world.s.loadModel(TARGET_MODEL).catch(() => null);
+    if (this.gone) return;
     if (base) {
       const t = base.clone(true);
       t.position.copy(pos);
@@ -1598,6 +1610,7 @@ export class ScenarioMode {
   }
 
   exit(): void {
+    this.gone = true;
     this.clearNpcs();
     this.clearEffects();
     this.phase = "pause";
