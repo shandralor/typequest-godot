@@ -17,7 +17,7 @@ export const ALL: Character[] = [
   { id: "barbarian", model: ADV + "Barbarian.glb", label: "Barbaar" },
   { id: "mage", model: ADV + "Mage.glb", label: "Tovenaar" },
   { id: "ranger", model: ADV + "Ranger.glb", label: "Jager" },
-  { id: "rogue", model: ADV + "Rogue.glb", label: "Dief" },
+  { id: "rogue", model: ADV + "Rogue.glb", label: "Verkenner" },
   { id: "witch", model: HERO + "Witch.glb", label: "Heks" },
 ];
 
@@ -123,7 +123,7 @@ export function meleeFor(id: string): string {
 /**
  * Does this hero's PRIMARY weapon already serve as their ranged weapon?
  *
- * A jager's kruisboog and a magier's staf are ranged weapons. Only the blade classes need a
+ * A jager's kruisboog and a tovenaar's staf are ranged weapons. Only the blade classes need a
  * separate bow or crossbow. Without this the practice yard demanded `has_ranged`, which only
  * the bow/crossbow fetch granted -- so a mage was told "Haal eerst een boog thuis!" and had to
  * carry a bow to cast with, and a jager fetched a plain boog on top of his crossbow.

@@ -137,8 +137,14 @@ export class Hud {
     $<HTMLElement>("band").hidden = true;
   }
 
-  message(text: string): void {
+  /**
+   * A centred notice, or with `side` a win card at the top RIGHT of the stage. The end of a
+   * beat is the moment the payoff is on screen -- the arrow in the target, the skeleton on the
+   * floor, the glowing staf -- and centred at the top the card sat right over it.
+   */
+  message(text: string, side = false): void {
     const m = $<HTMLElement>("message");
+    m.classList.toggle("side", side);
     m.textContent = text;
     m.hidden = text === "";
   }

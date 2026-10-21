@@ -14,14 +14,15 @@ molen -> bos (staged fight, win, crystal). 165 tests pass, typecheck clean.
   `?dev` opens the dev harness (jump to any beat, flags, hero swap, play any clip).
 - Opties: keyboard layout, music, kies je held, two-tap "Begin opnieuw".
 
-Open, proposed next (not started):
-- caster forge win/prose say "je staf" while she studies a book (no staff on screen).
-- win message box (top 16%) sits over the archery target on "Raak!" and over the hero's head
-  in the cave win; consider placing #message lower for those beats.
-- the crystal win: the hero plays PickUp 3 m from the gem; an item-get puff ("Je hebt het
-  kristal!") like the house rack would land the payoff.
-- the cave is very dark for the fight phases (hard to read the exchange).
-- black frames on scene loads; thrown-weapon path at the yard (barbaar/dief) unexercised.
+Done 2026-10-21: caster's staf stands beside her and lights up with the spell; win cards sit
+top-right off the action; the crystal win is an item-get puff; a warm fill lights the duel;
+hero nouns match the picker (tovenaar, Verkenner).
+
+Open:
+- black frames on scene loads: NOT reproduced (sampled house/forest/forge fades, canvas is lit
+  from the first frame after the fade). Needs a repro on real hardware if still seen.
+- the thrown-weapon path (barbaar/dief at the yard) works, but normal play never reaches it:
+  blade classes always fetch a bow or crossbow before the yard opens. Keep or drop it.
 
 ## Character choice + variant prose ({held} subject token) (2026-07-19)
 

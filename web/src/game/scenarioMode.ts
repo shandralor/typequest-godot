@@ -61,6 +61,9 @@ const BLADE_LEN = 1.15;
 const FIGHT_NODES = /^(grot_fight|strijd_)/;
 /** how far apart the two of them stand once the fight starts */
 const FIGHT_GAP = 2.0;
+/** the warm fill over the duel (colour, intensity): the cave's own key leaves it unreadable */
+const FIGHT_TORCH = 0xffc58a;
+const FIGHT_TORCH_I = 6;
 export function isFightNode(id: string): boolean {
   return FIGHT_NODES.test(id);
 }
@@ -94,6 +97,11 @@ const FIGHT_IDLE = "Melee_2H_Idle";
 const BLADE_BITE = 0.2;
 /** how far back from the wheel's centre the grip end sits, toward the hero working it */
 const GRIND_GRIP = 0.48;
+/** the colour of the light the caster's spell wakes on her staf */
+const STAFF_GLOW = 0x9fe8ff;
+/** the caster's staf stands this tall beside her, at this (x, z) offset from her feet */
+const STAFF_HEIGHT = 1.35;
+const STAFF_SIDE: [number, number] = [0.62, -0.05];
 /** how high the caster's spellbook hangs, and how far it drifts up and down while it hangs */
 const BOOK_HEIGHT = 1.02;
 const BOOK_BOB = 0.06;
@@ -155,7 +163,7 @@ export class ScenarioMode {
   /** this phase's cue has already fired */
   private fightCued = false;
   /** the RPG item-get: the weapon held aloft in a puff of cloud while the wall goes empty */
-  private itemGet: { group: THREE.Object3D; t: number; from: THREE.Vector3 } | null = null;
+  private itemGet: { group: THREE.Object3D; t: number; from: THREE.Vector3; hold: THREE.Vector3; k: number } | null = null;
   /** the cloud bank the caster's book rides on */
   private haze: THREE.Object3D | null = null;
   /** the crystal on the cave floor, so the hero has something to actually pick up */
@@ -163,6 +171,8 @@ export class ScenarioMode {
   /** the caster's spellbook, hanging in mid-air and bobbing while the spell is read */
   private book: THREE.Object3D | null = null;
   private bookT = 0;
+  /** the light at the top of the caster's staff, which the spell she reads wakes up */
+  private staffGlow: { orb: THREE.Mesh; light: THREE.PointLight } | null = null;
   /** the intro get-up is still folding him upright -- hold him on the bed until it settles */
   private risingFromBed = false;
   /** bumped on every staged beat, so a slow animation callback from a past beat is ignored */
@@ -235,6 +245,7 @@ export class ScenarioMode {
   private clearEffects(): void {
     this.book = null;
     this.haze = null;
+    this.staffGlow = null; // its orb is a staged prop, removed with the rest
     if (this.itemGet) this.world.s.scene.remove(this.itemGet.group);
     this.itemGet = null;
     this.hud.itemGet("");
@@ -405,7 +416,15 @@ export class ScenarioMode {
       else await this.stageProp(WORK_PROPS[group], "grind_point");
       // A caster's book is not put down anywhere -- it HANGS in the air in front of her,
       // tilted so the open pages face the child, with the spell guttering underneath it.
-      if (group === "caster") this.floatBook();
+      if (group === "caster") {
+        this.floatBook();
+        // "het licht danst om je staf" -- so the staf has to be there, and the light has to
+        // grow on it while the spell is read. With only the book on stage the prose and the
+        // win ("je staf gloeit weer") named a thing nobody could see. It STANDS beside her
+        // rather than in her hand: the reading pose holds the hand flat, which laid the staf
+        // sideways straight through the book.
+        await this.standStaff();
+      }
     }
     if (setName === "forge" && weaponGroupFor(this.heroId) === "blades") {
       // the shower sits on the wheel in front of him and heats up as the song is typed --
@@ -428,6 +447,17 @@ export class ScenarioMode {
     // beside the skeleton and the hero picks it up at the win. The fight is staged ONCE on its
     // approach (the phases re-stage the same set), so it has to be laid down there, not on the
     // payoff node that sets the flag -- that one never loads the set.
+    // The duel needs light the scare did not: in the cave's cool dim key the exchange the child
+    // is steering -- the swing, the block, the skeleton reeling -- read as two dark shapes.
+    // A warm torch-like fill over the two of them, toward the camera, staged once with the set
+    // and kept through the phases.
+    if (setName === "dungeon" && isFightNode(node.id) && !restage) {
+      const hero = this.world.hero.node.position;
+      const torch = new THREE.PointLight(FIGHT_TORCH, FIGHT_TORCH_I, 6, 1.6);
+      torch.position.set(hero.x + FIGHT_GAP / 2, hero.y + 2.6, hero.z + 1.8);
+      this.world.s.scene.add(torch);
+      this.stagedProps.push(torch);
+    }
     if (setName === "dungeon" && (node.setsFlag?.includes("has_crystal") || isFightNode(node.id)) && !restage) {
       await this.stageProp("crystal", "far_right");
       const gem = this.stagedProps[this.stagedProps.length - 1];
@@ -590,6 +620,44 @@ export class ScenarioMode {
   }
 
   /**
+   * The caster's staf, standing upright on the floor at her side with an orb of light on top.
+   * Upright is MEASURED: whichever axis of the model is longest is turned to vertical, and it
+   * is seated on the floor by its box, because the staf models are authored lying down and at
+   * different sizes.
+   */
+  private async standStaff(): Promise<void> {
+    const path = resolveAsset(meleeFor(this.heroId)).replace(/^assets\//, "");
+    const base = path ? await this.world.s.loadModel(path).catch(() => null) : null;
+    if (!base) return;
+    const staff = base.clone(true);
+    const size = new THREE.Box3().setFromObject(staff).getSize(new THREE.Vector3());
+    if (size.x >= size.y && size.x >= size.z) staff.rotation.z = Math.PI / 2;
+    else if (size.z >= size.y) staff.rotation.x = Math.PI / 2;
+    const long = Math.max(size.x, size.y, size.z);
+    if (long > 0) staff.scale.setScalar(STAFF_HEIGHT / long);
+    const hero = this.world.hero.node.position;
+    staff.position.set(hero.x + STAFF_SIDE[0], 0, hero.z + STAFF_SIDE[1]);
+    staff.rotation.y = 0.3; // a slight lean of the head toward her reads as hers, not a post
+    staff.updateWorldMatrix(true, true);
+    const box = new THREE.Box3().setFromObject(staff);
+    staff.position.y += hero.y - box.min.y;
+    this.world.s.scene.add(staff);
+    this.stagedProps.push(staff);
+    staff.updateWorldMatrix(true, true);
+    const top = new THREE.Box3().setFromObject(staff);
+    const orb = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 16, 12),
+      new THREE.MeshBasicMaterial({ color: STAFF_GLOW, transparent: true, opacity: 0.85, depthWrite: false })
+    );
+    orb.position.set((top.min.x + top.max.x) / 2, top.max.y + 0.06, (top.min.z + top.max.z) / 2);
+    const light = new THREE.PointLight(STAFF_GLOW, 0, 3.5);
+    orb.add(light);
+    this.world.s.scene.add(orb);
+    this.stagedProps.push(orb);
+    this.staffGlow = { orb, light };
+  }
+
+  /**
    * A little bank of haze under the floating book, so it reads as being CARRIED on the cloud
    * rather than just hanging there. Reuses the island's cloud model at small scale -- a
    * particle wisp would not match the chunky low-poly art anywhere else in the game.
@@ -628,11 +696,23 @@ export class ScenarioMode {
    * turning. It also does honest work -- the wall prop is hidden UNDER the puff, so the weapon
    * leaving the wall reads as the pickup rather than as something popping out of existence.
    */
-  private async playItemGet(assetId: string, anchor: string, primary: boolean): Promise<void> {
+  private async playItemGet(
+    assetId: string,
+    anchor: string,
+    primary: boolean,
+    from?: THREE.Vector3,
+    /** prize length, and where it comes to hang relative to the hero's feet */
+    opts: { len?: number; hold?: THREE.Vector3 } = {}
+  ): Promise<void> {
+    const len = opts.len ?? ITEM_GET_LEN;
+    const hold = opts.hold ?? new THREE.Vector3(0, ITEM_GET_HOLD, 0);
+    const k = len / ITEM_GET_LEN; // the puff shrinks with the prize, or a small gem drowns in it
     // ONLY the primary fetch empties the class rack. A blade class fetching a boog leaves their
     // own zwaard hanging where it was -- they have not taken it yet.
     const wall = primary ? this.hideWallWeapon() : null;
-    const at = wall
+    const at = from
+      ? from.clone()
+      : wall
       ? wall.getWorldPosition(new THREE.Vector3())
       : this.world.hasAnchor(anchor)
         ? this.world.anchor(anchor)
@@ -661,8 +741,8 @@ export class ScenarioMode {
           m.castShadow = false;
         });
         const a = (i / 4) * Math.PI * 2;
-        puff.position.set(Math.cos(a) * 0.45, -0.5, Math.sin(a) * 0.32);
-        puff.scale.setScalar(0.26);
+        puff.position.set(Math.cos(a) * 0.45 * k, -0.5 * k, Math.sin(a) * 0.32 * k);
+        puff.scale.setScalar(0.26 * k);
         group.add(puff);
       }
     }
@@ -671,7 +751,7 @@ export class ScenarioMode {
     prize.name = "item_get_prize";
     const box = new THREE.Box3().setFromObject(prize);
     const longest = Math.max(...box.getSize(new THREE.Vector3()).toArray());
-    if (longest > 0) prize.scale.setScalar(ITEM_GET_LEN / longest);
+    if (longest > 0) prize.scale.setScalar(len / longest);
     // held up at a jaunty angle, and canted forward: a flat blade on a plain Y spin goes
     // invisible edge-on twice a turn, which is exactly when a child happens to look
     prize.rotation.set(-0.38, 0, Math.PI / 5);
@@ -680,10 +760,10 @@ export class ScenarioMode {
     // one side of the puff instead of rising out of it
     const centred = new THREE.Box3().setFromObject(prize).getCenter(new THREE.Vector3());
     prize.position.sub(centred);
-    prize.position.y += 0.3; // it rides ABOVE the puff, not inside it
+    prize.position.y += 0.3 * k; // it rides ABOVE the puff, not inside it
     this.world.s.scene.add(group);
     this.stagedProps.push(group);
-    this.itemGet = { group, t: 0, from: at };
+    this.itemGet = { group, t: 0, from: at, hold, k };
   }
 
   /**
@@ -973,7 +1053,7 @@ export class ScenarioMode {
       // nothing left to take -- a short "you have everything" beat, then leave
       this.hud.hideBand();
       this.hud.highlightKey("");
-      this.hud.message(this.locale.resolve("home.nothing") + "\n(druk op enter)");
+      this.hud.message(this.locale.resolve("home.nothing") + "\n(druk op enter)", true);
       this.world.hero.playOneShot("Cheering");
       this.phase = "win";
       return;
@@ -1057,8 +1137,17 @@ export class ScenarioMode {
       const beaten = this.npcs.length > 0 && this.currentSet === "dungeon" && !!node?.setsFlag?.includes("has_crystal");
       if (beaten) for (const n of this.npcs) n.playOneShot("Death_A", "Death_A_Pose");
       if (this.crystal) {
-        this.crystal.visible = false; // he picks it up -- it should not still be lying there
+        // the same RPG item-get as the weapons at home: the crystal rises off the cave floor in
+        // a puff and comes to hang over the hero's head. Before, he played a pickup three
+        // metres from it and it simply vanished.
+        const from = this.crystal.getWorldPosition(new THREE.Vector3());
+        this.crystal.visible = false;
         this.crystal = null;
+        // smaller than a weapon and hung in the open space between him and the fallen skeleton: the duel's frame
+        // is tight, and at the weapons' height over the head it rose clean out of the shot
+        void this.playItemGet("crystal", "", false, from, { len: 0.42, hold: new THREE.Vector3(1.0, 1.0, 0.3) });
+        this.hud.itemGet(this.locale.resolve("itemget.kristal"));
+        gotItem = true;
         this.world.hero.playOneShot("PickUp", "Cheering");
       } else {
         // a LOOPED cheer, like Godot's play_lead_loop -- he holds the celebration while the
@@ -1072,7 +1161,7 @@ export class ScenarioMode {
     this.hud.prompt("");
     this.hud.hideBand();
     this.hud.highlightKey("");
-    if (!gotItem) this.hud.message(this.locale.fillTokens(text, this.heroId) + "\n(druk op enter)");
+    if (!gotItem) this.hud.message(this.locale.fillTokens(text, this.heroId) + "\n(druk op enter)", true);
     if (this.currentSet === "forge") this.world.useRig(rigFor("forge", { walking: false, win: true, landmarks: false }), false);
     // bank the persistent effort for a real adventure only: a home chore (fetching gear) and
     // the cave setback are not one, so they do not add to the totals (Godot's `celebrate`)
@@ -1111,9 +1200,9 @@ export class ScenarioMode {
       // the head position is read LIVE: the beat's walk is still easing him toward the rack
       // when the passage completes, so a snapshot taken then aims at the doorway he left
       const to = this.world.hero.node.position.clone();
-      to.y += ITEM_GET_HOLD;
+      to.add(g.hold);
       g.group.position.lerpVectors(g.from, to, ease);
-      g.group.position.y += 0.55 * lift + Math.sin(g.t * 2) * 0.05 * ease;
+      g.group.position.y += (0.55 * lift + Math.sin(g.t * 2) * 0.05 * ease) * g.k;
       g.group.rotation.y = g.t * 0.55;
       g.group.scale.setScalar(0.4 + 0.6 * lift + 0.35 * ease);
     }
@@ -1125,6 +1214,15 @@ export class ScenarioMode {
         this.haze.position.y = this.book.position.y - 0.34;
         this.haze.rotation.y = this.bookT * 0.25; // turns slowly the other way, so it breathes
       }
+    }
+    if (this.staffGlow) {
+      // it wakes with the spell: dim at the first word, full and pulsing by the last, and it
+      // stays lit through the win so "je staf gloeit weer" is what the child is looking at
+      const p = this.phase === "prose" ? this.prose.progress() : 1;
+      const pulse = 0.5 + 0.5 * Math.sin(this.bookT * 5);
+      this.staffGlow.orb.scale.setScalar((0.04 + 0.07 * p) * (1 + 0.15 * pulse));
+      (this.staffGlow.orb.material as THREE.MeshBasicMaterial).opacity = 0.35 + 0.6 * p;
+      this.staffGlow.light.intensity = (0.3 + 3.2 * p) * (0.85 + 0.3 * pulse);
     }
     if (this.sparks) {
       this.sparks.emitting = this.phase === "prose";

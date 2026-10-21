@@ -12,7 +12,7 @@ export const CATALOG: Record<string, string> = {
   // hero subject nouns (the {held} token -> the chosen character)
   "hero.knight": "ridder",
   "hero.barbarian": "barbaar",
-  "hero.mage": "magier",
+  "hero.mage": "tovenaar",
   "hero.ranger": "jager",
   "hero.rogue": "verkenner",
   "hero.witch": "heks",
@@ -114,6 +114,7 @@ export const CATALOG: Record<string, string> = {
   "itemget.wapen": "Je hebt nu je {wapen}!",
   "itemget.bow": "Je hebt nu je boog!",
   "itemget.crossbow": "Je hebt nu je kruisboog!",
+  "itemget.kristal": "Je hebt het kristal!",
   "home.win_bow": "Je hebt je boog gehaald!",
   "home.win_crossbow": "Je hebt je kruisboog gehaald!",
   "home.nothing": "Je hebt alles al gehaald!",
