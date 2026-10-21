@@ -1030,7 +1030,9 @@ export class ScenarioMode {
     }
     this.world.hero.face(this.skelSpot.x - hero.x, this.skelSpot.z - hero.z);
     this.world.hero.play(FIGHT_IDLE);
-    this.setHearts(FIGHT_HEARTS[nodeId] ?? null);
+    // hearts over a skeleton still lying in the dark would hang over nothing: they come up
+    // with it (the "rise" beat)
+    this.setHearts(this.fightAwake || nodeId !== "strijd_slag" ? FIGHT_HEARTS[nodeId] ?? null : null);
     // still lying where it fell on the first visit: it rises -- and comes for him -- on the
     // sentence that says so (the "rise" beat). Only strijd_slag has that sentence; landing on a
     // later phase directly (the dev harness) finds it already up.
@@ -1078,6 +1080,7 @@ export class ScenarioMode {
         }
         toHero();
         skel.play("Skeletons_Idle");
+        this.setHearts(HEARTS_MAX);
         return;
       }
       case "taunt":

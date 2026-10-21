@@ -18,6 +18,15 @@ Done 2026-10-21: caster's staf stands beside her and lights up with the spell; w
 top-right off the action; the crystal win is an item-get puff; a warm fill lights the duel;
 hero nouns match the picker (tovenaar, Verkenner).
 
+Done 2026-10-21 (later): the cave duel is a fight -- each typed sentence plays what it says
+(content/band1/fightBeats.ts), the skeleton's raised blade waits for the child's answer, each
+choice is a clash with contact flash/knockback/shake, skeleton hearts. Duel phases are one
+continuous scene (no fades). Scenes dressed from unused KayKit models (cave, mill, oefenplein);
+the editor palette now covers dungeon/halloween/resource/rpgtools/weapons packs (523 props).
+
+Next ideas: Meshy only for gaps KayKit cannot fill (ask before spending credits); a Meshy hero
+spike if custom player models are wanted.
+
 Open:
 - black frames on scene loads: NOT reproduced (sampled house/forest/forge fades, canvas is lit
   from the first frame after the fade). Needs a repro on real hardware if still seen.

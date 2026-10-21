@@ -3,14 +3,16 @@
 
 Walks the KayKit packs served under public/assets (a symlink to the committed asset tree).
   TILES -- hexagon/hex_*.gltf, keyed by the code after `hex_` (what IslandDef.tiles[].t holds)
-  PROPS -- every other .gltf in the hexagon + forest_nature packs (buildings, trees, rocks...)
+  PROPS -- every other .gltf in the listed packs (buildings, trees, rocks, dungeon dressing,
+           farm and resource bits...); a pack beyond the first two is its own category
 Re-run when a pack is added. Labels are humanised file names.
 """
 import os, re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..", "public", "assets")
-PACKS = ["kaykit/hexagon", "kaykit/forest_nature"]
+PACKS = ["kaykit/hexagon", "kaykit/forest_nature", "kaykit/dungeon", "kaykit/halloween",
+         "kaykit/resource_bits", "kaykit/rpgtools_bits", "kaykit/fantasy_weapons_bits"]
 OUT = os.path.join(HERE, "..", "src", "editor", "catalog.generated.ts")
 
 
@@ -21,6 +23,8 @@ def label(name):
 def category(pack, name):
     if pack.endswith("forest_nature"):
         return "nature"
+    if not pack.endswith("hexagon"):
+        return pack.split("/")[-1]
     for k in ("building", "wall", "fence", "tree", "trees", "hill", "hills", "mountain", "rock", "cloud", "flag", "crate", "resource", "water"):
         if name.startswith(k):
             return {"trees": "tree", "hills": "hill", "waterlily": "water", "waterplant": "water"}.get(k, k)

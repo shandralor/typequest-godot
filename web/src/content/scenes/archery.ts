@@ -8,6 +8,13 @@ export const ARCHERY: SceneDef = {
   ],
   props: [
     { m: "kaykit/hexagon/bucket_arrows.gltf", x: 1.6, z: 4.2, s: 3 },
+    { m: "kaykit/hexagon/haybale.gltf", x: -1.1, z: -8.6, rot: 10, s: 6 },
+    { m: "kaykit/hexagon/haybale.gltf", x: 1.1, z: -8.7, rot: 350, s: 6 },
+    { m: "kaykit/hexagon/barrel.gltf", x: -2.6, z: 1.6, s: 4.5 },
+    { m: "kaykit/forest_nature/Tree_6_A_Color1.gltf", x: -8.5, z: -13, s: 1.5 },
+    { m: "kaykit/forest_nature/Tree_5_B_Color1.gltf", x: 7.5, z: -14, s: 1.6 },
+    { m: "kaykit/forest_nature/Rock_5_A_Color1.gltf", x: 3.2, z: -2.2, s: 0.7 },
+    { m: "kaykit/forest_nature/Bush_4_A_Color1.gltf", x: -2.8, z: -4 },
     { m: "kaykit/forest_nature/Tree_1_A_Color1.gltf", x: -0.714, z: 26.733, rot: 110.88, s: 1.406 },
     { m: "kaykit/forest_nature/Tree_1_A_Color1.gltf", x: 3.962, z: 22.08, rot: 51.175, s: 1.575 },
     { m: "kaykit/forest_nature/Tree_2_A_Color1.gltf", x: 7.167, z: 24.913, rot: 328.925, s: 1.322 },
