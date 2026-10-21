@@ -31,14 +31,23 @@ to leave the previous ScenarioMode alive (2 skeletons after one jump, 4 after qu
 `startScenario` now exits the old one first and ScenarioMode bails after every async load once
 exited (`gone`). 168 tests pass.
 
-Next ideas: Meshy only for gaps KayKit cannot fill (ask before spending credits); a Meshy hero
-spike if custom player models are wanted.
+Meshy hero spike (2026-10-21): `web/tools/meshy.py` runs text -> textured mesh -> rig ->
+library animations (key in ~/.config/meshy/api_key; every step but balance/library costs credits,
+ask first). One knight made for 65 credits (75 left): 12k tris, 24-bone Mixamo-style rig, 10
+clips, 2 MB after a 1k texture (`assets/meshy/Knight_Meshy.glb`). `?meshy` swaps it in for the
+KayKit knight. HeroRig handles a model with its OWN clips: KayKit clip names map to the nearest
+own clip (OWN_CLIP_ALIASES), it is scaled to the KayKit height via the skinned bounds, and props
+attach to RightHand/LeftHand when there is no handslot. Verdict pending the owner's look: it
+animates and fights, but it is taller/less chibi than the KayKit world and the sword grip angle
+is off.
+
+Decided 2026-10-21: the yard stays bow/crossbow for every class (the throw path stays in code,
+unreachable). The skeleton wake-up is ~4.2 s of game time (2.3 s get-up + 1.9 s walk to its
+spot), already inside the wanted 5-6 s; the "8 s" was wall time in the slow software renderer.
 
 Open:
 - black frames on scene loads: NOT reproduced (sampled house/forest/forge fades, canvas is lit
   from the first frame after the fade). Needs a repro on real hardware if still seen.
-- the thrown-weapon path (barbaar/dief at the yard) works, but normal play never reaches it:
-  blade classes always fetch a bow or crossbow before the yard opens. Keep or drop it.
 
 ## Character choice + variant prose ({held} subject token) (2026-07-19)
 

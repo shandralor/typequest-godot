@@ -25,7 +25,16 @@ function find(id: string): Character {
   return ALL.find((c) => c.id === id) ?? ALL[0];
 }
 
+/**
+ * The Meshy spike (web/tools/meshy.py): a generated knight with its own rig and clips. `?meshy`
+ * swaps it in for the KayKit knight so the two can be judged in the same scenes; nothing else
+ * changes, so the child's game never sees it.
+ */
+const MESHY_KNIGHT = "assets/meshy/Knight_Meshy.glb";
+const meshySpike = typeof location !== "undefined" && new URLSearchParams(location.search).has("meshy");
+
 export function modelFor(id: string): string {
+  if (meshySpike && id === "knight") return MESHY_KNIGHT;
   return find(id).model;
 }
 
