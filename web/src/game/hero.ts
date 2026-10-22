@@ -146,65 +146,10 @@ export function isHoldPose(name: string): boolean {
   return /^Ranged_/.test(name) && !/Idle$/.test(name);
 }
 
-/**
- * A model that brings its OWN clips (a Meshy hero: Mixamo-style bones, a handful of library
- * animations) cannot bind the KayKit packs. The game asks for clips by KayKit name, so this
- * answers each name with the nearest clip the model has, first match wins, Idle otherwise.
- */
-const OWN_CLIP_ALIASES: [RegExp, string][] = [
-  [/^Lie_Idle$/, "Lie_Idle"], // the first frames of the stand-up, built in ownClips()
-  [/^Lie_(StandUp|Down)$/, "Stand_Up1"],
-  [/^(Walking|Running)/, "Casual_Walk"],
-  [/^Melee_2H_Attack_Spinning$/, "Attack"],
-  [/^Melee_.*Attack/, "Right_Hand_Sword_Slash"],
-  [/^(Melee_Block|Melee_Blocking|Dodge_)/, "Sword_Parry"],
-  [/^Hit_|^Death_/, "Hit_Reaction"],
-  [/^Cheering$/, "Victory_Cheer"],
-  [/^(Ranged_Bow_Release|Ranged_1H_Shoot|Ranged_Magic_Shoot|Throw)$/, "Archery_Shot"],
-  [/^PickUp$/, "Big_Wave_Hello"],
-];
-
-/** The KayKit name -> own clip lookup for a model with its own animations. */
-function ownClips(animations: THREE.AnimationClip[]): { get(name: string): THREE.AnimationClip | undefined } {
-  const own = new Map(animations.map((c) => [c.name, c]));
-  const stand = own.get("Stand_Up1");
-  // lying still is the stand-up's opening pose, held
-  if (stand) own.set("Lie_Idle", THREE.AnimationUtils.subclip(stand, "Lie_Idle", 0, 2, 30));
-  const idle = own.get("Idle") ?? animations[0];
-  return {
-    get(name: string): THREE.AnimationClip | undefined {
-      if (own.has(name)) return own.get(name);
-      for (const [re, to] of OWN_CLIP_ALIASES) if (re.test(name) && own.has(to)) return own.get(to);
-      return idle;
-    },
-  };
-}
-
-/**
- * The posed bounds of a skinned model. Box3.setFromObject reads the raw geometry, which for a
- * Meshy export is in metres under a centimetre armature: it measured the knight 1/100th of his
- * drawn size, and scaling to that drew him a hundred times too big.
- */
-function skinnedBox(model: THREE.Object3D): THREE.Box3 {
-  model.updateMatrixWorld(true);
-  const box = new THREE.Box3();
-  model.traverse((o) => {
-    const m = o as THREE.SkinnedMesh;
-    if (!m.isSkinnedMesh) return;
-    m.skeleton.update();
-    m.computeBoundingBox();
-    box.union(m.boundingBox!.clone().applyMatrix4(m.matrixWorld));
-  });
-  return box;
-}
-
-/** A model with its own clips is drawn at the KayKit adventurers' height, so scenes still fit. */
-const HERO_HEIGHT = 2.54;
-
 export class HeroRig {
   readonly node = new THREE.Group();
   private mixer: THREE.AnimationMixer | null = null;
-  private clips: { get(name: string): THREE.AnimationClip | undefined } = sharedClips;
+  private clips: Map<string, THREE.AnimationClip> = sharedClips;
   private actions = new Map<string, THREE.AnimationAction>();
   private current: THREE.AnimationAction | null = null;
   private moving = false;
@@ -243,14 +188,12 @@ export class HeroRig {
     // SkeletonUtils.clone gives this rig its OWN skeleton over the template's shared geometry,
     // which is what lets two NPCs of the same model animate independently.
     const model = cloneSkinned(template);
-    const own = (template.animations?.length ?? 0) > 1;
-    if (own) model.scale.multiplyScalar(HERO_HEIGHT / skinnedBox(model).getSize(new THREE.Vector3()).y);
     // pivot at the feet: seat the measured lowest point on y = 0
-    model.position.y -= (own ? skinnedBox(model) : new THREE.Box3().setFromObject(model)).min.y;
+    model.position.y -= new THREE.Box3().setFromObject(model).min.y;
     this.node.add(model);
     this.loadedPath = modelPath;
     this.mixer = new THREE.AnimationMixer(model);
-    this.clips = own ? ownClips(template.animations!) : clips;
+    this.clips = clips;
     this.play("Idle_A");
   }
 
@@ -407,25 +350,9 @@ export class HeroRig {
     this.node.traverse((o) => {
       if (!slot && key(o.name) === want) slot = o;
     });
-    // a Mixamo-style rig (the Meshy spike) has no handslots: hold it in the hand bone itself,
-    // undoing that armature's centimetre scale so the prop keeps its size
-    let rescale = false;
-    if (!slot) {
-      const hand = { handslotr: "righthand", handslotl: "lefthand" }[want];
-      this.node.traverse((o) => {
-        if (!slot && hand && key(o.name) === hand) slot = o;
-      });
-      rescale = true;
-    }
     if (!slot) return false;
     obj.position.copy(offset);
     (slot as THREE.Object3D).add(obj);
-    if (rescale) {
-      this.node.updateMatrixWorld(true);
-      const s = (slot as THREE.Object3D).getWorldScale(new THREE.Vector3());
-      const n = this.node.getWorldScale(new THREE.Vector3());
-      obj.scale.set(n.x / s.x, n.y / s.y, n.z / s.z);
-    }
     return true;
   }
 

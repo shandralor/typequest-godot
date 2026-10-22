@@ -31,15 +31,9 @@ to leave the previous ScenarioMode alive (2 skeletons after one jump, 4 after qu
 `startScenario` now exits the old one first and ScenarioMode bails after every async load once
 exited (`gone`). 168 tests pass.
 
-Meshy hero spike (2026-10-21): `web/tools/meshy.py` runs text -> textured mesh -> rig ->
-library animations (key in ~/.config/meshy/api_key; every step but balance/library costs credits,
-ask first). One knight made for 65 credits (75 left): 12k tris, 24-bone Mixamo-style rig, 10
-clips, 2 MB after a 1k texture (`assets/meshy/Knight_Meshy.glb`). `?meshy` swaps it in for the
-KayKit knight. HeroRig handles a model with its OWN clips: KayKit clip names map to the nearest
-own clip (OWN_CLIP_ALIASES), it is scaled to the KayKit height via the skinned bounds, and props
-attach to RightHand/LeftHand when there is no handslot. Verdict pending the owner's look: it
-animates and fights, but it is taller/less chibi than the KayKit world and the sword grip angle
-is off.
+Decided 2026-10-22: NO Meshy. A generated knight was tried (rigged, 10 clips, playable) and
+rejected; the spike was reverted (see git history, commit 5591be4, for the meshy.py pipeline and
+the own-clip HeroRig code). Stay with KayKit for heroes and props.
 
 Decided 2026-10-21: the yard stays bow/crossbow for every class (the throw path stays in code,
 unreachable). The skeleton wake-up is ~4.2 s of game time (2.3 s get-up + 1.9 s walk to its
